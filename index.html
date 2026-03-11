@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학원 숙제 관리 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f0f2f8;
+  --surface:#ffffff;
+  --card:#ffffff;
+  --card-hover:#f8f9ff;
+  --border:#e2e8f0;
+  --border-strong:#cbd5e1;
+  --primary:#7c3aed;
+  --primary-light:#a78bfa;
+  --primary-bg:#f3efff;
+  --accent:#06b6d4;
+  --success:#10b981;
+  --success-bg:#ecfdf5;
+  --warning:#f59e0b;
+  --warning-bg:#fffbeb;
+  --danger:#ef4444;
+  --danger-bg:#fef2f2;
+  --text:#1e293b;
+  --text-muted:#64748b;
+  --grad:linear-gradient(135deg,#7c3aed,#06b6d4);
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+  --shadow-md:0 4px 24px rgba(0,0,0,0.1);
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.page{display:none;min-height:100vh;}
+.page.active{display:flex;}
+
+/* LOGIN */
+#loginPage{align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(135deg,#f0f2ff 0%,#faf5ff 50%,#ecfeff 100%);}
+.login-box{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:48px 40px;
+  width:100%;max-width:420px;
+  box-shadow:var(--shadow-md);
+}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo .icon{font-size:48px;margin-bottom:12px;}
+.login-logo h1{font-size:22px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-logo p{color:var(--text-muted);font-size:13px;margin-top:6px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:8px;font-weight:500;}
+.form-group input{
+  width:100%;padding:12px 16px;
+  background:#f8fafc;border:1px solid var(--border);
+  border-radius:12px;color:var(--text);
+  font-family:inherit;font-size:15px;
+  transition:border-color .2s,box-shadow .2s;outline:none;
+}
+.form-group input:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(124,58,237,0.12);background:#fff;}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--grad);color:#fff;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 25px rgba(124,58,237,0.3);}
+.login-hint{margin-top:20px;padding:14px;background:var(--primary-bg);border-radius:10px;border:1px solid rgba(124,58,237,0.15);}
+.login-hint p{font-size:12px;color:var(--text-muted);line-height:1.9;}
+.login-hint strong{color:var(--primary);}
+.error-msg{color:var(--danger);font-size:13px;margin-top:8px;display:none;}
+.remember-row{display:flex;align-items:center;margin:4px 0 12px;}
+.remember-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-muted);user-select:none;}
+.remember-label input[type=checkbox]{display:none;}
+.remember-check{width:18px;height:18px;border:2px solid var(--border-strong);border-radius:5px;background:#f8fafc;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.remember-label input[type=checkbox]:checked+.remember-check{background:var(--primary);border-color:var(--primary);}
+.remember-label input[type=checkbox]:checked+.remember-check::after{content:'✓';color:#fff;font-size:11px;font-weight:700;}
+
+/* SIDEBAR */
+.app-layout{flex-direction:row;width:100%;}
+.sidebar{
+  width:240px;min-height:100vh;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;bottom:0;z-index:10;
+  box-shadow:2px 0 8px rgba(0,0,0,0.04);
+}
+.sidebar-header{padding:24px 20px;border-bottom:1px solid var(--border);}
+.sidebar-header .app-name{font-size:15px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.sidebar-header .user-name{font-size:13px;color:var(--text-muted);margin-top:4px;}
+.role-badge{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.role-admin{background:var(--primary-bg);color:var(--primary);}
+.role-student{background:rgba(6,182,212,0.1);color:var(--accent);}
+.sidebar-nav{flex:1;padding:16px 12px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-radius:10px;
+  font-size:14px;color:var(--text-muted);
+  cursor:pointer;transition:all .2s;margin-bottom:4px;
+}
+.nav-item:hover{background:#f8f9ff;color:var(--text);}
+.nav-item.active{background:var(--primary-bg);color:var(--primary);font-weight:600;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.logout-btn{
+  width:100%;padding:10px;border:1px solid var(--border);
+  border-radius:10px;background:transparent;
+  color:var(--text-muted);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s;
+}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg);}
+
+.main-content{margin-left:240px;flex:1;padding:32px;min-height:100vh;}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+.panel-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.panel-sub{color:var(--text-muted);font-size:14px;margin-bottom:28px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+.card+.card{margin-top:16px;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.stat-label{font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:500;}
+.stat-pct{font-size:32px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-detail{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.progress-bar-wrap{height:6px;background:#e2e8f0;border-radius:99px;margin-top:10px;overflow:hidden;}
+.progress-bar{height:100%;border-radius:99px;background:var(--grad);transition:width .6s ease;}
+
+/* HOMEWORK LIST */
+.hw-list{display:flex;flex-direction:column;gap:10px;}
+.hw-item{
+  display:flex;align-items:center;gap:14px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);transition:all .2s;
+}
+.hw-item:hover{box-shadow:var(--shadow-md);border-color:var(--border-strong);}
+.hw-item.done{opacity:.65;}
+.hw-item.done .hw-title{text-decoration:line-through;color:var(--text-muted);}
+.hw-checkbox{
+  width:22px;height:22px;border-radius:6px;border:2px solid var(--border-strong);
+  background:transparent;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.hw-checkbox.checked{background:var(--success);border-color:var(--success);}
+.hw-checkbox.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700;}
+.hw-info{flex:1;}
+.hw-title{font-size:15px;font-weight:500;margin-bottom:4px;}
+.hw-meta{font-size:12px;color:var(--text-muted);}
+.hw-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-done{background:var(--success-bg);color:var(--success);}
+.badge-pending{background:var(--warning-bg);color:var(--warning);}
+.submit-row{margin-top:20px;display:flex;justify-content:flex-end;}
+.btn-submit{
+  padding:12px 28px;border:none;border-radius:12px;
+  background:var(--grad);color:#fff;font-family:inherit;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;
+}
+.btn-submit:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,0.3);}
+
+/* ADMIN GRID */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:900px){.admin-grid{grid-template-columns:1fr;}}
+.section-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--primary);}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:500;}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%;padding:10px 14px;background:#f8fafc;
+  border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;
+}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--primary-light);background:#fff;}
+.btn-add{
+  width:100%;padding:11px;border:none;border-radius:10px;
+  background:var(--grad);color:#fff;font-family:inherit;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;
+}
+.btn-add:hover{opacity:.9;}
+
+/* STUDENT TABLE */
+.student-stat-table{width:100%;border-collapse:collapse;}
+.student-stat-table th{padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.student-stat-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:14px;}
+.student-stat-table tbody tr{transition:background .15s;cursor:pointer;}
+.student-stat-table tbody tr:hover{background:#f8f9ff;}
+.student-stat-table tbody tr:last-child td{border-bottom:none;}
+.pct-cell{font-weight:700;color:var(--primary);}
+.student-name-cell{font-weight:600;display:flex;align-items:center;gap:8px;}
+.student-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.click-hint{font-size:11px;color:var(--text-muted);font-weight:400;}
+
+/* ADMIN HW ITEMS */
+.admin-hw-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:10px;
+  background:#f8fafc;border:1px solid var(--border);margin-bottom:8px;
+  cursor:pointer;transition:all .2s;
+}
+.admin-hw-item:hover{background:var(--primary-bg);border-color:var(--primary-light);box-shadow:0 2px 8px rgba(124,58,237,0.1);}
+.admin-hw-info{flex:1;}
+.admin-hw-title{font-size:14px;font-weight:500;}
+.admin-hw-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.btn-del{background:var(--danger-bg);border:none;color:var(--danger);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;transition:background .2s;}
+.btn-del:hover{background:#fecaca;}
+/* GROUP STATS */
+.gs-period-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow);}
+.gs-period-label{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.gs-group-block{margin-bottom:18px;}
+.gs-group-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:8px;}
+.gs-group-name{font-size:13px;font-weight:700;flex:1;}
+.gs-bar-wrap{display:flex;align-items:center;gap:8px;}
+.gs-bar-bg{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:120px;}
+.gs-bar-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.gs-pct{font-size:12px;font-weight:700;min-width:36px;text-align:right;}
+.gs-count{font-size:11px;color:var(--text-muted);min-width:50px;text-align:right;}
+.gs-student-row{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 28px;border-radius:8px;transition:background .15s;}
+.gs-student-row:hover{background:#f8f9ff;}
+.gs-student-name{font-size:13px;font-weight:500;flex:1;}
+.gs-student-bar-bg{height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:90px;}
+.gs-student-bar-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+/* HW STUDENT MODAL */
+.hw-student-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+  background:#fafafa;margin-bottom:8px;transition:border-color .2s;
+}
+.hw-student-row:hover{border-color:var(--border-strong);}
+.hw-student-avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.hw-student-name{flex:1;font-size:14px;font-weight:600;}
+.hw-toggle{width:30px;height:30px;border-radius:9px;border:2px solid var(--border-strong);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:15px;flex-shrink:0;}
+.hw-toggle.done{background:var(--success);border-color:var(--success);color:#fff;}
+.hw-toggle.pending{background:var(--surface);color:var(--text-muted);}
+.hw-toggle:hover{transform:scale(1.12);}
+.hw-modal-prog{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:20px;}
+.hw-modal-prog-bar{height:100%;border-radius:99px;background:var(--grad);transition:width .5s ease;}
+/* CATEGORY */
+.cat-group-header{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:8px;
+  background:var(--primary-bg);border-left:3px solid var(--primary);
+  margin:16px 0 8px;font-size:13px;font-weight:700;color:var(--primary);
+}
+.cat-group-header .cat-count{font-size:11px;font-weight:400;color:var(--text-muted);margin-left:auto;}
+.cat-tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
+  background:var(--primary-bg);color:var(--primary);margin-right:6px;}
+.cat-manage-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-radius:8px;background:#f8fafc;
+  border:1px solid var(--border);margin-bottom:6px;font-size:13px;
+}
+.cat-add-row{display:flex;gap:8px;margin-top:10px;}
+.cat-add-row input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+  font-family:inherit;font-size:13px;outline:none;background:#f8fafc;color:var(--text);}
+.cat-add-row input:focus{border-color:var(--primary-light);background:#fff;}
+.btn-cat-add{padding:8px 16px;border:none;border-radius:8px;background:var(--grad);
+  color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+/* STUDENT GROUPS */
+.grp-member-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.grp-member-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;
+  background:var(--primary-bg);border:1px solid rgba(124,58,237,0.2);color:var(--primary);
+}
+.grp-member-chip .chip-del{cursor:pointer;color:var(--text-muted);font-size:11px;line-height:1;
+  background:none;border:none;padding:0 0 0 2px;}
+.grp-member-chip .chip-del:hover{color:var(--danger);}
+.grp-card{background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.grp-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.grp-card-name{font-size:14px;font-weight:700;color:var(--primary);}
+.grp-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
+  background:rgba(6,182,212,0.1);color:var(--accent);margin-left:6px;}
+.student-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.sftab{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface);
+  font-family:inherit;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.sftab:hover{border-color:var(--primary-light);color:var(--primary);}
+.sftab.active{background:var(--primary-bg);border-color:var(--primary-light);color:var(--primary);font-weight:600;}
+
+/* PERIOD TABS */
+.period-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{
+  padding:7px 18px;border-radius:20px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-muted);font-family:inherit;
+  font-size:13px;cursor:pointer;transition:all .2s;
+}
+.tab-btn:hover{border-color:var(--primary-light);color:var(--primary);}
+.tab-btn.active{background:var(--primary-bg);border-color:var(--primary-light);color:var(--primary);font-weight:600;}
+.student-select-row{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+.student-select-row select{padding:8px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;}
+
+/* MONTHLY GRID */
+.monthly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+.month-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow);}
+.month-label{font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:500;}
+.month-pct{font-size:24px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.empty-state{text-align:center;padding:40px;color:var(--text-muted);}
+.empty-state .ei{font-size:40px;margin-bottom:12px;}
+
+/* MULTI CHECK */
+.multi-check-wrap{max-height:140px;overflow-y:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px;}
+.multi-check-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;color:var(--text);}
+.multi-check-item input[type=checkbox]{accent-color:var(--primary);width:14px;height:14px;}
+
+/* ── MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(15,23,42,0.4);backdrop-filter:blur(4px);
+  z-index:100;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border-radius:20px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.15);
+  width:100%;max-width:660px;max-height:85vh;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.modal-header{
+  padding:24px 28px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
+}
+.modal-title{font-size:18px;font-weight:700;}
+.modal-sub{font-size:13px;color:var(--text-muted);margin-top:4px;}
+.modal-close{
+  background:none;border:none;font-size:20px;cursor:pointer;
+  color:var(--text-muted);padding:4px;border-radius:8px;
+  transition:background .2s;line-height:1;
+}
+.modal-close:hover{background:#f1f5f9;}
+.modal-body{padding:24px 28px;overflow-y:auto;flex:1;}
+
+/* STUDENT DETAIL HW */
+.detail-hw-item{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:12px;
+  border:1px solid var(--border);background:#fafafa;margin-bottom:10px;
+  transition:border-color .2s;
+}
+.detail-hw-item:hover{border-color:var(--border-strong);}
+.detail-hw-info{flex:1;}
+.detail-hw-title{font-size:14px;font-weight:600;margin-bottom:3px;}
+.detail-hw-meta{font-size:12px;color:var(--text-muted);}
+.detail-pct-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.detail-pct-label{font-size:12px;color:var(--text-muted);}
+.pct-toggle{
+  width:28px;height:28px;border-radius:8px;border:2px solid var(--border-strong);
+  background:transparent;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;
+}
+.pct-toggle.done{background:var(--success);border-color:var(--success);color:#fff;}
+.pct-toggle.pending{background:var(--surface);color:var(--text-muted);}
+.pct-toggle:hover{transform:scale(1.1);}
+.detail-status{
+  display:inline-block;padding:4px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;white-space:nowrap;
+}
+
+/* OVERALL SUMMARY IN MODAL */
+.modal-summary{
+  display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;
+}
+.msummary-card{
+  flex:1;min-width:100px;background:var(--bg);
+  border-radius:12px;padding:14px;text-align:center;
+}
+.msummary-label{font-size:11px;color:var(--text-muted);margin-bottom:6px;}
+.msummary-val{font-size:22px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:30px;right:30px;
+  background:var(--success);color:#fff;
+  padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;
+  transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;
+  box-shadow:0 8px 24px rgba(16,185,129,0.35);
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.warn{background:var(--warning);box-shadow:0 8px 24px rgba(245,158,11,0.35);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">📚</div>
+      <h1>학원 숙제 관리 시스템</h1>
+      <p>계정으로 로그인하세요</p>
+    </div>
+    <div class="form-group">
+      <label>아이디</label>
+      <input id="loginId" type="text" placeholder="아이디 입력" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>비밀번호</label>
+      <input id="loginPw" type="password" placeholder="비밀번호 입력" autocomplete="current-password">
+    </div>
+    <div id="loginError" class="error-msg">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    <div class="remember-row">
+      <label class="remember-label">
+        <input type="checkbox" id="rememberMe">
+        <span class="remember-check"></span>
+        아이디/비밀번호 저장
+      </label>
+    </div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="doLogin()">로그인</button>
+    <div class="login-hint">
+      <p><strong>관리자:</strong> admin / admin123</p>
+      <p><strong>학생 예시:</strong> 김민준, 이서연, 박지호 / 1234</p>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT APP -->
+<div id="studentPage" class="page app-layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="app-name">📚 숙제 관리</div>
+      <div class="user-name" id="studentName"></div>
+      <span class="role-badge role-student">학생</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPanel('s','homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
+      <div class="nav-item" onclick="showPanel('s','stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
+    </nav>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  </div>
+  <div class="main-content">
+    <div class="panel active" id="s-panel-homework">
+      <div class="panel-title">내 숙제 목록</div>
+      <div class="panel-sub" id="s-hw-sub"></div>
+      <div class="stats-row" id="s-quick-stats"></div>
+      <div class="hw-list" id="s-hw-list"></div>
+      <div class="submit-row"><button class="btn-submit" onclick="submitHomework()">✅ 제출하기</button></div>
+    </div>
+    <div class="panel" id="s-panel-stats">
+      <div class="panel-title">숙제 달성 통계</div>
+      <div class="panel-sub">기간별 숙제 완료율을 확인하세요</div>
+      <div class="period-tabs">
+        <button class="tab-btn active" onclick="switchTab(this,'monthly')">월별</button>
+        <button class="tab-btn" onclick="switchTab(this,'semester')">학기별</button>
+        <button class="tab-btn" onclick="switchTab(this,'yearly')">연간</button>
+        <button class="tab-btn" onclick="switchTab(this,'total')">전체 기간</button>
+      </div>
+      <div id="stats-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminPage" class="page app-layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="app-name">📚 숙제 관리</div>
+      <div class="user-name">관리자</div>
+      <span class="role-badge role-admin">관리자</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
+      <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
+      <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
+      <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
+    </nav>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  </div>
+  <div class="main-content">
+    <!-- Manage -->
+    <div class="panel active" id="a-panel-manage">
+      <div class="panel-title">숙제 관리</div>
+      <div class="panel-sub">학생에게 숙제를 추가하고 관리합니다</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title">➕ 숙제 추가</div>
+          <div class="form-row"><label>숙제 제목</label><input id="hw-title" type="text" placeholder="예) 1단원 받아쓰기"></div>
+          <div class="form-row"><label>항목 (카테고리)</label>
+            <select id="hw-category"><option value="">— 항목 없음 —</option></select>
+          </div>
+          <div class="form-row"><label>숙제 등록일</label><input id="hw-created" type="date"></div>
+          <div class="form-row"><label>마감일</label><input id="hw-due" type="date"></div>
+          <div class="form-row">
+            <label>대상 학생 (복수 선택 가능)</label>
+            <div class="student-filter-tabs" id="student-group-tabs"></div>
+            <div class="multi-check-wrap" id="student-checks"></div>
+          </div>
+          <button class="btn-add" onclick="addHomework()">숙제 추가</button>
+        </div>
+        <div class="card">
+          <div class="section-title">📋 전체 숙제 목록</div>
+          <div id="admin-hw-list"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="section-title">🏷️ 항목(카테고리) 관리</div>
+        <div id="cat-list"></div>
+        <div class="cat-add-row">
+          <input id="cat-input" type="text" placeholder="새 항목 이름 (예: 문학, 독서, 내신)" onkeydown="if(event.key==='Enter')addCategory()">
+          <button class="btn-cat-add" onclick="addCategory()">➕ 추가</button>
+        </div>
+      </div>
+    </div>
+    <!-- Student Groups -->
+    <div class="panel" id="a-panel-groups">
+      <div class="panel-title">학생 그룹 관리</div>
+      <div class="panel-sub">학교/학년별 그룹을 만들고 학생을 배정하세요</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title">➕ 그룹 추가</div>
+          <div class="form-row"><label>그룹 이름</label>
+            <input id="grp-input" type="text" placeholder="예) 경동고 1학년, 경신고 2학년" onkeydown="if(event.key==='Enter')addStudentGroup()">
+          </div>
+          <button class="btn-add" onclick="addStudentGroup()">그룹 추가</button>
+        </div>
+        <div class="card">
+          <div class="section-title">👥 그룹 목록</div>
+          <div id="grp-list"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Students -->
+    <div class="panel" id="a-panel-students">
+      <div class="panel-title">학생 현황</div>
+      <div class="panel-sub">학생을 추가하거나 클릭하면 상세 숙제 현황을 확인할 수 있습니다</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title">➕ 학생 추가</div>
+          <div class="form-row"><label>학생 이름</label><input id="new-student-name" type="text" placeholder="예) 홍길동"></div>
+          <div class="form-row"><label>접속 아이디</label><input id="new-student-id" type="text" placeholder="예) hong123"></div>
+          <div class="form-row"><label>비밀번호</label><input id="new-student-pw" type="password" placeholder="비밀번호 입력"></div>
+          <div class="form-row"><label>비밀번호 확인</label><input id="new-student-pw2" type="password" placeholder="비밀번호 재입력"></div>
+          <div class="form-row"><label>소속 그룹 (선택)</label>
+            <select id="new-student-group" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
+              <option value="">— 그룹 없음 —</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addStudent()">학생 추가</button>
+        </div>
+        <div class="card">
+          <div class="section-title">👥 학생 목록</div>
+          <table class="student-stat-table">
+            <thead><tr><th>학생</th><th>전체</th><th>완료</th><th>달성률</th><th></th></tr></thead>
+            <tbody id="student-stat-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div class="panel" id="a-panel-stats">
+      <div class="panel-title">달성 통계</div>
+      <div class="panel-sub">그룹별 학생의 기간별 숙제 달성률을 확인합니다</div>
+      <div class="period-tabs" id="admin-period-tabs">
+        <button class="tab-btn active" onclick="switchAdminTab(this,'monthly')">월별</button>
+        <button class="tab-btn" onclick="switchAdminTab(this,'semester')">학기별</button>
+        <button class="tab-btn" onclick="switchAdminTab(this,'yearly')">연간</button>
+        <button class="tab-btn" onclick="switchAdminTab(this,'total')">전체 기간</button>
+      </div>
+      <div id="admin-stats-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="modal-overlay" id="studentModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-student-name"></div>
+        <div class="modal-sub">숙제 달성 현황 · 관리자가 달성도를 수정할 수 있습니다</div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="modal-summary"></div>
+      <div id="modal-hw-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HW STUDENT MODAL -->
+<div class="modal-overlay" id="hwStudentModal" onclick="closeHWModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="hw-modal-title"></div>
+        <div class="modal-sub" id="hw-modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('hwStudentModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="hw-modal-summary"></div>
+      <div class="hw-modal-prog"><div class="hw-modal-prog-bar" id="hw-modal-prog-bar"></div></div>
+      <div id="hw-modal-student-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────
+const DEFAULT_USERS=[
+  {id:'admin',name:'관리자',password:'admin123',role:'admin'},
+  {id:'student1',name:'김민준',password:'1234',role:'student'},
+  {id:'student2',name:'이서연',password:'1234',role:'student'},
+  {id:'student3',name:'박지호',password:'1234',role:'student'},
+];
+function initData(){
+  if(!localStorage.getItem('hwapp_users')){
+    localStorage.setItem('hwapp_users',JSON.stringify(DEFAULT_USERS));
+    const today=new Date().toISOString().slice(0,10);
+    const cats=[
+      {id:'cat1',name:'문학'},{id:'cat2',name:'독서'},{id:'cat3',name:'문법'}
+    ];
+    localStorage.setItem('hwapp_categories',JSON.stringify(cats));
+    const hws=[
+      {id:'hw1',title:'1단원 받아쓰기',categoryId:'cat3',assignedTo:['student1','student2','student3'],dueDate:today,createdAt:'2026-01-10'},
+      {id:'hw2',title:'독서 감상문 쓰기',categoryId:'cat2',assignedTo:['student1','student2'],dueDate:today,createdAt:'2026-01-20'},
+      {id:'hw3',title:'시 외우기',categoryId:'cat1',assignedTo:['student2','student3'],dueDate:today,createdAt:'2026-02-05'},
+      {id:'hw4',title:'맞춤법 연습 10문제',categoryId:'cat3',assignedTo:['student1','student2','student3'],dueDate:today,createdAt:'2026-02-15'},
+      {id:'hw5',title:'소설 1장 읽기',categoryId:'cat1',assignedTo:['student1','student3'],dueDate:today,createdAt:'2026-03-01'},
+    ];
+    localStorage.setItem('hwapp_homeworks',JSON.stringify(hws));
+    const comps=[
+      {homeworkId:'hw1',studentId:'student1',completedAt:'2026-01-11'},
+      {homeworkId:'hw1',studentId:'student2',completedAt:'2026-01-12'},
+      {homeworkId:'hw2',studentId:'student1',completedAt:'2026-01-22'},
+      {homeworkId:'hw3',studentId:'student2',completedAt:'2026-02-07'},
+      {homeworkId:'hw4',studentId:'student1',completedAt:'2026-02-17'},
+      {homeworkId:'hw4',studentId:'student3',completedAt:'2026-02-18'},
+    ];
+    localStorage.setItem('hwapp_completions',JSON.stringify(comps));
+  }
+}
+const getUsers=()=>JSON.parse(localStorage.getItem('hwapp_users')||'[]');
+const getHomeworks=()=>JSON.parse(localStorage.getItem('hwapp_homeworks')||'[]');
+const getCompletions=()=>JSON.parse(localStorage.getItem('hwapp_completions')||'[]');
+const getCategories=()=>JSON.parse(localStorage.getItem('hwapp_categories')||'[]');
+const getStudentGroups=()=>JSON.parse(localStorage.getItem('hwapp_student_groups')||'[]');
+const saveHomeworks=d=>localStorage.setItem('hwapp_homeworks',JSON.stringify(d));
+const saveCompletions=d=>localStorage.setItem('hwapp_completions',JSON.stringify(d));
+const saveCategories=d=>localStorage.setItem('hwapp_categories',JSON.stringify(d));
+const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stringify(d));
+
+let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly', currentModalStudent=null;
+
+// 그룹 색상 팔레트
+const GROUP_COLORS=[
+  {bg:'#ede9fe',color:'#6d28d9',border:'rgba(109,40,217,0.25)'},  // 볜지
+  {bg:'#dcfce7',color:'#15803d',border:'rgba(21,128,61,0.25)'},   // 녹색
+  {bg:'#fef9c3',color:'#a16207',border:'rgba(161,98,7,0.25)'},    // 노란색
+  {bg:'#fee2e2',color:'#b91c1c',border:'rgba(185,28,28,0.25)'},   // 빨간색
+  {bg:'#e0f2fe',color:'#0369a1',border:'rgba(3,105,161,0.25)'},   // 파란색
+  {bg:'#fce7f3',color:'#be185d',border:'rgba(190,24,93,0.25)'},   // 분홍
+  {bg:'#ffedd5',color:'#c2410c',border:'rgba(194,65,12,0.25)'},   // 주황색
+  {bg:'#f0fdf4',color:'#166534',border:'rgba(22,101,52,0.25)'},   // 진품녹
+];
+function getGroupColor(groupId){
+  const groups=getStudentGroups();
+  const idx=groups.findIndex(g=>g.id===groupId);
+  return GROUP_COLORS[idx<0?0:idx%GROUP_COLORS.length];
+}
+
+// ── AUTH ─────────────────────────────────────────────────
+function loadSavedCredentials(){
+  const savedId=localStorage.getItem('hwapp_saved_id');
+  const savedPw=localStorage.getItem('hwapp_saved_pw');
+  if(savedId&&savedPw){
+    document.getElementById('loginId').value=savedId;
+    document.getElementById('loginPw').value=savedPw;
+    document.getElementById('rememberMe').checked=true;
+  }
+}
+function doLogin(){
+  const id=document.getElementById('loginId').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  const remember=document.getElementById('rememberMe').checked;
+  const u=getUsers().find(x=>(x.id===id||x.name===id||x.loginId===id)&&x.password===pw);
+  if(!u){document.getElementById('loginError').style.display='block';return;}
+  document.getElementById('loginError').style.display='none';
+  if(remember){
+    localStorage.setItem('hwapp_saved_id',id);
+    localStorage.setItem('hwapp_saved_pw',pw);
+  } else {
+    localStorage.removeItem('hwapp_saved_id');
+    localStorage.removeItem('hwapp_saved_pw');
+  }
+  currentUser=u;
+  showPage(u.role==='admin'?'admin':'student');
+}
+document.getElementById('loginId').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPw').focus();});
+document.getElementById('loginPw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){
+  currentUser=null;pendingChecks={};showPage('login');
+  // 저장된 자격증명이 있으면 다시 채워두기
+  const savedId=localStorage.getItem('hwapp_saved_id');
+  const savedPw=localStorage.getItem('hwapp_saved_pw');
+  if(savedId&&savedPw){
+    document.getElementById('loginId').value=savedId;
+    document.getElementById('loginPw').value=savedPw;
+    document.getElementById('rememberMe').checked=true;
+  } else {
+    document.getElementById('loginId').value='';
+    document.getElementById('loginPw').value='';
+    document.getElementById('rememberMe').checked=false;
+  }
+}
+function showPage(role){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  if(role==='login'){document.getElementById('loginPage').classList.add('active');return;}
+  if(role==='student'){
+    document.getElementById('studentPage').classList.add('active');
+    document.getElementById('studentName').textContent=currentUser.name;
+    renderStudentHomework();showPanel('s','homework');
+  } else {
+    document.getElementById('adminPage').classList.add('active');
+    renderAdminManage();renderAdminStudents();renderAdminStats();showPanel('a','manage');
+  }
+}
+
+// ── NAV ──────────────────────────────────────────────────
+function showPanel(who,name){
+  const pg=who==='s'?'student':'admin';
+  document.querySelectorAll(`#${pg}Page .panel`).forEach(p=>p.classList.remove('active'));
+  document.getElementById(`${who==='s'?'s':'a'}-panel-${name}`).classList.add('active');
+  document.querySelectorAll(`#${pg}Page .nav-item`).forEach(n=>n.classList.remove('active'));
+  document.getElementById(`${who==='s'?'s':'a'}nav-${name}`).classList.add('active');
+  if(who==='s'&&name==='stats')renderStudentStats();
+  if(who==='a'&&name==='students')renderAdminStudents();
+  if(who==='a'&&name==='groups')renderStudentGroupPanel();
+  if(who==='a'&&name==='stats')renderAdminStats();
+}
+
+// ── STUDENT HOMEWORK ─────────────────────────────────────
+function renderStudentHomework(){
+  const hws=getHomeworks().filter(h=>h.assignedTo.includes(currentUser.id));
+  const cats=getCategories();
+  const comps=getCompletions();
+  const isDone=id=>comps.some(c=>c.homeworkId===id&&c.studentId===currentUser.id);
+  const total=hws.length, done=hws.filter(h=>isDone(h.id)).length, pct=total?Math.round(done/total*100):0;
+  document.getElementById('s-hw-sub').textContent=`총 ${total}개 숙제 · 완료 ${done}개`;
+  document.getElementById('s-quick-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">전체 달성률</div><div class="stat-pct">${pct}%</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div class="stat-detail">${done} / ${total} 완료</div></div>
+    <div class="stat-card"><div class="stat-label">미완료</div>
+      <div class="stat-pct" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div>
+      <div class="stat-detail">숙제 남음</div></div>
+    <div class="stat-card"><div class="stat-label">완료</div>
+      <div class="stat-pct" style="-webkit-text-fill-color:var(--success);background:none">${done}</div>
+      <div class="stat-detail">숙제 완료</div></div>`;
+  const list=document.getElementById('s-hw-list');
+  if(!hws.length){list.innerHTML='<div class="empty-state"><div class="ei">🎉</div><div>배정된 숙제가 없습니다</div></div>';return;}
+  // group by category
+  const groups=buildGroups(hws,cats);
+  list.innerHTML=groups.map(g=>{
+    const header=`<div class="cat-group-header">🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
+    const items=g.items.map(h=>{
+      const d=isDone(h.id);
+      const chk=pendingChecks[h.id]!==undefined?pendingChecks[h.id]:d;
+      return`<div class="hw-item${d?' done':''}">
+        <div class="hw-checkbox${chk?' checked':''}" onclick="toggleCheck('${h.id}',${d})"></div>
+        <div class="hw-info"><div class="hw-title">${h.title}</div><div class="hw-meta">마감: ${h.dueDate||'미정'} · 등록: ${h.createdAt}</div></div>
+        <span class="hw-badge ${d?'badge-done':'badge-pending'}">${d?'완료':'미완료'}</span>
+      </div>`;
+    }).join('');
+    return header+items;
+  }).join('');
+  return;
+}
+function toggleCheck(hId,done){
+  if(done)return;
+  pendingChecks[hId]=pendingChecks[hId]===undefined?true:!pendingChecks[hId];
+  renderStudentHomework();
+}
+function submitHomework(){
+  const comps=getCompletions(); const today=new Date().toISOString().slice(0,10); let cnt=0;
+  for(const[hId,chk] of Object.entries(pendingChecks)){
+    if(chk&&!comps.some(c=>c.homeworkId===hId&&c.studentId===currentUser.id)){comps.push({homeworkId:hId,studentId:currentUser.id,completedAt:today});cnt++;}
+  }
+  saveCompletions(comps);pendingChecks={};renderStudentHomework();
+  showToast(cnt?`✅ ${cnt}개 숙제를 제출했습니다!`:'새로 완료한 숙제가 없습니다.');
+}
+
+// ── STUDENT STATS ─────────────────────────────────────────
+function switchTab(btn,t){
+  currentStudentTab=t;
+  document.querySelectorAll('#studentPage .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderStudentStats();
+}
+function renderStudentStats(){renderStatsForStudent(currentUser.id,'stats-content',currentStudentTab);}
+
+function getStudentHWs(sid){return getHomeworks().filter(h=>h.assignedTo.includes(sid));}
+function isDoneFor(hId,sid){return getCompletions().some(c=>c.homeworkId===hId&&c.studentId===sid);}
+
+function calcPeriodStats(sid,period){
+  const hws=getStudentHWs(sid), comps=getCompletions().filter(c=>c.studentId===sid), res={};
+  hws.forEach(h=>{
+    const k=getPKey(h.createdAt,period);
+    if(!res[k])res[k]={total:0,done:0,label:getPLabel(h.createdAt,period)};
+    res[k].total++;if(comps.some(c=>c.homeworkId===h.id))res[k].done++;
+  });return res;
+}
+function getPKey(ds,p){
+  if(!ds)return'unknown';const d=new Date(ds),y=d.getFullYear(),m=d.getMonth()+1;
+  if(p==='monthly')return`${y}-${String(m).padStart(2,'0')}`;
+  if(p==='semester')return`${y}-S${m<=8?1:2}`;
+  if(p==='yearly')return`${y}`;return'total';
+}
+function getPLabel(ds,p){
+  if(!ds)return'미정';const d=new Date(ds),y=d.getFullYear(),m=d.getMonth()+1;
+  if(p==='monthly')return`${y}년 ${m}월`;
+  if(p==='semester')return`${y}년 ${m<=8?'1학기':'2학기'}`;
+  if(p==='yearly')return`${y}년`;return'전체 기간';
+}
+function renderStatsForStudent(sid,cid,period){
+  const el=document.getElementById(cid);
+  if(period==='total'){
+    const hws=getStudentHWs(sid),done=hws.filter(h=>isDoneFor(h.id,sid)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    el.innerHTML=`<div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:64px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${pct}%</div>
+      <div style="font-size:16px;color:var(--text-muted);margin:12px 0">전체 기간 숙제 달성률</div>
+      <div style="font-size:14px;color:var(--text-muted)">${done}개 완료 / ${total}개 전체</div>
+      <div class="progress-bar-wrap" style="max-width:300px;margin:20px auto 0;height:10px"><div class="progress-bar" style="width:${pct}%"></div></div>
+    </div>`;return;
+  }
+  const stats=calcPeriodStats(sid,period),keys=Object.keys(stats).sort();
+  if(!keys.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>데이터가 없습니다</div></div>';return;}
+  el.innerHTML=`<div class="monthly-grid">${keys.map(k=>{
+    const s=stats[k],pct=s.total?Math.round(s.done/s.total*100):0;
+    return`<div class="month-card">
+      <div class="month-label">${s.label}</div><div class="month-pct">${pct}%</div>
+      <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${s.done}/${s.total} 완료</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── CATEGORY HELPERS ─────────────────────────────────────
+function buildGroups(hws,cats){
+  const groups=[];
+  cats.forEach(c=>{
+    const items=hws.filter(h=>h.categoryId===c.id);
+    if(items.length)groups.push({label:c.name,catId:c.id,items});
+  });
+  const uncatItems=hws.filter(h=>!h.categoryId||!cats.find(c=>c.id===h.categoryId));
+  if(uncatItems.length)groups.push({label:'미분류',catId:null,items:uncatItems});
+  return groups;
+}
+function renderCatList(){
+  const cats=getCategories();
+  const el=document.getElementById('cat-list');
+  if(!cats.length){el.innerHTML='<div style="font-size:13px;color:var(--text-muted);padding:8px 0">등록된 항목이 없습니다.</div>';}
+  else el.innerHTML=cats.map(c=>`<div class="cat-manage-item"><span>🏷️ ${c.name}</span><button class="btn-del" onclick="deleteCategory('${c.id}')">삭제</button></div>`).join('');
+  // update select
+  const sel=document.getElementById('hw-category');
+  sel.innerHTML='<option value="">— 항목 없음 —</option>'+cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function addCategory(){
+  const inp=document.getElementById('cat-input');
+  const name=inp.value.trim();
+  if(!name){showToast('항목 이름을 입력하세요.','warn');return;}
+  const cats=getCategories();
+  if(cats.find(c=>c.name===name)){showToast('이미 존재하는 항목입니다.','warn');return;}
+  cats.push({id:'cat'+Date.now(),name});
+  saveCategories(cats);inp.value='';
+  renderCatList();showToast(`✅ "${name}" 항목이 추가되었습니다!`);
+}
+function deleteCategory(id){
+  const cats=getCategories().filter(c=>c.id!==id);
+  saveCategories(cats);
+  // unlink homeworks in this category
+  const hws=getHomeworks().map(h=>h.categoryId===id?{...h,categoryId:''}:h);
+  saveHomeworks(hws);
+  renderCatList();renderAdminHWList();
+  showToast('항목이 삭제되었습니다.');
+}
+// ── STUDENT GROUP MANAGEMENT ──────────────────────────────
+function getStudentGroupOf(sid){
+  return getStudentGroups().find(g=>g.studentIds&&g.studentIds.includes(sid));
+}
+function renderStudentGroupPanel(){
+  const groups=getStudentGroups();
+  const students=getUsers().filter(u=>u.role==='student');
+  const el=document.getElementById('grp-list');
+  if(!groups.length){el.innerHTML='<div class="empty-state"><div class="ei">👥</div><div>그룹이 없습니다</div></div>';return;}
+  el.innerHTML=groups.map((g,gi)=>{
+    const gc=GROUP_COLORS[gi%GROUP_COLORS.length];
+    const members=(g.studentIds||[]).map(sid=>{
+      const s=students.find(u=>u.id===sid);
+      return s?`<span class="grp-member-chip" style="background:${gc.bg};color:${gc.color};border-color:${gc.border}">${s.name}<button class="chip-del" onclick="removeFromGroup('${g.id}','${sid}')" title="그룹에서 제거">✕</button></span>`:''
+    }).join('');
+    const unassigned=students.filter(s=>!getStudentGroupOf(s.id)&&!(g.studentIds||[]).includes(s.id));
+    const addSelect=unassigned.length?`<select onchange="addToGroup('${g.id}',this.value);this.value=''" style="margin-top:8px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#f8fafc;font-family:inherit;font-size:12px;color:var(--text);outline:none;">
+      <option value="">+ 학생 추가...</option>${unassigned.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+    </select>`:'';
+    return`<div class="grp-card" style="border-left:3px solid ${gc.color}">
+      <div class="grp-card-header">
+        <span class="grp-card-name" style="color:${gc.color}">🏫 ${g.name}<span class="grp-badge" style="background:${gc.bg};color:${gc.color};border-color:${gc.border}">${(g.studentIds||[]).length}명</span></span>
+        <button class="btn-del" onclick="deleteStudentGroup('${g.id}')">삭제</button>
+      </div>
+      <div class="grp-member-wrap">${members||'<span style="font-size:12px;color:var(--text-muted)">소속 학생 없음</span>'}</div>
+      ${addSelect}
+    </div>`;
+  }).join('');
+}
+function addStudentGroup(){
+  const inp=document.getElementById('grp-input');
+  const name=inp.value.trim();
+  if(!name){showToast('그룹 이름을 입력하세요.','warn');return;}
+  const groups=getStudentGroups();
+  if(groups.find(g=>g.name===name)){showToast('이미 존재하는 그룹입니다.','warn');return;}
+  groups.push({id:'grp'+Date.now(),name,studentIds:[]});
+  saveStudentGroups(groups);inp.value='';
+  renderStudentGroupPanel();showToast(`✅ "${name}" 그룹이 추가되었습니다!`);
+}
+function deleteStudentGroup(id){
+  saveStudentGroups(getStudentGroups().filter(g=>g.id!==id));
+  renderStudentGroupPanel();renderAdminManage();showToast('그룹이 삭제되었습니다.');
+}
+function addToGroup(gId,sId){
+  if(!sId)return;
+  const groups=getStudentGroups();
+  // remove from any existing group first
+  groups.forEach(g=>{g.studentIds=(g.studentIds||[]).filter(id=>id!==sId);});
+  const g=groups.find(g=>g.id===gId);
+  if(g){g.studentIds=g.studentIds||[];if(!g.studentIds.includes(sId))g.studentIds.push(sId);}
+  saveStudentGroups(groups);
+  renderStudentGroupPanel();renderAdminManage();
+}
+function removeFromGroup(gId,sId){
+  const groups=getStudentGroups();
+  const g=groups.find(g=>g.id===gId);
+  if(g)g.studentIds=(g.studentIds||[]).filter(id=>id!==sId);
+  saveStudentGroups(groups);
+  renderStudentGroupPanel();renderAdminManage();
+}
+function renderAdminManage(){
+  const groups=getStudentGroups();
+  // group filter tabs
+  const tabEl=document.getElementById('student-group-tabs');
+  tabEl.innerHTML=`<button class="sftab active" onclick="filterStudentChecks('',this)">전체</button>`
+    +groups.map(g=>`<button class="sftab" onclick="filterStudentChecks('${g.id}',this)">${g.name}</button>`).join('');
+  renderStudentChecks('');
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('hw-created').value=today;
+  document.getElementById('hw-due').value=today;
+  renderCatList();
+  renderAdminHWList();
+}
+function renderStudentChecks(filterGroupId){
+  const students=getUsers().filter(u=>u.role==='student');
+  const groups=getStudentGroups();
+  let filtered=students;
+  if(filterGroupId){
+    const g=groups.find(g=>g.id===filterGroupId);
+    filtered=g?students.filter(s=>(g.studentIds||[]).includes(s.id)):[];
+  }
+  const el=document.getElementById('student-checks');
+  if(!filtered.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:4px">해당 그룹에 학생이 없습니다</div>';return;}
+  el.innerHTML=filtered.map(u=>{
+    const grp=getStudentGroupOf(u.id);
+    const gc=grp?getGroupColor(grp.id):null;
+    const badge=grp?`<span style="font-size:10px;font-weight:600;margin-left:4px;padding:1px 6px;border-radius:8px;background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}">${grp.name}</span>`:'';
+    return`<label class="multi-check-item"><input type="checkbox" value="${u.id}" class="student-hw-chk"> ${u.name}${badge}</label>`;
+  }).join('');
+}
+function filterStudentChecks(groupId,btn){
+  document.querySelectorAll('#student-group-tabs .sftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStudentChecks(groupId);
+}
+function renderAdminHWList(){
+  const hws=getHomeworks(),users=getUsers(),cats=getCategories(),el=document.getElementById('admin-hw-list');
+  if(!hws.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';return;}
+  const groups=buildGroups(hws,cats);
+  el.innerHTML=groups.map(g=>{
+    const header=`<div class="cat-group-header">🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
+    const items=g.items.map(h=>{
+      const names=h.assignedTo.map(id=>users.find(u=>u.id===id)?.name||id).join(', ');
+      const cnt=getCompletions().filter(c=>c.homeworkId===h.id).length;
+      const safeTitle=h.title.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const pct=h.assignedTo.length?Math.round(cnt/h.assignedTo.length*100):0;
+      const progColor=pct===100?'var(--success)':pct>0?'var(--warning)':'var(--border-strong)';
+      return`<div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')">
+        <div class="admin-hw-info">
+          <div class="admin-hw-title">📄 ${h.title}</div>
+          <div class="admin-hw-meta">대상: ${names} · 등록: ${h.createdAt} · 마감: ${h.dueDate||'미정'}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+              <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:${progColor}">${cnt}/${h.assignedTo.length} 완료</span>
+          </div>
+        </div>
+        <button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>
+      </div>`;
+    }).join('');
+    return header+items;
+  }).join('');
+}
+function addHomework(){
+  const title=document.getElementById('hw-title').value.trim();
+  const categoryId=document.getElementById('hw-category').value;
+  const created=document.getElementById('hw-created').value;
+  const due=document.getElementById('hw-due').value;
+  const checked=[...document.querySelectorAll('.student-hw-chk:checked')].map(c=>c.value);
+  if(!title){showToast('숙제 제목을 입력하세요.','warn');return;}
+  if(!created){showToast('등록일을 선택하세요.','warn');return;}
+  if(!checked.length){showToast('학생을 1명 이상 선택하세요.','warn');return;}
+  const hws=getHomeworks();
+  hws.push({id:'hw'+Date.now(),title,categoryId,assignedTo:checked,dueDate:due,createdAt:created});
+  saveHomeworks(hws);
+  document.getElementById('hw-title').value='';
+  document.getElementById('hw-category').value='';
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('hw-created').value=today;
+  document.getElementById('hw-due').value=today;
+  document.querySelectorAll('.student-hw-chk').forEach(c=>c.checked=false);
+  renderAdminHWList();showToast('✅ 숙제가 추가되었습니다!');
+}
+// ── HW STUDENT MODAL ─────────────────────────────────────
+function openHWStudentModal(hwId){
+  const hw=getHomeworks().find(h=>h.id===hwId);
+  if(!hw)return;
+  const users=getUsers();
+  const comps=getCompletions();
+  const cats=getCategories();
+  const cat=cats.find(c=>c.id===hw.categoryId);
+  const done=comps.filter(c=>c.homeworkId===hwId).length;
+  const total=hw.assignedTo.length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('hw-modal-title').textContent='📄 '+hw.title;
+  document.getElementById('hw-modal-sub').textContent=(cat?'['+cat.name+'] ':'')+' 등록: '+hw.createdAt+' · 마감: '+(hw.dueDate||'미정');
+  document.getElementById('hw-modal-summary').innerHTML=`
+    <div class="msummary-card"><div class="msummary-label">달성률</div><div class="msummary-val">${pct}%</div></div>
+    <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none;font-size:22px;font-weight:900">${done}</div></div>
+    <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none;font-size:22px;font-weight:900">${total-done}</div></div>
+    <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--text);background:none;font-size:22px;font-weight:900">${total}</div></div>`;
+  document.getElementById('hw-modal-prog-bar').style.width=pct+'%';
+  renderHWStudentList(hwId);
+  document.getElementById('hwStudentModal').classList.add('open');
+}
+function renderHWStudentList(hwId){
+  const hw=getHomeworks().find(h=>h.id===hwId);
+  if(!hw)return;
+  const users=getUsers();
+  const comps=getCompletions();
+  const el=document.getElementById('hw-modal-student-list');
+  el.innerHTML=hw.assignedTo.map(sid=>{
+    const s=users.find(u=>u.id===sid);
+    if(!s)return'';
+    const isDone=comps.some(c=>c.homeworkId===hwId&&c.studentId===sid);
+    const initial=s.name.slice(0,1);
+    return`<div class="hw-student-row">
+      <div class="hw-student-avatar">${initial}</div>
+      <div class="hw-student-name">${s.name}</div>
+      <span style="font-size:12px;color:${isDone?'var(--success)':'var(--warning)'};font-weight:600;margin-right:8px">${isDone?'✅ 완료':'⏳ 미완료'}</span>
+      <button class="hw-toggle ${isDone?'done':'pending'}" onclick="toggleHWStudentDone('${hwId}','${sid}',${isDone})" title="${isDone?'완료 취소':'완료로 표시'}">${isDone?'✓':'○'}</button>
+    </div>`;
+  }).join('');
+}
+function toggleHWStudentDone(hwId,sid,isDone){
+  let comps=getCompletions();
+  if(isDone){
+    comps=comps.filter(c=>!(c.homeworkId===hwId&&c.studentId===sid));
+  } else {
+    const today=new Date().toISOString().slice(0,10);
+    comps.push({homeworkId:hwId,studentId:sid,completedAt:today});
+  }
+  saveCompletions(comps);
+  // 모달 요약 업데이트
+  const hw=getHomeworks().find(h=>h.id===hwId);
+  const done=comps.filter(c=>c.homeworkId===hwId).length;
+  const total=hw.assignedTo.length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('hw-modal-summary').querySelectorAll('.msummary-val')[0].textContent=pct+'%';
+  document.getElementById('hw-modal-summary').querySelectorAll('.msummary-val')[1].textContent=done;
+  document.getElementById('hw-modal-summary').querySelectorAll('.msummary-val')[2].textContent=total-done;
+  document.getElementById('hw-modal-prog-bar').style.width=pct+'%';
+  renderHWStudentList(hwId);
+  renderAdminHWList();
+  showToast(isDone?'완료가 취소되었습니다.':'✅ 완료로 표시했습니다!');
+}
+function closeHWModal(e){
+  if(e.target===document.getElementById('hwStudentModal'))
+    document.getElementById('hwStudentModal').classList.remove('open');
+}
+function deleteHW(id,title){
+  saveHomeworks(getHomeworks().filter(h=>h.id!==id));
+  saveCompletions(getCompletions().filter(c=>c.homeworkId!==id));
+  renderAdminHWList();showToast(`🗑️ "${title}" 숙제가 삭제되었습니다.`);
+}
+
+// ── ADMIN STUDENTS ────────────────────────────────────────
+function renderAdminStudents(){
+  // 그룹 select 갱신
+  const grpSel=document.getElementById('new-student-group');
+  if(grpSel){
+    const groups=getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    grpSel.innerHTML='<option value="">— 그룹 없음 —</option>'+groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+  }
+  // 통계 select 갱신
+  const adminStatSel=document.getElementById('admin-stat-student');
+  const students=getUsers().filter(u=>u.role==='student');
+  if(adminStatSel){
+    const prev=adminStatSel.value;
+    adminStatSel.innerHTML='<option value="all">전체 학생 평균</option>'+students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    if(prev)adminStatSel.value=prev;
+  }
+  document.getElementById('student-stat-body').innerHTML=students.map(s=>{
+    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const initials=s.name.slice(0,1);
+    const grp=getStudentGroupOf(s.id);
+    const grpColor=grp?getGroupColor(grp.id):null;
+    const grpBadge=grp?`<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>`:''
+    const loginId=s.loginId||s.id;
+    const safeName=s.name.replace(/'/g,'\u2019');
+    return`<tr onclick="openStudentDetail('${s.id}')">
+      <td><div class="student-name-cell"><div class="student-avatar">${initials}</div>${s.name}${grpBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}]</span></div></td>
+      <td>${total}</td><td>${done}</td>
+      <td><span class="pct-cell">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%"></div></div></td>
+      <td style="white-space:nowrap">
+        <span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
+        <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function addStudent(){
+  const name=document.getElementById('new-student-name').value.trim();
+  const loginId=document.getElementById('new-student-id').value.trim();
+  const pw=document.getElementById('new-student-pw').value.trim();
+  const groupId=document.getElementById('new-student-group').value;
+  const pw2=document.getElementById('new-student-pw2').value.trim();
+  if(!name){showToast('학생 이름을 입력하세요.','warn');return;}
+  if(!loginId){showToast('접속 아이디를 입력하세요.','warn');return;}
+  if(!pw){showToast('비밀번호를 입력하세요.','warn');return;}
+  if(pw!==pw2){showToast('비밀번호가 일치하지 않습니다.','warn');document.getElementById('new-student-pw2').focus();return;}
+  const users=getUsers();
+  if(users.find(u=>u.id===loginId||u.loginId===loginId)){showToast('이미 사용 중인 아이디입니다.','warn');return;}
+  const newId='student'+Date.now();
+  users.push({id:newId,name,password:pw,role:'student',loginId});
+  localStorage.setItem('hwapp_users',JSON.stringify(users));
+  if(groupId){
+    const groups=getStudentGroups();
+    const g=groups.find(g=>g.id===groupId);
+    if(g){g.studentIds=g.studentIds||[];g.studentIds.push(newId);}
+    saveStudentGroups(groups);
+  }
+  document.getElementById('new-student-name').value='';
+  document.getElementById('new-student-id').value='';
+  document.getElementById('new-student-pw').value='';
+  document.getElementById('new-student-pw2').value='';
+  document.getElementById('new-student-group').value='';
+  renderAdminStudents();renderAdminManage();
+  showToast(`✅ "${name}" 학생이 추가되었습니다!`);
+}
+function deleteStudent(sid,name){
+  if(!confirm(`"${name}" 학생을 삭제하시겠습니까?\n해당 학생의 모든 숙제 완료 기록도 삭제됩니다.`))return;
+  let users=getUsers().filter(u=>u.id!==sid);
+  localStorage.setItem('hwapp_users',JSON.stringify(users));
+  saveCompletions(getCompletions().filter(c=>c.studentId!==sid));
+  const hws=getHomeworks().map(h=>({...h,assignedTo:h.assignedTo.filter(id=>id!==sid)}));
+  saveHomeworks(hws);
+  const groups=getStudentGroups().map(g=>({...g,studentIds:(g.studentIds||[]).filter(id=>id!==sid)}));
+  saveStudentGroups(groups);
+  renderAdminStudents();renderAdminManage();renderAdminStats();
+  showToast(`"${name}" 학생이 삭제되었습니다.`);
+}
+
+
+
+// ── STUDENT DETAIL MODAL ──────────────────────────────────
+function openStudentDetail(sid){
+  currentModalStudent=sid;
+  const student=getUsers().find(u=>u.id===sid);
+  document.getElementById('modal-student-name').textContent=`${student.name} 학생`;
+  renderModalContent(sid);
+  document.getElementById('studentModal').classList.add('open');
+}
+function renderModalContent(sid){
+  const hws=getStudentHWs(sid);
+  const done=hws.filter(h=>isDoneFor(h.id,sid)).length;
+  const total=hws.length;
+  const pct=total?Math.round(done/total*100):0;
+
+  document.getElementById('modal-summary').innerHTML=`
+    <div class="msummary-card"><div class="msummary-label">전체 달성률</div><div class="msummary-val">${pct}%</div>
+      <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div></div>
+    <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none">${done}</div></div>
+    <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div></div>
+    <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div></div>`;
+
+  if(!hws.length){
+    document.getElementById('modal-hw-list').innerHTML='<div class="empty-state"><div class="ei">📭</div><div>배정된 숙제가 없습니다</div></div>';return;
+  }
+  document.getElementById('modal-hw-list').innerHTML=hws.map(h=>{
+    const d=isDoneFor(h.id,sid);
+    return`<div class="detail-hw-item">
+      <div class="detail-hw-info">
+        <div class="detail-hw-title">${h.title}</div>
+        <div class="detail-hw-meta">출제일: ${h.createdAt} · 마감: ${h.dueDate||'미정'}</div>
+      </div>
+      <div class="detail-pct-wrap">
+        <span class="detail-status hw-badge ${d?'badge-done':'badge-pending'}">${d?'완료':'미완료'}</span>
+        <button class="pct-toggle ${d?'done':'pending'}" title="${d?'미완료로 변경':'완료로 변경'}"
+          onclick="toggleAdminCompletion('${h.id}','${sid}',${d})">
+          ${d?'✓':'○'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleAdminCompletion(hId,sid,currentlyDone){
+  const comps=getCompletions();
+  if(currentlyDone){
+    // 완료 → 미완료 (삭제)
+    const idx=comps.findIndex(c=>c.homeworkId===hId&&c.studentId===sid);
+    if(idx>-1)comps.splice(idx,1);
+  } else {
+    // 미완료 → 완료 (추가)
+    comps.push({homeworkId:hId,studentId:sid,completedAt:new Date().toISOString().slice(0,10)});
+  }
+  saveCompletions(comps);
+  renderModalContent(sid);
+  renderAdminStudents();
+  showToast(currentlyDone?'미완료로 변경되었습니다.':'✅ 완료로 변경되었습니다!');
+}
+function closeModal(e){if(e.target===document.getElementById('studentModal'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('studentModal').classList.remove('open');}
+
+// ── ADMIN STATS ───────────────────────────────────────────
+function switchAdminTab(btn,t){
+  currentAdminTab=t;
+  document.querySelectorAll('#adminPage .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderAdminStats();
+}
+function renderAdminStats(){
+  const students=getUsers().filter(u=>u.role==='student');
+  const groups=getStudentGroups();
+  const period=currentAdminTab;
+  const el=document.getElementById('admin-stats-content');
+
+  // 그룹 블록 구성
+  const groupBlocks=[];
+  groups.forEach((g,gi)=>{
+    const members=students.filter(s=>(g.studentIds||[]).includes(s.id));
+    if(members.length)groupBlocks.push({group:g,gi,members});
+  });
+  const ungrouped=students.filter(s=>!getStudentGroupOf(s.id));
+  if(ungrouped.length)groupBlocks.push({group:{id:'_none',name:'미배정'},gi:groups.length,members:ungrouped});
+
+  if(!students.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>학생이 없습니다</div></div>';return;}
+
+  if(period==='total'){
+    el.innerHTML='<div class="gs-period-card"><div class="gs-period-label">📅 전체 기간</div>'+
+      groupBlocks.map(({group,gi,members})=>renderGroupStatBlock(group,gi,members,null)).join('')+'</div>';
+  } else {
+    const allKeys=new Set();
+    students.forEach(s=>Object.keys(calcPeriodStats(s.id,period)).forEach(k=>allKeys.add(k)));
+    const sortedKeys=[...allKeys].sort();
+    if(!sortedKeys.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>데이터가 없습니다</div></div>';return;}
+    el.innerHTML=sortedKeys.map(key=>{
+      const labelSrc=students.map(s=>calcPeriodStats(s.id,period)).find(st=>st[key]);
+      const label=labelSrc?labelSrc[key].label:key;
+      return`<div class="gs-period-card"><div class="gs-period-label">📅 ${label}</div>`+
+        groupBlocks.map(({group,gi,members})=>renderGroupStatBlock(group,gi,members,key)).join('')+
+      `</div>`;
+    }).join('');
+  }
+}
+function renderGroupStatBlock(group,gi,members,periodKey){
+  const gc=group.id==='_none'?{bg:'#f1f5f9',color:'#64748b',border:'rgba(100,116,139,0.2)'}:GROUP_COLORS[gi%GROUP_COLORS.length];
+  let gTotal=0,gDone=0;
+  members.forEach(s=>{
+    if(periodKey===null){
+      const hw=getStudentHWs(s.id);gTotal+=hw.length;gDone+=hw.filter(h=>isDoneFor(h.id,s.id)).length;
+    } else {
+      const st=calcPeriodStats(s.id,currentAdminTab);
+      if(st[periodKey]){gTotal+=st[periodKey].total;gDone+=st[periodKey].done;}
+    }
+  });
+  const gPct=gTotal?Math.round(gDone/gTotal*100):0;
+  const barColor=gPct===100?'var(--success)':gPct>0?gc.color:'var(--border-strong)';
+
+  const studentRows=members.map(s=>{
+    let sDone=0,sTotal=0;
+    if(periodKey===null){
+      const hw=getStudentHWs(s.id);sTotal=hw.length;sDone=hw.filter(h=>isDoneFor(h.id,s.id)).length;
+    } else {
+      const st=calcPeriodStats(s.id,currentAdminTab);
+      if(st[periodKey]){sTotal=st[periodKey].total;sDone=st[periodKey].done;}
+    }
+    const sPct=sTotal?Math.round(sDone/sTotal*100):0;
+    const sColor=sPct===100?'var(--success)':sPct>0?gc.color:'#cbd5e1';
+    return`<div class="gs-student-row">
+      <div class="gs-student-name">${s.name}</div>
+      <div class="gs-bar-wrap">
+        <div class="gs-student-bar-bg"><div class="gs-student-bar-fill" style="width:${sPct}%;background:${sColor}"></div></div>
+        <span class="gs-pct" style="color:${sColor}">${sPct}%</span>
+        <span class="gs-count">${sDone}/${sTotal}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return`<div class="gs-group-block">
+    <div class="gs-group-header" style="background:${gc.bg};border:1px solid ${gc.border}">
+      <span class="gs-group-name" style="color:${gc.color}">🏫 ${group.name}</span>
+      <div class="gs-bar-wrap">
+        <div class="gs-bar-bg"><div class="gs-bar-fill" style="width:${gPct}%;background:${barColor}"></div></div>
+        <span class="gs-pct" style="color:${barColor}">${gPct}%</span>
+        <span class="gs-count">${gDone}/${gTotal}</span>
+      </div>
+    </div>
+    ${studentRows}
+  </div>`;
+}
+
+
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type==='warn'?' warn':'');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+initData();
+loadSavedCredentials();
+</script>
+</body>
+</html>
