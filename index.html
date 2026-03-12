@@ -374,6 +374,225 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 }
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.warn{background:var(--warning);box-shadow:0 8px 24px rgba(245,158,11,0.35);}
+
+/* CALENDAR & CLASS */
+.calendar-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+}
+.cal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cal-nav {
+  display: flex;
+  gap: 8px;
+}
+.cal-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+.cal-btn:hover {
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--border);
+  gap: 1px;
+}
+.cal-day-label {
+  background: #f1f5f9;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.cal-cell {
+  background: #fff;
+  min-height: 120px;
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cal-cell:hover {
+  background: #f8fafc;
+}
+.cal-cell.today {
+  background: #fefce8;
+}
+.cal-cell.other-month {
+  background: #f8fafc;
+  color: #cbd5e1;
+  pointer-events: none;
+}
+.cal-date {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.cal-cell.sun .cal-date { color: var(--danger); }
+.cal-cell.sat .cal-date { color: var(--accent); }
+
+.class-mini {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid rgba(124,58,237,0.15);
+  font-weight: 500;
+}
+.schedule-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.schedule-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  min-width: 90px;
+}
+.schedule-info { flex: 1; }
+.schedule-title { font-size: 15px; font-weight: 600; }
+.schedule-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* WEEKLY GRID */
+.weekly-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.week-day-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.week-day-header {
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.week-day-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.week-day-date { font-size: 12px; color: var(--text-muted); }
+.week-day-content { padding: 12px 20px; }
+.week-empty { font-size: 12px; color: var(--text-muted); padding: 4px 0; }
+.week-class-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.week-class-item:last-child { border-bottom: none; }
+.week-class-time { font-size: 12px; font-weight: 700; color: var(--primary); min-width: 80px; }
+.week-class-title { font-size: 13px; font-weight: 600; }
+.week-class-meta { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+  /* Subject Chips */
+  .subject-chip-group { display: flex; gap: 8px; flex-wrap: wrap; padding: 5px 0; }
+  .subject-chip { 
+    padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); 
+    background: #fff; cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: all 0.2s; user-select: none; display: flex; align-items: center; gap: 6px;
+  }
+  .subject-chip input { display: none; }
+  .subject-chip:hover { border-color: var(--primary-light); background: #fdfaff; }
+  .subject-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 10px rgba(124,58,237,0.2); }
+
+  /* Payment Toggle Row */
+  .payment-toggle-row {
+    background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    margin: 10px 0; cursor: pointer; transition: all 0.2s;
+  }
+  .payment-toggle-row:hover { border-color: var(--primary-light); background: #fdfaff; }
+  .payment-toggle-row.active { border-color: var(--primary); background: #f5f3ff; }
+  .payment-toggle-label { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); font-size: 14px; }
+  .payment-toggle-row input { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
+
+  /* Payment Summary Cards */
+  .payment-sum-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    display: flex; flex-direction: column; gap: 15px; grid-column: span 1;
+  }
+  .payment-sum-header { font-size: 14px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary-bg); padding-bottom: 10px; margin-bottom: 5px; }
+  .payment-sum-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pay-stat-item { padding: 12px; border-radius: 12px; background: #f8fafc; text-align: center; }
+  .pay-stat-val { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .pay-stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .pay-stat-pct { margin-top: 10px; padding: 15px; border-radius: 12px; background: var(--grad); color: #fff; text-align: center; }
+  .pay-stat-pct-val { font-size: 28px; font-weight: 900; line-height: 1; }
+  .pay-stat-pct-label { font-size: 12px; opacity: 0.9; margin-top: 5px; }
+
+  /* Financial Breakdown Styles */
+  .pay-detail-container { margin-top: 5px; display: flex; flex-direction: column; gap: 12px; }
+  .pay-detail-section { border-top: 1px solid var(--border); padding-top: 15px; }
+  .pay-detail-section-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .pay-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+  .pay-detail-label { color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+  .pay-detail-val { font-weight: 700; color: var(--text); }
+  .pay-detail-total-box { background: var(--primary-bg); padding: 12px; border-radius: 10px; border: 1px solid rgba(124,58,237,0.1); margin-top: 5px; }
+  .pay-subject-item { display: grid; grid-template-columns: 60px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+  .pay-subject-item:last-child { border-bottom: none; }
+  .pay-subject-money { display: flex; justify-content: space-between; font-size: 12px; }
+
+  /* Pending Payment List Styles */
+  .pay-pending-list { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+  .pay-pending-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; transition: all 0.2s;
+  }
+  .pay-pending-item:hover { border-color: var(--danger-light); background: #fff5f5; }
+  .pay-pending-info { display: flex; flex-direction: column; gap: 2px; }
+  .pay-pending-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .pay-pending-fee { font-size: 11px; color: var(--danger); font-weight: 600; }
+  .btn-check-pay {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: var(--text-muted); font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-check-pay:hover { background: var(--success); color: #fff; border-color: var(--success); }
 </style>
 </head>
 <body>
@@ -419,22 +638,56 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span class="role-badge role-student">학생</span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" onclick="showPanel('s','homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
+      <div class="nav-item" onclick="showPanel('s','dashboard')" id="snav-dashboard"><span>🏠</span> 대시보드</div>
+      <div class="nav-item" onclick="showPanel('s','homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
+      <div class="nav-item" onclick="showPanel('s','classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
       <div class="nav-item" onclick="showPanel('s','stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
     </nav>
-    <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
   </div>
   <div class="main-content">
-    <div class="panel active" id="s-panel-homework">
+    <div class="panel active" id="s-panel-dashboard">
+      <div class="panel-title">대시보드</div>
+      <div class="panel-sub">한눈에 보는 일정과 숙제</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title">📅 일정 조회</div>
+          <div class="period-tabs" style="margin-bottom:16px">
+            <button class="tab-btn active" onclick="switchClassView('sd', 'daily', this)">오늘</button>
+            <button class="tab-btn" onclick="switchClassView('sd', 'weekly', this)">주간</button>
+            <button class="tab-btn" onclick="switchClassView('sd', 'monthly', this)">월간</button>
+          </div>
+          <div id="sd-class-view-content"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">📚 이번 주 숙제</div>
+          <div id="s-dashboard-hw-list" class="hw-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" id="s-panel-homework">
       <div class="panel-title">내 숙제 목록</div>
       <div class="panel-sub" id="s-hw-sub"></div>
       <div class="stats-row" id="s-quick-stats"></div>
       <div class="hw-list" id="s-hw-list"></div>
       <div class="submit-row"><button class="btn-submit" onclick="submitHomework()">✅ 제출하기</button></div>
     </div>
+    <div class="panel" id="s-panel-classes">
+      <div class="panel-title">내 수업 일정</div>
+      <div class="panel-sub">보기 방식을 선택하여 일정을 확인하세요</div>
+      <div class="period-tabs" style="margin-bottom:16px">
+        <button class="tab-btn active" onclick="switchClassView('s', 'daily', this)">오늘</button>
+        <button class="tab-btn" onclick="switchClassView('s', 'weekly', this)">주간</button>
+        <button class="tab-btn" onclick="switchClassView('s', 'monthly', this)">월간</button>
+      </div>
+      <div id="s-class-view-content"></div>
+    </div>
     <div class="panel" id="s-panel-stats">
       <div class="panel-title">숙제 달성 통계</div>
       <div class="panel-sub">기간별 숙제 완료율을 확인하세요</div>
+      <div style="font-size:12px;color:var(--primary);margin-bottom:20px;background:var(--primary-bg);padding:8px 12px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;font-weight:500;border:1px solid rgba(124,58,237,0.1)">
+        <span>ℹ️</span> 최근 10일 이내의 숙제는 통계에서 제외됩니다.
+      </div>
       <div class="period-tabs">
         <button class="tab-btn active" onclick="switchTab(this,'monthly')">월별</button>
         <button class="tab-btn" onclick="switchTab(this,'semester')">학기별</button>
@@ -455,17 +708,39 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span class="role-badge role-admin">관리자</span>
     </div>
     <nav class="sidebar-nav">
+      <div class="nav-item" onclick="showPanel('a','dashboard')" id="anav-dashboard"><span>🏠</span> 대시보드</div>
       <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
+      <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
     </nav>
-    <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
   </div>
   <div class="main-content">
+    <!-- Dashboard -->
+    <div class="panel active" id="a-panel-dashboard">
+      <div class="panel-title">대시보드</div>
+      <div class="panel-sub">전체 일정과 마감 임박 숙제 현황</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title">📅 일정 조회</div>
+          <div class="period-tabs" style="margin-bottom:16px">
+            <button class="tab-btn active" onclick="switchClassView('ad', 'daily', this)">오늘</button>
+            <button class="tab-btn" onclick="switchClassView('ad', 'weekly', this)">주간</button>
+            <button class="tab-btn" onclick="switchClassView('ad', 'monthly', this)">월간</button>
+          </div>
+          <div id="ad-class-view-content"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">📚 이번 주 숙제</div>
+          <div id="a-dashboard-hw-list"></div>
+        </div>
+      </div>
+    </div>
     <!-- Manage -->
-    <div class="panel active" id="a-panel-manage">
+    <div class="panel" id="a-panel-manage">
       <div class="panel-title">숙제 관리</div>
       <div class="panel-sub">학생에게 숙제를 추가하고 관리합니다</div>
       <div class="admin-grid">
@@ -489,12 +764,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <div id="admin-hw-list"></div>
         </div>
       </div>
-      <div class="card" style="margin-top:20px">
-        <div class="section-title">🏷️ 항목(카테고리) 관리</div>
-        <div id="cat-list"></div>
-        <div class="cat-add-row">
-          <input id="cat-input" type="text" placeholder="새 항목 이름 (예: 문학, 독서, 내신)" onkeydown="if(event.key==='Enter')addCategory()">
-          <button class="btn-cat-add" onclick="addCategory()">➕ 추가</button>
+      <div class="admin-grid" style="margin-top:20px">
+        <div class="card">
+          <div class="section-title">🏷️ 항목(카테고리) 관리</div>
+          <div id="cat-list"></div>
+          <div class="cat-add-row">
+            <input id="cat-input" type="text" placeholder="새 항목 이름 (예: 문학, 독서, 내신)" onkeydown="if(event.key==='Enter')addCategory()">
+            <button class="btn-cat-add" onclick="addCategory()">➕ 추가</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">👥 학생별 숙제 달성 현황</div>
+          <table class="student-stat-table">
+            <thead><tr><th>학생</th><th>전체</th><th>완료</th><th>달성률</th><th></th></tr></thead>
+            <tbody id="student-stat-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -522,24 +806,65 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="panel-sub">학생을 추가하거나 클릭하면 상세 숙제 현황을 확인할 수 있습니다</div>
       <div class="admin-grid">
         <div class="card">
-          <div class="section-title">➕ 학생 추가</div>
+          <div class="section-title" id="student-form-title">➕ 학생 추가</div>
           <div class="form-row"><label>학생 이름</label><input id="new-student-name" type="text" placeholder="예) 홍길동"></div>
           <div class="form-row"><label>접속 아이디</label><input id="new-student-id" type="text" placeholder="예) hong123"></div>
           <div class="form-row"><label>비밀번호</label><input id="new-student-pw" type="password" placeholder="비밀번호 입력"></div>
           <div class="form-row"><label>비밀번호 확인</label><input id="new-student-pw2" type="password" placeholder="비밀번호 재입력"></div>
+          <div class="form-row"><label>학부모 HP</label><input id="new-student-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
+          <div class="form-row"><label>학생 HP</label><input id="new-student-student-hp" type="text" placeholder="예) 010-9876-5432"></div>
+          <div class="form-row"><label>과목 (복수 선택 가능)</label>
+            <div id="new-student-subject-wrap" class="subject-chip-group">
+              <label class="subject-chip"><input type="checkbox" name="subj" value="국어" onchange="toggleSubjectChip(this)"> 국어</label>
+              <label class="subject-chip"><input type="checkbox" name="subj" value="영어" onchange="toggleSubjectChip(this)"> 영어</label>
+              <label class="subject-chip"><input type="checkbox" name="subj" value="수학" onchange="toggleSubjectChip(this)"> 수학</label>
+            </div>
+          </div>
+          <div class="form-row"><label>학원비 (원)</label><input id="new-student-fee" type="number" placeholder="예) 300000"></div>
+          
+          <div class="payment-toggle-row" id="payment-toggle-container" onclick="document.getElementById('new-student-ispaid').click()">
+            <div class="payment-toggle-label">💰 학원비 수금 완료</div>
+            <input id="new-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.classList.toggle('active', this.checked); if(editingStudentId) togglePaymentStatus(editingStudentId, this.checked)">
+          </div>
+
           <div class="form-row"><label>소속 그룹 (선택)</label>
             <select id="new-student-group" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
               <option value="">— 그룹 없음 —</option>
             </select>
           </div>
           <div class="form-row"><label>입학 날짜</label><input id="new-student-entered" type="date"></div>
-          <button class="btn-add" onclick="addStudent()">학생 추가</button>
+          <div style="display:flex; gap:10px; margin-top:20px">
+            <button class="btn-add" id="btn-student-submit" style="flex:1" onclick="addStudent()">학생 추가</button>
+            <button class="btn-del" id="btn-student-cancel" style="flex:1; background:#94a3b8; display:none" onclick="cancelStudentEdit()">취소</button>
+          </div>
         </div>
-        <div class="card">
-          <div class="section-title">👥 학생 목록</div>
-          <table class="student-stat-table">
-            <thead><tr><th>학생</th><th>전체</th><th>완료</th><th>달성률</th><th></th></tr></thead>
-            <tbody id="student-stat-body"></tbody>
+        <div class="payment-sum-card" id="payment-summary-widget">
+          <div class="payment-sum-header">💳 전체 수금 현황</div>
+          <div id="payment-summary-content">
+            <!-- Dynamic Content -->
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="section-title">📋 전체 학생 현황 <span style="font-weight:normal; font-size:12px; color:var(--text-muted); margin-left:10px;">(모든 등록 정보 포함)</span></div>
+        <div style="overflow-x:auto">
+          <table class="student-stat-table" style="min-width:1000px">
+            <thead>
+              <tr>
+                <th style="width:120px">학생명</th>
+                <th style="width:100px">아이디</th>
+                <th style="width:100px">비밀번호</th>
+                <th style="width:130px">학부모 HP</th>
+                <th style="width:130px">학생 HP</th>
+                <th style="width:160px">과목</th>
+                <th style="width:120px">학원비</th>
+                <th style="width:60px">수금</th>
+                <th style="width:130px">소속 그룹</th>
+                <th style="width:110px">입학일</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="student-detailed-body"></tbody>
           </table>
         </div>
       </div>
@@ -560,6 +885,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="panel" id="a-panel-stats">
       <div class="panel-title">달성 통계</div>
       <div class="panel-sub">그룹별 학생의 기간별 숙제 달성률을 확인합니다</div>
+      <div style="font-size:12px;color:var(--primary);margin-bottom:20px;background:var(--primary-bg);padding:8px 12px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;font-weight:500;border:1px solid rgba(124,58,237,0.1)">
+        <span>ℹ️</span> 최근 10일 이내의 숙제는 통계에서 제외됩니다.
+      </div>
       <div class="period-tabs" id="admin-period-tabs">
         <button class="tab-btn active" onclick="switchAdminTab(this,'monthly')">월별</button>
         <button class="tab-btn" onclick="switchAdminTab(this,'semester')">학기별</button>
@@ -567,6 +895,68 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <button class="tab-btn" onclick="switchAdminTab(this,'total')">전체 기간</button>
       </div>
       <div id="admin-stats-content"></div>
+    </div>
+    <!-- Class Management -->
+    <div class="panel" id="a-panel-classes">
+      <div class="panel-title">수업 일정 관리</div>
+      <div class="panel-sub">전체 학생의 수업 일정을 관리합니다</div>
+      <div class="admin-grid">
+        <div class="card">
+          <div class="section-title" id="cls-form-title">➕ 수업 일정 추가</div>
+          <div class="form-row"><label>수업 구분</label>
+            <div style="display:flex;gap:20px;padding:8px 0">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="radio" name="cls-type" value="single" checked onclick="toggleRegularNotice(false)"> 보충수업
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="radio" name="cls-type" value="regular" onclick="toggleRegularNotice(true)"> 정규수업
+              </label>
+            </div>
+            <div id="regular-notice" style="display:none;font-size:11px;color:var(--danger);margin-top:4px">
+              ⚠️ 정규수업 선택 시, 해당 요일의 올해 말까지 모든 일정이 자동 등록됩니다.
+            </div>
+          </div>
+          <div class="form-row"><label>수업 제목</label><input id="cls-title" type="text" placeholder="예) 중등 수학 A반 보강"></div>
+          <div class="form-row"><label>대상 그룹</label>
+            <select id="cls-group"><option value="">— 전체 또는 그룹 선택 —</option></select>
+          </div>
+          <div class="form-row"><label>날짜</label><input id="cls-date" type="date"></div>
+          <div class="form-row" style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label>시작 시간</label>
+              <div style="display:flex;gap:4px">
+                <select id="cls-start-h" style="flex:1"></select>
+                <select id="cls-start-m" style="flex:1"></select>
+              </div>
+            </div>
+            <div style="flex:1">
+              <label>종료 시간</label>
+              <div style="display:flex;gap:4px">
+                <select id="cls-end-h" style="flex:1"></select>
+                <select id="cls-end-m" style="flex:1"></select>
+              </div>
+            </div>
+          </div>
+          <div class="form-row"><label>비고/설명</label><textarea id="cls-desc" placeholder="내용 입력"></textarea></div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-add" id="btn-cls-submit" onclick="addClass()" style="flex:2">수업 등록</button>
+            <button class="btn-del" id="btn-cls-cancel" onclick="cancelClassEdit()" style="flex:1;display:none;margin:0">취소</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">📅 일정 조회</div>
+          <div class="period-tabs" style="margin-bottom:16px">
+            <button class="tab-btn active" onclick="switchClassView('a', 'daily', this)">오늘</button>
+            <button class="tab-btn" onclick="switchClassView('a', 'weekly', this)">주간</button>
+            <button class="tab-btn" onclick="switchClassView('a', 'monthly', this)">월간</button>
+          </div>
+          <div id="a-class-view-content"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="section-title">📝 등록된 전체 수업 목록</div>
+        <div id="admin-cls-list"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -577,7 +967,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="modal-header">
       <div>
         <div class="modal-title" id="modal-student-name"></div>
-        <div class="modal-sub">숙제 달성 현황 · 관리자가 달성도를 수정할 수 있습니다</div>
+        <div class="modal-sub">숙제 달성 현황 · 최근 10일분 숙제는 통계에서 제외됨</div>
       </div>
       <button class="modal-close" onclick="closeModalDirect()">✕</button>
     </div>
@@ -642,6 +1032,7 @@ function initData(){
     ];
     localStorage.setItem('hwapp_completions',JSON.stringify(comps));
   }
+  migrateClassTypes();
 }
 const getUsers=()=>JSON.parse(localStorage.getItem('hwapp_users')||'[]');
 const getHomeworks=()=>JSON.parse(localStorage.getItem('hwapp_homeworks')||'[]');
@@ -649,13 +1040,33 @@ const getCompletions=()=>JSON.parse(localStorage.getItem('hwapp_completions')||'
 const getCategories=()=>JSON.parse(localStorage.getItem('hwapp_categories')||'[]');
 const getStudentGroups=()=>JSON.parse(localStorage.getItem('hwapp_student_groups')||'[]');
 const getRetiredUsers=()=>JSON.parse(localStorage.getItem('hwapp_retired_users')||'[]');
+const getClasses=()=>JSON.parse(localStorage.getItem('hwapp_classes')||'[]');
 const saveHomeworks=d=>localStorage.setItem('hwapp_homeworks',JSON.stringify(d));
 const saveCompletions=d=>localStorage.setItem('hwapp_completions',JSON.stringify(d));
 const saveCategories=d=>localStorage.setItem('hwapp_categories',JSON.stringify(d));
 const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stringify(d));
 const saveRetiredUsers=d=>localStorage.setItem('hwapp_retired_users',JSON.stringify(d));
+const saveClasses=d=>localStorage.setItem('hwapp_classes',JSON.stringify(d));
+
+function migrateClassTypes() {
+  const classes = getClasses();
+  let changed = false;
+  const migrated = classes.map(c => {
+    if (!c.type) {
+      changed = true;
+      // Heuristic: IDs longer than 'cls' + 13 digits (timestamp) are likely regular batch
+      if (c.id && c.id.length > 16) return { ...c, type: 'regular' };
+      return { ...c, type: 'single' };
+    }
+    return c;
+  });
+  if (changed) saveClasses(migrated);
+}
 
 let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly', currentModalStudent=null;
+let currentCalDate = new Date(); // 달력/일정 표시용 기준 날짜
+let currentClassView = 'daily'; // daily, weekly, monthly
+let editingClassId = null, editingStudentId = null;
 
 // 그룹 색상 팔레트
 const GROUP_COLORS=[
@@ -672,6 +1083,30 @@ function getGroupColor(groupId){
   const groups=getStudentGroups();
   const idx=groups.findIndex(g=>g.id===groupId);
   return GROUP_COLORS[idx<0?0:idx%GROUP_COLORS.length];
+}
+
+// 로컬 날짜 문자열 생성 (YYYY-MM-DD)
+function formatDateLocal(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// 핸드폰 번호 포맷팅 (010-XXXX-XXXX)
+function formatPhone(val) {
+  if (!val) return '-';
+  const clean = val.replace(/[^0-9]/g, '');
+  if (clean.length === 11) {
+    return clean.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+  } else if (clean.length === 10) {
+    if (clean.startsWith('02')) {
+      return clean.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+    }
+    return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+  }
+  return val; // 포맷팅이 불가능하면 원본 반환
 }
 
 // ── AUTH ─────────────────────────────────────────────────
@@ -724,10 +1159,10 @@ function showPage(role){
   if(role==='student'){
     document.getElementById('studentPage').classList.add('active');
     document.getElementById('studentName').textContent=currentUser.name;
-    renderStudentHomework();showPanel('s','homework');
+    showPanel('s','dashboard');
   } else {
     document.getElementById('adminPage').classList.add('active');
-    renderAdminManage();renderAdminStudents();renderAdminStats();showPanel('a','manage');
+    showPanel('a','dashboard');
   }
 }
 
@@ -738,11 +1173,136 @@ function showPanel(who,name){
   document.getElementById(`${who==='s'?'s':'a'}-panel-${name}`).classList.add('active');
   document.querySelectorAll(`#${pg}Page .nav-item`).forEach(n=>n.classList.remove('active'));
   document.getElementById(`${who==='s'?'s':'a'}nav-${name}`).classList.add('active');
+
+  if(who==='s'&&name==='dashboard') renderDashboard('s');
+  if(who==='a'&&name==='dashboard') renderDashboard('a');
+  if(who==='a'&&name==='manage') renderAdminManage();
+  if(who==='s'&&name==='homework') renderStudentHomework();
   if(who==='s'&&name==='stats')renderStudentStats();
-  if(who==='a'&&name==='students')renderAdminStudents();
+  if(who==='a'&&name==='students'){renderAdminStudents(); renderDetailedStudentList();}
   if(who==='a'&&name==='retired')renderRetiredStudents();
   if(who==='a'&&name==='groups')renderStudentGroupPanel();
   if(who==='a'&&name==='stats')renderAdminStats();
+  if(who==='a'&&name==='classes') {
+    currentClassView = 'daily';
+    currentCalDate = new Date();
+    renderAdminClasses();
+  }
+  if(who==='s'&&name==='classes') {
+    currentClassView = 'daily';
+    currentCalDate = new Date();
+    renderStudentClasses();
+  }
+}
+
+function renderDashboard(who) {
+  const isStudent = who === 's';
+  const prefix = isStudent ? 'sd' : 'ad';
+  
+  currentClassView = 'daily';
+  currentCalDate = new Date();
+  renderClassView(prefix, isStudent);
+
+  const hwListId = isStudent ? 's-dashboard-hw-list' : 'a-dashboard-hw-list';
+  const listEl = document.getElementById(hwListId);
+  const hws = getHomeworks();
+  const cats = getCategories();
+  const comps = getCompletions();
+  const classes = getClasses().filter(c => c.type === 'regular');
+  const users = getUsers();
+  
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const sixDaysLater = new Date(today);
+  sixDaysLater.setDate(today.getDate() + 6);
+  
+  // Filter homeworks within range
+  const filteredHws = hws.filter(h => {
+    if (!h.dueDate) return false;
+    // Parse YYYY-MM-DD as local date
+    const parts = h.dueDate.split('-');
+    const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+    dueDate.setHours(0,0,0,0);
+    const isWithinRange = dueDate >= today && dueDate <= sixDaysLater;
+    if (!isWithinRange) return false;
+    
+    if (isStudent) {
+      const isAssigned = h.assignedTo.includes(currentUser.id);
+      const isDone = comps.some(c => c.homeworkId === h.id && c.studentId === currentUser.id);
+      return isAssigned && !isDone;
+    }
+    return true;
+  });
+
+  if (filteredHws.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">🎉 이번 주 예정된 숙제가 없습니다.</div>';
+    return;
+  }
+
+  // Use buildGroups to group them by category
+  const groups = buildGroups(filteredHws, cats);
+
+  listEl.innerHTML = groups.map(g => {
+    // Find a related regular class name for this category
+    const relatedClass = classes.find(c => c.title.includes(g.label) || g.label.includes(c.title));
+    const displayLabel = relatedClass ? relatedClass.title : g.label;
+    
+    // Group header style (copying logic from renderAdminHWList)
+    const studentGroups = getStudentGroups();
+    const matchedGrp = studentGroups.find(sg => g.label.includes(sg.name) || sg.name.includes(g.label));
+    const matchedGi = matchedGrp ? studentGroups.indexOf(matchedGrp) : -1;
+    const gc = matchedGrp ? GROUP_COLORS[matchedGi % GROUP_COLORS.length] : null;
+    const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
+
+    const header = `<div class="cat-group-header" ${headerStyle}>📅 ${displayLabel}<span class="cat-count">${g.items.length}개</span></div>`;
+    
+    const items = g.items.map(h => {
+      if (isStudent) {
+        // Student style (hw-item)
+        const d = comps.some(c => c.homeworkId === h.id && c.studentId === currentUser.id);
+        const chk = pendingChecks[h.id] !== undefined ? pendingChecks[h.id] : d;
+        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
+        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+        const badgeClass = diff <= 2 ? 'badge-danger' : 'badge-pending';
+        
+        return `
+          <div class="hw-item${d ? ' done' : ''}">
+            <div class="hw-checkbox${chk ? ' checked' : ''}" onclick="toggleCheck('${h.id}',${d})"></div>
+            <div class="hw-info">
+              <div class="hw-title">${h.title}</div>
+              <div class="hw-meta" style="color:var(--danger); font-weight:700">마감: ${h.dueDate}</div>
+            </div>
+            <span class="hw-badge ${d ? 'badge-done' : badgeClass}">${d ? '완료' : 'D-' + diff}</span>
+          </div>
+        `;
+      } else {
+        // Admin style (admin-hw-item)
+        const names = h.assignedTo.map(id => users.find(u => u.id === id)?.name || id).join(', ');
+        const doneCount = comps.filter(c => c.homeworkId === h.id).length;
+        const pct = h.assignedTo.length ? Math.round(doneCount / h.assignedTo.length * 100) : 0;
+        const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
+        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+
+        return `
+          <div class="admin-hw-item" style="cursor:default">
+            <div class="admin-hw-info">
+              <div class="admin-hw-title">📄 ${h.title}</div>
+              <div class="admin-hw-meta">대상: ${names} · 마감: ${h.dueDate} <span style="color:var(--danger);font-weight:700">(D-${diff})</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+                  <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${h.assignedTo.length} 완료</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+
+    return header + items;
+  }).join('');
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
@@ -788,7 +1348,7 @@ function toggleCheck(hId,done){
   renderStudentHomework();
 }
 function submitHomework(){
-  const comps=getCompletions(); const today=new Date().toISOString().slice(0,10); let cnt=0;
+  const comps=getCompletions(); const today=formatDateLocal(new Date()); let cnt=0;
   for(const[hId,chk] of Object.entries(pendingChecks)){
     if(chk&&!comps.some(c=>c.homeworkId===hId&&c.studentId===currentUser.id)){comps.push({homeworkId:hId,studentId:currentUser.id,completedAt:today});cnt++;}
   }
@@ -807,8 +1367,18 @@ function renderStudentStats(){renderStatsForStudent(currentUser.id,'stats-conten
 function getStudentHWs(sid){return getHomeworks().filter(h=>h.assignedTo.includes(sid));}
 function isDoneFor(hId,sid){return getCompletions().some(c=>c.homeworkId===hId&&c.studentId===sid);}
 
+const getStatCutoffDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 10);
+  return formatDateLocal(d);
+};
+function getStatHWs(sid){
+  const cutoff = getStatCutoffDate();
+  return getHomeworks().filter(h => h.assignedTo.includes(sid) && h.createdAt <= cutoff);
+}
+
 function calcPeriodStats(sid,period){
-  const hws=getStudentHWs(sid), comps=getCompletions().filter(c=>c.studentId===sid), res={};
+  const hws=getStatHWs(sid), comps=getCompletions().filter(c=>c.studentId===sid), res={};
   hws.forEach(h=>{
     const k=getPKey(h.createdAt,period);
     if(!res[k])res[k]={total:0,done:0,label:getPLabel(h.createdAt,period)};
@@ -830,7 +1400,7 @@ function getPLabel(ds,p){
 function renderStatsForStudent(sid,cid,period){
   const el=document.getElementById(cid);
   if(period==='total'){
-    const hws=getStudentHWs(sid),done=hws.filter(h=>isDoneFor(h.id,sid)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const hws=getStatHWs(sid),done=hws.filter(h=>isDoneFor(h.id,sid)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     el.innerHTML=`<div class="card" style="text-align:center;padding:40px">
       <div style="font-size:64px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${pct}%</div>
       <div style="font-size:16px;color:var(--text-muted);margin:12px 0">전체 기간 숙제 달성률</div>
@@ -838,12 +1408,16 @@ function renderStatsForStudent(sid,cid,period){
       <div class="progress-bar-wrap" style="max-width:300px;margin:20px auto 0;height:10px"><div class="progress-bar" style="width:${pct}%"></div></div>
     </div>`;return;
   }
-  const stats=calcPeriodStats(sid,period),keys=Object.keys(stats).sort();
+  const stats=calcPeriodStats(sid,period),keys=Object.keys(stats).sort().reverse();
   if(!keys.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>데이터가 없습니다</div></div>';return;}
-  el.innerHTML=`<div class="monthly-grid">${keys.map(k=>{
+  el.innerHTML=`<div class="monthly-grid">${keys.map((k,idx)=>{
     const s=stats[k],pct=s.total?Math.round(s.done/s.total*100):0;
-    return`<div class="month-card">
-      <div class="month-label">${s.label}</div><div class="month-pct">${pct}%</div>
+    const isLatest = idx === 0 && period === 'monthly';
+    const labelStyle = isLatest ? 'style="font-size:14px;font-weight:900;color:var(--primary)"' : '';
+    const cardStyle = isLatest ? 'style="border:2px solid var(--primary-light);background:var(--primary-bg)"' : '';
+    const labelPrefix = isLatest ? '<span style="display:block;font-size:10px;margin-bottom:2px;color:var(--primary)">최근 데이터</span>' : '';
+    return`<div class="month-card" ${cardStyle}>
+      <div class="month-label" ${labelStyle}>${labelPrefix}${s.label}</div><div class="month-pct">${pct}%</div>
       <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${s.done}/${s.total} 완료</div>
     </div>`;
@@ -881,8 +1455,13 @@ function addCategory(){
   renderCatList();showToast(`✅ "${name}" 항목이 추가되었습니다!`);
 }
 function deleteCategory(id){
-  const cats=getCategories().filter(c=>c.id!==id);
-  saveCategories(cats);
+  const cats=getCategories();
+  const cat=cats.find(c=>c.id===id);
+  if(!cat) return;
+  if(!confirm(`"${cat.name}" 항목을 삭제하시겠습니까?\n삭제 시 해당 항목으로 연결된 모든 숙제는 '미분류' 상태가 됩니다.`)) return;
+
+  const newCats=cats.filter(c=>c.id!==id);
+  saveCategories(newCats);
   // unlink homeworks in this category
   const hws=getHomeworks().map(h=>h.categoryId===id?{...h,categoryId:''}:h);
   saveHomeworks(hws);
@@ -956,13 +1535,14 @@ function renderAdminManage(){
   tabEl.innerHTML=`<button class="sftab active" onclick="filterStudentChecks('',this)">전체</button>`
     +groups.map(g=>`<button class="sftab" onclick="filterStudentChecks('${g.id}',this)">${g.name}</button>`).join('');
   renderStudentChecks('');
-  const today=new Date().toISOString().slice(0,10);
-  const nextWeek=new Date(Date.now()+7*24*60*60*1000).toISOString().slice(0,10);
+  const today=formatDateLocal(new Date());
+  const nextWeek=formatDateLocal(new Date(Date.now()+7*24*60*60*1000));
   document.getElementById('hw-created').value=today;
   document.getElementById('hw-due').value=nextWeek;
   document.getElementById('new-student-entered').value=today;
   renderCatList();
   renderAdminHWList();
+  renderAdminStudents();
 }
 function renderStudentChecks(filterGroupId){
   const students=getUsers().filter(u=>u.role==='student');
@@ -1101,7 +1681,7 @@ function addHomework(){
   saveHomeworks(hws);
   document.getElementById('hw-title').value='';
   document.getElementById('hw-category').value='';
-  const today=new Date().toISOString().slice(0,10);
+  const today=formatDateLocal(new Date());
   document.getElementById('hw-created').value=today;
   document.getElementById('hw-due').value=today;
   document.querySelectorAll('.student-hw-chk').forEach(c=>c.checked=false);
@@ -1198,7 +1778,7 @@ function toggleHWStudentDone(hwId,sid,isDone){
   if(isDone){
     comps=comps.filter(c=>!(c.homeworkId===hwId&&c.studentId===sid));
   } else {
-    const today=new Date().toISOString().slice(0,10);
+    const today=formatDateLocal(new Date());
     comps.push({homeworkId:hwId,studentId:sid,completedAt:today});
   }
   saveCompletions(comps);
@@ -1250,7 +1830,7 @@ function renderAdminStudents(){
     if(prev)adminStatSel.value=prev;
   }
   document.getElementById('student-stat-body').innerHTML=students.map(s=>{
-    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const hws=getStatHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
     const grpColor=grp?getGroupColor(grp.id):null;
@@ -1258,7 +1838,7 @@ function renderAdminStudents(){
     const loginId=s.loginId||s.id;
     const safeName=s.name.replace(/'/g,'\u2019');
     return`<tr onclick="openStudentDetail('${s.id}')">
-      <td><div class="student-name-cell"><div class="student-avatar">${initials}</div>${s.name}${grpBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}]</span></div></td>
+      <td><div class="student-name-cell"><div class="student-avatar">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}]</span>${grpBadge}</div></td>
       <td>${total}</td><td>${done}</td>
       <td><span class="pct-cell">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%"></div></div></td>
       <td style="white-space:nowrap">
@@ -1273,40 +1853,79 @@ function addStudent(){
   const name=document.getElementById('new-student-name').value.trim();
   const loginId=document.getElementById('new-student-id').value.trim();
   const pw=document.getElementById('new-student-pw').value.trim();
-  const groupId=document.getElementById('new-student-group').value;
   const pw2=document.getElementById('new-student-pw2').value.trim();
+  const groupId=document.getElementById('new-student-group').value;
   const entered=document.getElementById('new-student-entered').value;
-  if(!name){showToast('학생 이름을 입력하세요.','warn');return;}
-  if(!loginId){showToast('접속 아이디를 입력하세요.','warn');return;}
-  if(!entered){showToast('입학 날짜를 입력하세요.','warn');return;}
-  if(!pw){showToast('비밀번호를 입력하세요.','warn');return;}
-  if(pw!==pw2){showToast('비밀번호가 일치하지 않습니다.','warn');document.getElementById('new-student-pw2').focus();return;}
-  const users=getUsers();
-  if(users.find(u=>u.id===loginId||u.loginId===loginId)){showToast('이미 사용 중인 아이디입니다.','warn');return;}
-  const newId='student'+Date.now();
-  users.push({id:newId,name,password:pw,role:'student',loginId,enteredAt:entered});
-  localStorage.setItem('hwapp_users',JSON.stringify(users));
-  if(groupId){
-    const groups=getStudentGroups();
-    const g=groups.find(g=>g.id===groupId);
-    if(g){g.studentIds=g.studentIds||[];g.studentIds.push(newId);}
-    saveStudentGroups(groups);
+  const parentHp=document.getElementById('new-student-parent-hp').value.trim();
+  const studentHp=document.getElementById('new-student-student-hp').value.trim();
+  
+  // 과목 복수 선택 처리
+  const subjs = [];
+  document.querySelectorAll('input[name="subj"]:checked').forEach(cb => subjs.push(cb.value));
+  const subject = subjs.join(',');
+  const fee = document.getElementById('new-student-fee').value.trim();
+  const isPaid = document.getElementById('new-student-ispaid').checked;
+
+  if(!name){
+    showToast('학생 이름을 입력하세요.', 'warn');
+    return;
   }
-  document.getElementById('new-student-name').value='';
-  document.getElementById('new-student-id').value='';
-  document.getElementById('new-student-pw').value='';
-  document.getElementById('new-student-pw2').value='';
-  document.getElementById('new-student-group').value='';
-  document.getElementById('new-student-entered').value=new Date().toISOString().slice(0,10);
-  renderAdminStudents();renderAdminManage();
-  showToast(`✅ "${name}" 학생이 추가되었습니다!`);
+
+  let users=getUsers();
+  
+  if (editingStudentId) {
+    const sIdx = users.findIndex(u => u.id === editingStudentId);
+    if (sIdx > -1) {
+      users[sIdx].name = name;
+      if (loginId) users[sIdx].loginId = loginId; // Allow ID change if needed? Wait, ID is usually constant but if it was missing it might be added.
+      if (pw) users[sIdx].password = pw;
+      users[sIdx].parentHp = parentHp;
+      users[sIdx].studentHp = studentHp;
+      users[sIdx].subject = subject;
+      users[sIdx].fee = fee;
+      users[sIdx].isPaid = isPaid;
+      users[sIdx].enteredAt = entered;
+      localStorage.setItem('hwapp_users', JSON.stringify(users));
+
+      // 그룹 업데이트
+      const groups = getStudentGroups();
+      groups.forEach(g => {
+        g.studentIds = (g.studentIds || []).filter(sid => sid !== editingStudentId);
+      });
+      if (groupId) {
+        const g = groups.find(g => g.id === groupId);
+        if (g) {
+          g.studentIds = g.studentIds || [];
+          g.studentIds.push(editingStudentId);
+        }
+      }
+      saveStudentGroups(groups);
+      showToast(`✅ "${name}" 학생 정보가 수정되었습니다.`);
+    }
+  } else {
+    const newId='student'+Date.now();
+    const finalId = loginId || newId; // Fallback to auto-gen ID if loginId missing
+    const finalPw = pw || '1234'; // Default password if missing
+    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, isPaid});
+    localStorage.setItem('hwapp_users',JSON.stringify(users));
+
+    if(groupId){
+      const groups=getStudentGroups();
+      const g=groups.find(x=>x.id===groupId);
+      if(g){ g.studentIds=g.studentIds||[]; g.studentIds.push(newId); saveStudentGroups(groups); }
+    }
+    showToast(`✅ "${name}" 학생이 추가되었습니다!`);
+  }
+
+  cancelStudentEdit();
+  renderAdminStudents();renderAdminHWList();renderDetailedStudentList();renderPaymentSummary();
 }
 function deleteStudent(sid,name){
   if(!confirm(`"${name}" 학생을 삭제하시겠습니까?\n해당 학생의 모든 숙제 완료 기록도 삭제됩니다.`))return;
   let users=getUsers().filter(u=>u.id!==sid);
   localStorage.setItem('hwapp_users',JSON.stringify(users));
   cleanupStudentData(sid);
-  renderAdminStudents();renderAdminManage();renderAdminStats();
+  renderAdminStudents();renderAdminHWList();renderAdminStats();renderDetailedStudentList();renderPaymentSummary();
   showToast(`"${name}" 학생이 삭제되었습니다.`);
 }
 function deleteRetiredStudent(sid,name){
@@ -1331,17 +1950,17 @@ function retireStudent(id,name){
   const studentIdx=users.findIndex(u=>u.id===id);
   if(studentIdx>-1){
     const st=users.splice(studentIdx,1)[0];
-    retired.push({...st, retiredAt:new Date().toISOString().slice(0,10)});
+    retired.push({...st, retiredAt:formatDateLocal(new Date())});
     localStorage.setItem('hwapp_users',JSON.stringify(users));
     saveRetiredUsers(retired);
-    renderAdminStudents();
+    renderAdminStudents();renderDetailedStudentList();
     showToast(`😢 "${name}" 학생이 퇴원 처리되었습니다.`);
   }
 }
 function renderRetiredStudents(){
   const retired=getRetiredUsers();
   document.getElementById('retired-stat-body').innerHTML=retired.map(s=>{
-    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const hws=getStatHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
     const grpColor=grp?getGroupColor(grp.id):null;
@@ -1350,7 +1969,7 @@ function renderRetiredStudents(){
     const safeName=s.name.replace(/'/g,'\u2019');
     const entered=s.enteredAt||'미정';
     return`<tr onclick="openStudentDetail('${s.id}')">
-      <td><div class="student-name-cell"><div class="student-avatar" style="background:#cbd5e1">${initials}</div>${s.name}${grpBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${entered} 입학 / ${s.retiredAt} 퇴원</span></div></td>
+      <td><div class="student-name-cell"><div class="student-avatar" style="background:#cbd5e1">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${entered} 입학 / ${s.retiredAt} 퇴원</span>${grpBadge}</div></td>
       <td>${total}</td><td>${done}</td>
       <td><span class="pct-cell" style="color:#94a3b8">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%;background:#94a3b8"></div></div></td>
       <td style="white-space:nowrap;text-align:right">
@@ -1372,12 +1991,321 @@ function restoreStudent(id,name){
     users.push(st);
     localStorage.setItem('hwapp_users',JSON.stringify(users));
     saveRetiredUsers(retired);
-    renderRetiredStudents();
+    renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();
     showToast(`🎉 "${name}" 학생이 복원되었습니다.`);
   }
 }
 
+function renderPaymentSummary() {
+  const students = getUsers().filter(u => u.role === 'student');
+  const total = students.length;
+  const paidStudents = students.filter(s => s.isPaid);
+  const paidCount = paidStudents.length;
+  const pendingCount = total - paidCount;
+  const pct = total ? Math.round((paidCount / total) * 100) : 0;
+  
+  const pendingStudents = students.filter(s => !s.isPaid && s.fee);
 
+  // 학원 전체 수금액 계산
+  let totalAcademyExpected = 0;
+  let totalAcademyCollected = 0;
+  
+  // 과목별 수금액 초기화
+  const subjects = ['국어', '영어', '수학'];
+  const subjStats = {};
+  subjects.forEach(sub => {
+    subjStats[sub] = { expected: 0, collected: 0 };
+  });
+
+  students.forEach(s => {
+    const fee = parseInt(s.fee) || 0;
+    totalAcademyExpected += fee;
+    if (s.isPaid) totalAcademyCollected += fee;
+
+    const sSubjs = (s.subject || '').split(',').filter(x => x);
+    sSubjs.forEach(sub => {
+      if (subjStats[sub]) {
+        subjStats[sub].expected += fee;
+        if (s.isPaid) subjStats[sub].collected += fee;
+      }
+    });
+  });
+
+  const el = document.getElementById('payment-summary-content');
+  if (!el) return;
+  
+  el.innerHTML = `
+    <div class="payment-sum-stats">
+      <div class="pay-stat-item">
+        <div class="pay-stat-val" style="color:var(--text)">${total}</div>
+        <div class="pay-stat-label">전체 학생</div>
+      </div>
+      <div class="pay-stat-item">
+        <div class="pay-stat-val" style="color:var(--success)">${paidCount}</div>
+        <div class="pay-stat-label">완납 인원</div>
+      </div>
+      <div class="pay-stat-item">
+        <div class="pay-stat-val" style="color:var(--danger)">${pendingCount}</div>
+        <div class="pay-stat-label">미납 인원</div>
+      </div>
+      <div class="pay-stat-item">
+        <div class="pay-stat-val" style="color:var(--primary)">${pct}%</div>
+        <div class="pay-stat-label">인원 수금률</div>
+      </div>
+    </div>
+
+    <div class="pay-detail-container">
+      <!-- 미납 학생 명단 -->
+      <div class="pay-detail-section" style="border-top:none; padding-top:0">
+        <div class="pay-detail-section-title">⚠️ 미납 학생 명단 (${pendingStudents.length}명)</div>
+        <div class="pay-pending-list">
+          ${pendingStudents.length ? pendingStudents.map(s => {
+            const grp = getStudentGroupOf(s.id);
+            const subjects = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="padding:1px 5px; font-size:9px; margin:0">${sub}</span>`).join(' ');
+            let badge = '';
+            if (grp) {
+              const gc = getGroupColor(grp.id);
+              badge = `<span style="font-size:10px;font-weight:600;margin-left:4px;padding:1px 6px;border-radius:8px;background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}">${grp.name}</span>`;
+            }
+            return `
+              <div class="pay-pending-item">
+                <div class="pay-pending-info">
+                  <div class="pay-pending-name">${s.name}${badge}</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+                    <div style="display:flex; gap:2px">${subjects}</div>
+                    <div class="pay-pending-fee" style="margin-top:0">${(parseInt(s.fee)||0).toLocaleString()}원</div>
+                  </div>
+                </div>
+                <button class="btn-check-pay" onclick="confirmPayment('${s.id}', '${s.name}', '${s.fee}')">수금 체크</button>
+              </div>
+            `;
+          }).join('') : '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px">미납 학생이 없습니다. 🎉</div>'}
+        </div>
+      </div>
+
+      <!-- 과목별 수금액 -->
+      <div class="pay-detail-section">
+        <div class="pay-detail-section-title">📚 과목별 수금 현황</div>
+        ${subjects.map(sub => {
+          const sExpected = subjStats[sub].expected;
+          const sCollected = subjStats[sub].collected;
+          const sPct = sExpected ? Math.round((sCollected / sExpected) * 100) : 0;
+          return `
+            <div class="pay-subject-item">
+              <div class="pay-subject-name">${sub}</div>
+              <div class="pay-subject-money-wrap">
+                <div class="pay-subject-money">
+                  <span style="color:var(--text-muted); font-size:10px">${sCollected.toLocaleString()} / ${sExpected.toLocaleString()}</span>
+                  <span style="font-weight:800; color:var(--primary)">${sPct}%</span>
+                </div>
+                <div class="progress-bar-wrap" style="height:3px; margin-top:4px; background:#f1f5f9">
+                  <div class="progress-bar" style="width:${sPct}%; background:var(--primary)"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- 학원전체 수금 현황 -->
+      <div class="pay-detail-section">
+        <div class="pay-detail-section-title">🏫 학원전체 수금 현황</div>
+        <div class="pay-detail-total-box">
+          <div class="pay-detail-row">
+            <span class="pay-detail-label">총 수금 예정액</span>
+            <span class="pay-detail-val">${totalAcademyExpected.toLocaleString()}원</span>
+          </div>
+          <div class="pay-detail-row">
+            <span class="pay-detail-label">현재 실수령액</span>
+            <span class="pay-detail-val" style="color:var(--success)">${totalAcademyCollected.toLocaleString()}원</span>
+          </div>
+          <div class="pay-detail-row">
+            <span class="pay-detail-label">현재 미수령액</span>
+            <span class="pay-detail-val" style="color:var(--danger)">${(totalAcademyExpected - totalAcademyCollected).toLocaleString()}원</span>
+          </div>
+          <div class="progress-bar-wrap" style="height:4px; margin-top:8px; background:rgba(0,0,0,0.05)">
+            <div class="progress-bar" style="width:${totalAcademyExpected ? Math.round((totalAcademyCollected/totalAcademyExpected)*100) : 0}%; background:var(--grad)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pay-stat-pct" style="margin-top:5px">
+      <div class="pay-stat-pct-val">${pct}%</div>
+      <div class="pay-stat-pct-label">최종 수납 완료율</div>
+      <div class="progress-bar-wrap" style="height:6px; background:rgba(255,255,255,0.2); margin-top:10px">
+        <div class="progress-bar" style="width:${pct}%; background:#fff"></div>
+      </div>
+    </div>
+  `;
+}
+
+function confirmPayment(sid, name, fee) {
+  const formattedFee = (parseInt(fee)||0).toLocaleString();
+  if (!confirm(`📢 [수금 확인]\n\n"${name}" 학생의 학원비 ${formattedFee}원을 수납 완료 처리하시겠습니까?`)) return;
+  
+  togglePaymentStatus(sid, true);
+}
+
+
+
+function renderDetailedStudentList() {
+  const students = getUsers().filter(u => u.role === 'student');
+  const groups = getStudentGroups();
+  const el = document.getElementById('student-detailed-body');
+  if (!el) return;
+
+  // 정렬: 이름순
+  const sorted = students.slice().sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  el.innerHTML = sorted.map(s => {
+    const grp = getStudentGroupOf(s.id);
+    const grpColor = grp ? getGroupColor(grp.id) : null;
+    const grpBadge = grp ? `<span class="grp-badge" style="background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '<span style="color:#cbd5e1">-</span>';
+    const feeDisplay = s.fee ? parseInt(s.fee).toLocaleString() + '원' : '-';
+    
+    // 과목 복수 태그 처리
+    const subjectTags = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="margin:0">${sub}</span>`).join('') || '-';
+    
+    const initials = s.name.slice(0, 1);
+    const safeName = s.name.replace(/'/g, '\u2019');
+
+    return `
+      <tr onclick="editStudent('${s.id}')" style="cursor:pointer">
+        <td><div class="student-name-cell"><div class="student-avatar" style="width:24px;height:24px;font-size:11px">${initials}</div>${s.name}</div></td>
+        <td style="font-size:13px;color:var(--text-muted)">${s.loginId || s.id}</td>
+        <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
+        <td style="font-size:13px">${formatPhone(s.parentHp)}</td>
+        <td style="font-size:13px">${formatPhone(s.studentHp)}</td>
+        <td style="font-size:13px;"><div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">${subjectTags}</div></td>
+        <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
+        <td>
+          <input type="checkbox" ${s.isPaid ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
+        </td>
+        <td>${grpBadge}</td>
+        <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt || '-'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-del" onclick="event.stopPropagation(); retireStudent('${s.id}','${safeName}')" style="background:#f59e0b;color:#fff;border:none">퇴원</button>
+          <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  renderPaymentSummary();
+}
+
+// ── STUDENT EDIT LOGIC ────────────────────────────────────
+function editStudent(sid) {
+  const student = getUsers().find(u => u.id === sid);
+  if (!student) return;
+  editingStudentId = sid;
+  
+  // UI 변경 (타이틀/버튼 우선 변경)
+  const titleEl = document.getElementById('student-form-title');
+  if (titleEl) {
+    titleEl.innerText = '✏️ 학생 정보 수정';
+    titleEl.style.color = 'var(--danger)';
+  }
+  const submitBtn = document.getElementById('btn-student-submit');
+  if (submitBtn) {
+    submitBtn.innerText = '수정 완료';
+    submitBtn.style.background = 'var(--danger)';
+  }
+  const cancelBtn = document.getElementById('btn-student-cancel');
+  if (cancelBtn) cancelBtn.style.display = 'block';
+  
+  document.getElementById('new-student-name').value = student.name || '';
+  document.getElementById('new-student-id').value = student.loginId || student.id || '';
+  document.getElementById('new-student-id').readOnly = true;
+  document.getElementById('new-student-id').style.background = '#f1f5f9';
+  document.getElementById('new-student-id').style.cursor = 'not-allowed';
+  
+  document.getElementById('new-student-pw').value = '';
+  document.getElementById('new-student-pw2').value = '';
+  document.getElementById('new-student-parent-hp').value = student.parentHp || '';
+  document.getElementById('new-student-student-hp').value = student.studentHp || '';
+  
+  // 과목 복수 체크박스 처리
+  const subjs = (student.subject || '').split(',');
+  document.querySelectorAll('input[name="subj"]').forEach(cb => {
+    cb.checked = subjs.includes(cb.value);
+    cb.parentElement.classList.toggle('active', cb.checked);
+  });
+  
+  document.getElementById('new-student-fee').value = student.fee || '';
+  const isPaid = student.isPaid || false;
+  document.getElementById('new-student-ispaid').checked = isPaid;
+  document.getElementById('payment-toggle-container').classList.toggle('active', isPaid);
+  document.getElementById('new-student-entered').value = student.enteredAt || '';
+
+  const groups = getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const grpSel = document.getElementById('new-student-group');
+  const currentGrp = getStudentGroupOf(sid);
+  grpSel.innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  grpSel.value = currentGrp ? currentGrp.id : '';
+
+  // 스크롤 이동
+  document.getElementById('a-panel-students').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelStudentEdit() {
+  editingStudentId = null;
+  document.getElementById('new-student-name').value = '';
+  document.getElementById('new-student-id').value = '';
+  document.getElementById('new-student-id').readOnly = false;
+  document.getElementById('new-student-id').style.background = '';
+  document.getElementById('new-student-id').style.cursor = '';
+  document.getElementById('new-student-pw').value = '';
+  document.getElementById('new-student-pw2').value = '';
+  document.getElementById('new-student-parent-hp').value = '';
+  document.getElementById('new-student-student-hp').value = '';
+  document.getElementById('new-student-fee').value = '';
+  // 과목 체크박스 초기화
+  document.querySelectorAll('input[name="subj"]').forEach(cb => {
+    cb.checked = false;
+    cb.parentElement.classList.remove('active');
+  });
+  
+  document.getElementById('payment-toggle-container').classList.remove('active');
+  
+  document.getElementById('new-student-entered').value = formatDateLocal(new Date());
+  
+  const groups=getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  document.getElementById('new-student-group').innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+
+  const titleEl = document.getElementById('student-form-title');
+  titleEl.innerText = '➕ 학생 추가';
+  titleEl.style.color = ''; 
+  document.getElementById('btn-student-submit').innerText = '학생 추가';
+  document.getElementById('btn-student-submit').style.background = '';
+  document.getElementById('btn-student-cancel').style.display = 'none';
+}
+
+function togglePaymentStatus(sid, isPaid) {
+  const users = getUsers();
+  const sIdx = users.findIndex(u => u.id === sid);
+  if (sIdx > -1) {
+    users[sIdx].isPaid = isPaid;
+    localStorage.setItem('hwapp_users', JSON.stringify(users));
+    showToast(`✅ "${users[sIdx].name}" 학생의 수금 상태가 변경되었습니다.`);
+    
+    // 현재 수정 중인 학생과 같다면 양식도 동기화
+    if (editingStudentId === sid) {
+      const cb = document.getElementById('new-student-ispaid');
+      if (cb) {
+        cb.checked = isPaid;
+        cb.parentElement.classList.toggle('active', isPaid);
+      }
+    }
+
+    // 전반적인 UI 연동 (리스트 및 요약 위젯)
+    renderDetailedStudentList();
+  }
+}
+
+function toggleSubjectChip(el) {
+  el.parentElement.classList.toggle('active', el.checked);
+}
 
 // ── STUDENT DETAIL MODAL ──────────────────────────────────
 function openStudentDetail(sid){
@@ -1389,17 +2317,30 @@ function openStudentDetail(sid){
   document.getElementById('studentModal').classList.add('open');
 }
 function renderModalContent(sid){
-  const hws=getStudentHWs(sid);
+  const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
+  if (!student) return;
+  const hws = getStatHWs(sid);
   const done=hws.filter(h=>isDoneFor(h.id,sid)).length;
   const total=hws.length;
   const pct=total?Math.round(done/total*100):0;
 
+  // 과목 복수 태그 처리
+  const subjectTags = (student.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="margin:0">${sub}</span>`).join(' ') || '-';
+
   document.getElementById('modal-summary').innerHTML=`
-    <div class="msummary-card"><div class="msummary-label">전체 달성률</div><div class="msummary-val">${pct}%</div>
-      <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div></div>
-    <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none">${done}</div></div>
-    <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div></div>
-    <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div></div>`;
+    <div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid var(--border);">
+      <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학부모 HP:</span> ${formatPhone(student.parentHp)}</div>
+      <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학생 HP:</span> ${formatPhone(student.studentHp)}</div>
+      <div style="font-size:12px; color:var(--text-muted); display:flex; gap:4px; align-items:center">📚 <span style="font-weight:700">과목:</span> ${subjectTags}</div>
+      <div style="font-size:12px; color:var(--text-muted);">💰 <span style="font-weight:700">학원비:</span> ${student.fee ? parseInt(student.fee).toLocaleString() + '원' : '-'}</div>
+    </div>
+    <div class="modal-summary" style="margin-bottom:0">
+      <div class="msummary-card"><div class="msummary-label">전체 달성률</div><div class="msummary-val">${pct}%</div>
+        <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div></div>
+      <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none">${done}</div></div>
+      <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div></div>
+      <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div></div>
+    </div>`;
 
   if(!hws.length){
     document.getElementById('modal-hw-list').innerHTML='<div class="empty-state"><div class="ei">📭</div><div>배정된 숙제가 없습니다</div></div>';return;
@@ -1468,12 +2409,16 @@ function renderAdminStats(){
   } else {
     const allKeys=new Set();
     students.forEach(s=>Object.keys(calcPeriodStats(s.id,period)).forEach(k=>allKeys.add(k)));
-    const sortedKeys=[...allKeys].sort();
+    const sortedKeys=[...allKeys].sort().reverse();
     if(!sortedKeys.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>데이터가 없습니다</div></div>';return;}
-    el.innerHTML=sortedKeys.map(key=>{
+    el.innerHTML=sortedKeys.map((key,idx)=>{
       const labelSrc=students.map(s=>calcPeriodStats(s.id,period)).find(st=>st[key]);
       const label=labelSrc?labelSrc[key].label:key;
-      return`<div class="gs-period-card"><div class="gs-period-label">📅 ${label}</div>`+
+      const isLatest = idx === 0 && period === 'monthly';
+      const labelStyle = isLatest ? 'style="font-size:18px;font-weight:900;color:var(--primary)"' : '';
+      const cardStyle = isLatest ? 'style="border:2px solid var(--primary-light);box-shadow:0 8px 20px rgba(124,58,237,0.15)"' : '';
+      const badge = isLatest ? '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--primary);color:#fff;margin-left:8px;vertical-align:middle">최신</span>' : '';
+      return`<div class="gs-period-card" ${cardStyle}><div class="gs-period-label" ${labelStyle}>📅 ${label}${badge}</div>`+
         groupBlocks.map(({group,gi,members})=>renderGroupStatBlock(group,gi,members,key)).join('')+
       `</div>`;
     }).join('');
@@ -1484,7 +2429,7 @@ function renderGroupStatBlock(group,gi,members,periodKey){
   let gTotal=0,gDone=0;
   members.forEach(s=>{
     if(periodKey===null){
-      const hw=getStudentHWs(s.id);gTotal+=hw.length;gDone+=hw.filter(h=>isDoneFor(h.id,s.id)).length;
+      const hw=getStatHWs(s.id);gTotal+=hw.length;gDone+=hw.filter(h=>isDoneFor(h.id,s.id)).length;
     } else {
       const st=calcPeriodStats(s.id,currentAdminTab);
       if(st[periodKey]){gTotal+=st[periodKey].total;gDone+=st[periodKey].done;}
@@ -1496,7 +2441,7 @@ function renderGroupStatBlock(group,gi,members,periodKey){
   const studentRows=members.map(s=>{
     let sDone=0,sTotal=0;
     if(periodKey===null){
-      const hw=getStudentHWs(s.id);sTotal=hw.length;sDone=hw.filter(h=>isDoneFor(h.id,s.id)).length;
+      const hw=getStatHWs(s.id);sTotal=hw.length;sDone=hw.filter(h=>isDoneFor(h.id,s.id)).length;
     } else {
       const st=calcPeriodStats(s.id,currentAdminTab);
       if(st[periodKey]){sTotal=st[periodKey].total;sDone=st[periodKey].done;}
@@ -1537,6 +2482,471 @@ function showToast(msg,type){
 // ── INIT ──────────────────────────────────────────────────
 initData();
 loadSavedCredentials();
+
+// ── CLASS MANAGEMENT ──────────────────────────────────────
+function renderAdminClasses() {
+  const groups = getStudentGroups();
+  const sel = document.getElementById('cls-group');
+  sel.innerHTML = '<option value="">— 전체 또는 그룹 선택 —</option>' + 
+    groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  
+  // Setup Time Selects
+  const sh=document.getElementById('cls-start-h'), sm=document.getElementById('cls-start-m');
+  const eh=document.getElementById('cls-end-h'), em=document.getElementById('cls-end-m');
+  let hOpt='', mOpt='';
+  for(let i=0;i<24;i++) hOpt+=`<option value="${String(i).padStart(2,'0')}">${i}시</option>`;
+  for(let i=0;i<60;i++) mOpt+=`<option value="${String(i).padStart(2,'0')}">${i}분</option>`;
+  sh.innerHTML=eh.innerHTML=hOpt; 
+  sm.innerHTML=em.innerHTML=mOpt;
+  
+  // Default values: 13:00 (1 PM)
+  sh.value=eh.value='13'; sm.value=em.value='00';
+
+  document.getElementById('cls-date').value = formatDateLocal(new Date());
+  renderClassView('a', false);
+  renderAdminClassList();
+}
+
+function renderStudentClasses() {
+  renderClassView('s', true);
+}
+
+function switchClassView(who, view, btn) {
+  currentClassView = view;
+  const parent = btn.parentElement;
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  
+  const isStudent = (who === 's' || who === 'sd');
+  renderClassView(who, isStudent);
+}
+
+function renderClassView(who, isStudent) {
+  const containerId = who + '-class-view-content';
+  if (currentClassView === 'daily') renderDailySchedule(containerId, isStudent);
+  else if (currentClassView === 'weekly') renderWeeklySchedule(containerId, isStudent);
+  else renderUniversalCalendar(containerId, isStudent);
+}
+
+function renderDailySchedule(containerId, isStudent) {
+  const container = document.getElementById(containerId);
+  const dateStr = formatDateLocal(currentCalDate);
+  
+  const classes = getClasses();
+  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
+  
+  const dayClasses = classes.filter(c => {
+    const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+    return isMine && c.date === dateStr;
+  }).sort((a,b) => a.startTime.localeCompare(b.startTime));
+  
+  const dayNamesFull = ['일', '월', '화', '수', '목', '금', '토'];
+  const dayIdx = currentCalDate.getDay();
+  const dayName = dayNamesFull[dayIdx];
+  const dayColor = dayIdx === 0 ? 'var(--danger)' : (dayIdx === 6 ? '#2563eb' : 'inherit');
+  
+  let html = `
+    <div class="cal-header">
+      <div class="cal-title">${currentCalDate.getFullYear()}년 ${currentCalDate.getMonth()+1}월 ${currentCalDate.getDate()}일 <span style="color:${dayColor}">(${dayName})</span></div>
+      <div class="cal-nav">
+        <button class="cal-btn" onclick="changeDate('${containerId}', -1, ${isStudent})">◀</button>
+        <button class="cal-btn" onclick="currentCalDate=new Date();renderDailySchedule('${containerId}', ${isStudent})">today</button>
+        <button class="cal-btn" onclick="changeDate('${containerId}', 1, ${isStudent})">▶</button>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+  `;
+  
+  if(!dayClasses.length) {
+    html += '<div class="empty-state">해당 날짜에 예정된 수업이 없습니다.</div>';
+  } else {
+    html += dayClasses.map(c => {
+      const gColor = getGroupColor(c.groupId);
+      return `
+        <div class="schedule-card" style="background:${gColor.bg}; border-color:${gColor.border}">
+          <div class="schedule-time" style="color:#000">${c.startTime} ~ ${c.endTime}</div>
+          <div class="schedule-info">
+            <div class="schedule-title" style="color:${gColor.color}">${c.title}</div>
+            <div class="schedule-meta" style="color:#000">${c.groupId ? getStudentGroups().find(g=>g.id===c.groupId)?.name : '전체 대상'}</div>
+            ${c.description ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${c.description}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderWeeklySchedule(containerId, isStudent) {
+  const container = document.getElementById(containerId);
+  
+  // Calculate start of week (Monday)
+  const start = new Date(currentCalDate);
+  const day = start.getDay();
+  const diff = day === 0 ? 6 : day - 1; 
+  start.setDate(start.getDate() - diff);
+  
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  
+  const classes = getClasses();
+  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
+  
+  const dayNamesFull = ['일', '월', '화', '수', '목', '금', '토'];
+  const startDay = dayNamesFull[start.getDay()];
+  const endDay = dayNamesFull[end.getDay()];
+
+  let html = `
+    <div class="cal-header">
+      <div class="cal-title">${start.getMonth()+1}/${start.getDate()}(${startDay}) ~ ${end.getMonth()+1}/${end.getDate()}(${endDay})</div>
+      <div class="cal-nav">
+        <button class="cal-btn" onclick="changeDate('${containerId}', -7, ${isStudent})">◀</button>
+        <button class="cal-btn" onclick="currentCalDate=new Date();renderWeeklySchedule('${containerId}', ${isStudent})">this week</button>
+        <button class="cal-btn" onclick="changeDate('${containerId}', 7, ${isStudent})">▶</button>
+      </div>
+    </div>
+    <div class="weekly-wrap" style="margin-top:20px">
+  `;
+  
+  const dayNames = ['월','화','수','목','금','토','일'];
+  for(let i=0; i<7; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const dStr = formatDateLocal(d);
+    const isToday = dStr === formatDateLocal(new Date());
+    
+    const dayClasses = classes.filter(c => {
+      const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+      return isMine && c.date === dStr;
+    }).sort((a,b) => a.startTime.localeCompare(b.startTime));
+    
+    html += `
+      <div class="week-day-block" ${isToday ? 'style="border-color:var(--primary-light);background:var(--primary-bg)"' : ''}>
+        <div class="week-day-header">
+          <span class="week-day-name" style="${i===5?'color:var(--accent)':(i===6?'color:var(--danger)':'')}">${dayNames[i]}요일</span>
+          <span class="week-day-date">${d.getMonth()+1}/${d.getDate()}</span>
+        </div>
+        <div class="week-day-content">
+          ${dayClasses.length ? dayClasses.map(c => {
+            const gColor = getGroupColor(c.groupId);
+            return `
+              <div class="week-class-item" style="background:${gColor.bg}; border-color:${gColor.border}; border-bottom-style:solid; padding:8px 10px; border-radius:8px; margin-bottom:4px">
+                <div class="week-class-time" style="color:#000; font-weight:700; font-size:11px; white-space:nowrap">${c.startTime} ~ ${c.endTime}</div>
+                <div class="week-class-title" style="color:${gColor.color}">${c.title}</div>
+                <div class="week-class-meta" style="color:#000; font-size:10px; font-weight:700">${c.groupId ? getStudentGroups().find(g=>g.id===c.groupId)?.name : '전체'}</div>
+              </div>
+            `;
+          }).join('') : '<div class="week-empty">수업 없음</div>'}
+        </div>
+      </div>
+    `;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function changeDate(containerId, delta, isStudent) {
+  currentCalDate.setDate(currentCalDate.getDate() + delta);
+  renderClassView(containerId.split('-')[0], isStudent);
+}
+
+function renderUniversalCalendar(containerId, isStudent) {
+  const container = document.getElementById(containerId);
+  const year = currentCalDate.getFullYear();
+  const month = currentCalDate.getMonth();
+  
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDayIdx = firstDay.getDay(); 
+  const totalDays = lastDay.getDate();
+  
+  const prevLastDay = new Date(year, month, 0).getDate();
+  
+  let html = `
+    <div class="cal-header">
+      <div class="cal-title">${year}년 ${month + 1}월</div>
+      <div class="cal-nav">
+        <button class="cal-btn" onclick="changeMonth('${containerId}', -1, ${isStudent})">◀</button>
+        <button class="cal-btn" onclick="currentCalDate=new Date();renderUniversalCalendar('${containerId}', ${isStudent})">today</button>
+        <button class="cal-btn" onclick="changeMonth('${containerId}', 1, ${isStudent})">▶</button>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-day-label">일</div><div class="cal-day-label">월</div>
+      <div class="cal-day-label">화</div><div class="cal-day-label">수</div>
+      <div class="cal-day-label">목</div><div class="cal-day-label">금</div>
+      <div class="cal-day-label">토</div>
+  `;
+  
+  const classes = getClasses();
+  const studentGroupId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
+
+  // Fill empty cells for previous month
+  for(let i = startDayIdx; i > 0; i--) {
+    html += `<div class="cal-cell other-month"><div class="cal-date">${prevLastDay - i + 1}</div></div>`;
+  }
+  
+  const todayStr = formatDateLocal(new Date());
+  for(let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = dateStr === todayStr;
+    const dayOfWeek = new Date(year, month, d).getDay();
+    const dayClass = dayOfWeek === 0 ? 'sun' : (dayOfWeek === 6 ? 'sat' : '');
+    
+    // Filter classes for this specific day
+    const dayClasses = classes.filter(c => {
+      const dateMatch = c.date === dateStr;
+      if (!dateMatch) return false;
+      if (isStudent) {
+        return !c.groupId || c.groupId === studentGroupId;
+      }
+      return true;
+    }).sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const classItems = dayClasses.map(c => {
+      const gColor = getGroupColor(c.groupId);
+      return `<div class="class-mini" title="${c.title}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
+    }).join('');
+
+    html += `
+      <div class="cal-cell ${isToday ? 'today' : ''} ${dayClass}" onclick="${!isStudent ? `quickAddClass('${dateStr}')` : ''}">
+        <div class="cal-date">${d}</div>
+        ${classItems}
+      </div>
+    `;
+  }
+  
+  // Fill remaining cells for next month
+  const remaining = (7 - (startDayIdx + totalDays) % 7) % 7;
+  for(let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-cell other-month"><div class="cal-date">${i}</div></div>`;
+  }
+  
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function changeMonth(containerId, delta, isStudent) {
+  currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+  renderClassView(containerId.split('-')[0], isStudent);
+}
+
+function addClass() {
+  const title = document.getElementById('cls-title').value.trim();
+  const date = document.getElementById('cls-date').value;
+  const sh = document.getElementById('cls-start-h').value;
+  const sm = document.getElementById('cls-start-m').value;
+  const eh = document.getElementById('cls-end-h').value;
+  const em = document.getElementById('cls-end-m').value;
+  const groupId = document.getElementById('cls-group').value;
+  const desc = document.getElementById('cls-desc').value.trim();
+  const type = document.querySelector('input[name="cls-type"]:checked').value;
+  
+  const start = `${sh}:${sm}`;
+  const end = `${eh}:${em}`;
+
+  if(!title || !date) {
+    showToast('수업 제목과 날짜를 입력하세요.', 'warn');
+    return;
+  }
+  
+  let classes = getClasses();
+  if (editingClassId) {
+    classes = classes.map(c => c.id === editingClassId ? {
+      ...c, title, date, startTime: start, endTime: end, groupId, description: desc
+    } : c);
+    showToast('✅ 수업 일정이 수정되었습니다.');
+  } else {
+    if (type === 'regular') {
+      const selectedDate = new Date(date);
+      const targetDay = selectedDate.getDay();
+      const currentYear = selectedDate.getFullYear();
+      
+      let iter = new Date(selectedDate);
+      while (iter.getFullYear() === currentYear) {
+        if (iter.getDay() === targetDay) {
+          classes.push({
+            id: 'cls' + Date.now() + Math.random().toString(36).substr(2, 5),
+            type: 'regular',
+            title, 
+            date: formatDateLocal(iter), 
+            startTime: start, endTime: end, groupId, description: desc
+          });
+        }
+        iter.setDate(iter.getDate() + 1);
+      }
+      showToast('✅ 정규수업 일정이 한해 말까지 모두 등록되었습니다.');
+    } else {
+      classes.push({
+        id: 'cls' + Date.now(),
+        type: 'single',
+        title, date, startTime: start, endTime: end, groupId, description: desc
+      });
+      showToast('✅ 보충수업 일정이 등록되었습니다.');
+    }
+  }
+  saveClasses(classes);
+  cancelClassEdit();
+  renderAdminClasses();
+}
+
+function toggleRegularNotice(show) {
+  document.getElementById('regular-notice').style.display = show ? 'block' : 'none';
+}
+
+function cancelClassEdit() {
+  editingClassId = null;
+  document.getElementById('cls-title').value = '';
+  document.getElementById('cls-desc').value = '';
+  document.getElementById('cls-date').value = formatDateLocal(new Date());
+  document.getElementById('cls-start-h').value = '13';
+  document.getElementById('cls-start-m').value = '00';
+  document.getElementById('cls-end-h').value = '13';
+  document.getElementById('cls-end-m').value = '00';
+  document.getElementById('cls-group').value = '';
+  
+  const titleEl = document.getElementById('cls-form-title');
+  titleEl.innerText = '➕ 수업 일정 추가';
+  titleEl.style.color = ''; // Reset color
+  document.getElementById('btn-cls-submit').innerText = '수업 등록';
+  document.getElementById('btn-cls-submit').style.background = '';
+  document.getElementById('btn-cls-cancel').style.display = 'none';
+}
+
+function editClass(id) {
+  const classes = getClasses();
+  const c = classes.find(item => item.id === id);
+  if (!c) return;
+  
+  editingClassId = id;
+  document.getElementById('cls-title').value = c.title;
+  document.getElementById('cls-date').value = c.date;
+  
+  const [sh, sm] = c.startTime.split(':');
+  const [eh, em] = c.endTime.split(':');
+  document.getElementById('cls-start-h').value = sh;
+  document.getElementById('cls-start-m').value = sm;
+  document.getElementById('cls-end-h').value = eh;
+  document.getElementById('cls-end-m').value = em;
+  
+  document.getElementById('cls-group').value = c.groupId || '';
+  document.getElementById('cls-desc').value = c.description || '';
+  
+  const titleEl = document.getElementById('cls-form-title');
+  titleEl.innerText = '✏️ 수업 일정 수정';
+  titleEl.style.color = 'var(--danger)'; // Set to red
+  document.getElementById('btn-cls-submit').innerText = '수정 완료';
+  document.getElementById('btn-cls-submit').style.background = 'var(--danger)';
+  document.getElementById('btn-cls-cancel').style.display = 'block';
+  
+  // Smooth scroll to form
+  document.getElementById('a-panel-classes').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function quickAddClass(date) {
+  document.getElementById('cls-date').value = date;
+  document.getElementById('cls-title').focus();
+}
+
+function renderAdminClassList() {
+  const classes = getClasses();
+  const groups = getStudentGroups();
+  const el = document.getElementById('admin-cls-list');
+  const dayNamesFull = ['일','월','화','수','목','금','토'];
+
+  if(!classes.length) {
+    el.innerHTML = '<div class="empty-state">등록된 수업이 없습니다.</div>';
+    return;
+  }
+
+  // Separate and Group
+  const regMap = new Map();
+  const singles = [];
+  
+  classes.forEach(c => {
+    if (c.type === 'regular') {
+      const dayIdx = new Date(c.date).getDay();
+      const key = `${c.title}-${c.startTime}-${c.endTime}-${c.groupId}-${dayIdx}`;
+      if (!regMap.has(key)) regMap.set(key, {...c, dayName: dayNamesFull[dayIdx]});
+    } else {
+      singles.push(c);
+    }
+  });
+
+  const regList = Array.from(regMap.values()).sort((a,b) => {
+    const days = ['월','화','수','목','금','토','일'];
+    return days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
+  });
+  singles.sort((a,b) => b.date.localeCompare(a.date) || a.startTime.localeCompare(b.startTime));
+
+  let html = '';
+  
+  if (regList.length > 0) {
+    html += '<div style="font-size:13px; font-weight:700; color:var(--primary); margin:10px 0 8px; border-bottom:1px solid var(--border)">🗓️ 정규수업 목록 <span style="font-weight:normal; font-size:11px; color:var(--text-muted)">(매주 고정)</span></div>';
+    html += regList.map(c => {
+      const grp = groups.find(g => g.id === c.groupId);
+      const gColor = getGroupColor(c.groupId);
+      return `
+        <div class="admin-hw-item" style="cursor:pointer; background:${gColor.bg}; border-color:${gColor.border}" onclick="editClass('${c.id}')">
+          <div class="admin-hw-info">
+            <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal"> - (매주 ${c.dayName}요일)</span></div>
+            <div class="admin-hw-meta" style="color:#000">
+              ${c.dayName}요일 (${c.startTime} ~ ${c.endTime}) 
+              ${grp ? `· 대상: <span style="font-weight:700">${grp.name}</span>` : '· 대상: 전체'}
+            </div>
+          </div>
+          <button class="btn-del" style="white-space:nowrap" onclick="event.stopPropagation(); deleteRegularClassSeries('${c.title}', '${c.startTime}', '${c.endTime}', '${c.groupId}', '${c.dayName}')">전체삭제</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (singles.length > 0) {
+    html += '<div style="font-size:13px; font-weight:700; color:var(--accent); margin:20px 0 8px; border-bottom:1px solid var(--border)">📎 보충수업 목록 <span style="font-weight:normal; font-size:11px; color:var(--text-muted)">(일회성)</span></div>';
+    html += singles.map(c => {
+      const grp = groups.find(g => g.id === c.groupId);
+      const gColor = getGroupColor(c.groupId);
+      return `
+        <div class="admin-hw-item" style="cursor:pointer; background:${gColor.bg}; border-color:${gColor.border}" onclick="editClass('${c.id}')">
+          <div class="admin-hw-info">
+            <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title}</div>
+            <div class="admin-hw-meta" style="color:#000">
+              날짜: ${c.date} (${c.startTime} ~ ${c.endTime}) 
+              ${grp ? `· 대상: <span style="font-weight:700">${grp.name}</span>` : '· 대상: 전체'}
+            </div>
+          </div>
+          <button class="btn-del" onclick="event.stopPropagation(); deleteClass('${c.id}')">삭제</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function deleteRegularClassSeries(title, start, end, groupId, dayName) {
+  if (!confirm(`'매주 ${dayName}요일 ${title}' 수업의 모든 일정을 삭제하시겠습니까?`)) return;
+  const dayNamesFull = ['일','월','화','수','목','금','토'];
+  let classes = getClasses();
+  classes = classes.filter(c => {
+    if (c.type !== 'regular') return true;
+    const dIdx = new Date(c.date).getDay();
+    const match = c.title === title && c.startTime === start && c.endTime === end && c.groupId === groupId && dayNamesFull[dIdx] === dayName;
+    return !match;
+  });
+  saveClasses(classes);
+  renderAdminClasses();
+  showToast('✅ 정규수업 일정이 모두 삭제되었습니다.');
+}
+
+function deleteClass(id) {
+  if(!confirm('해당 수업 일정을 삭제하시겠습니까?')) return;
+  const classes = getClasses().filter(c => c.id !== id);
+  saveClasses(classes);
+  renderAdminClasses();
+  showToast('수업 일정이 삭제되었습니다.');
+}
 </script>
 </body>
 </html>
