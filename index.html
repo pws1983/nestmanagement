@@ -296,7 +296,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .empty-state .ei{font-size:40px;margin-bottom:12px;}
 
 /* MULTI CHECK */
-.multi-check-wrap{max-height:140px;overflow-y:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px;}
+.multi-check-wrap{max-height:560px;overflow-y:auto;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px;}
 .multi-check-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer;color:var(--text);}
 .multi-check-item input[type=checkbox]{accent-color:var(--primary);width:14px;height:14px;}
 
@@ -455,8 +455,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span class="role-badge role-admin">관리자</span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
+      <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
+      <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
     </nav>
@@ -472,7 +473,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <div class="section-title">➕ 숙제 추가</div>
           <div class="form-row"><label>숙제 제목</label><input id="hw-title" type="text" placeholder="예) 1단원 받아쓰기"></div>
           <div class="form-row"><label>항목 (카테고리)</label>
-            <select id="hw-category"><option value="">— 항목 없음 —</option></select>
+            <select id="hw-category" onchange="handleCategoryChange(this.value)"><option value="">— 항목 없음 —</option></select>
           </div>
           <div class="form-row"><label>숙제 등록일</label><input id="hw-created" type="date"></div>
           <div class="form-row"><label>마감일</label><input id="hw-due" type="date"></div>
@@ -531,6 +532,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
               <option value="">— 그룹 없음 —</option>
             </select>
           </div>
+          <div class="form-row"><label>입학 날짜</label><input id="new-student-entered" type="date"></div>
           <button class="btn-add" onclick="addStudent()">학생 추가</button>
         </div>
         <div class="card">
@@ -540,6 +542,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
             <tbody id="student-stat-body"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+    <!-- Retired Students -->
+    <div class="panel" id="a-panel-retired">
+      <div class="panel-title">퇴원 현황</div>
+      <div class="panel-sub">퇴원한 학생 목록을 확인합니다</div>
+      <div class="card">
+        <div class="section-title">😢 퇴원 학생 목록</div>
+        <table class="student-stat-table">
+          <thead><tr><th>학생</th><th>전체</th><th>완료</th><th>달성률</th><th></th></tr></thead>
+          <tbody id="retired-stat-body"></tbody>
+        </table>
       </div>
     </div>
     <!-- Stats -->
@@ -634,10 +648,12 @@ const getHomeworks=()=>JSON.parse(localStorage.getItem('hwapp_homeworks')||'[]')
 const getCompletions=()=>JSON.parse(localStorage.getItem('hwapp_completions')||'[]');
 const getCategories=()=>JSON.parse(localStorage.getItem('hwapp_categories')||'[]');
 const getStudentGroups=()=>JSON.parse(localStorage.getItem('hwapp_student_groups')||'[]');
+const getRetiredUsers=()=>JSON.parse(localStorage.getItem('hwapp_retired_users')||'[]');
 const saveHomeworks=d=>localStorage.setItem('hwapp_homeworks',JSON.stringify(d));
 const saveCompletions=d=>localStorage.setItem('hwapp_completions',JSON.stringify(d));
 const saveCategories=d=>localStorage.setItem('hwapp_categories',JSON.stringify(d));
 const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stringify(d));
+const saveRetiredUsers=d=>localStorage.setItem('hwapp_retired_users',JSON.stringify(d));
 
 let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly', currentModalStudent=null;
 
@@ -724,6 +740,7 @@ function showPanel(who,name){
   document.getElementById(`${who==='s'?'s':'a'}nav-${name}`).classList.add('active');
   if(who==='s'&&name==='stats')renderStudentStats();
   if(who==='a'&&name==='students')renderAdminStudents();
+  if(who==='a'&&name==='retired')renderRetiredStudents();
   if(who==='a'&&name==='groups')renderStudentGroupPanel();
   if(who==='a'&&name==='stats')renderAdminStats();
 }
@@ -940,8 +957,10 @@ function renderAdminManage(){
     +groups.map(g=>`<button class="sftab" onclick="filterStudentChecks('${g.id}',this)">${g.name}</button>`).join('');
   renderStudentChecks('');
   const today=new Date().toISOString().slice(0,10);
+  const nextWeek=new Date(Date.now()+7*24*60*60*1000).toISOString().slice(0,10);
   document.getElementById('hw-created').value=today;
-  document.getElementById('hw-due').value=today;
+  document.getElementById('hw-due').value=nextWeek;
+  document.getElementById('new-student-entered').value=today;
   renderCatList();
   renderAdminHWList();
 }
@@ -953,6 +972,13 @@ function renderStudentChecks(filterGroupId){
     const g=groups.find(g=>g.id===filterGroupId);
     filtered=g?students.filter(s=>(g.studentIds||[]).includes(s.id)):[];
   }
+  // 그룹별 -> 이름별 정렬
+  filtered.sort((a,b)=>{
+    const ga=getStudentGroupOf(a.id),gb=getStudentGroupOf(b.id);
+    const gna=ga?ga.name:'zzz',gnb=gb?gb.name:'zzz';
+    const gcmp=gna.localeCompare(gnb,'ko');
+    return gcmp!==0?gcmp:a.name.localeCompare(b.name,'ko');
+  });
   const el=document.getElementById('student-checks');
   if(!filtered.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:4px">해당 그룹에 학생이 없습니다</div>';return;}
   el.innerHTML=filtered.map(u=>{
@@ -970,9 +996,14 @@ function filterStudentChecks(groupId,btn){
 function renderAdminHWList(){
   const hws=getHomeworks(),users=getUsers(),cats=getCategories(),el=document.getElementById('admin-hw-list');
   if(!hws.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';return;}
-  const groups=buildGroups(hws,cats);
+  const groups=buildGroups(hws,cats).map(g=>({...g,items:g.items.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))}));
+  const studentGroups=getStudentGroups();
   el.innerHTML=groups.map(g=>{
-    const header=`<div class="cat-group-header">🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
+    // 카테고리 라벨과 학생 그룹 이름 비교 (서로 포함 여부)
+    const matchedGrp=studentGroups.find((sg,i)=>g.label.includes(sg.name)||sg.name.includes(g.label));
+    const matchedGi=matchedGrp?studentGroups.indexOf(matchedGrp):-1;
+    const gc=matchedGrp?GROUP_COLORS[matchedGi%GROUP_COLORS.length]:null;
+    const headerStyle=gc?`style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"`:'';
     const items=g.items.map(h=>{
       const names=h.assignedTo.map(id=>users.find(u=>u.id===id)?.name||id).join(', ');
       const cnt=getCompletions().filter(c=>c.homeworkId===h.id).length;
@@ -993,8 +1024,68 @@ function renderAdminHWList(){
         <button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>
       </div>`;
     }).join('');
+    const header=`<div class="cat-group-header" ${headerStyle}>🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
     return header+items;
   }).join('');
+}
+function handleCategoryChange(catId){
+  if(!catId) return;
+  const cats = getCategories();
+  const cat = cats.find(c => c.id === catId);
+  if(!cat) return;
+
+  // 1. 전체 학생 목록으로 리셋 및 기존 체크 해제
+  const allTab = document.querySelector('#student-group-tabs .sftab');
+  if (allTab) filterStudentChecks('', allTab);
+  
+  const checkboxes = document.querySelectorAll('.student-hw-chk');
+  checkboxes.forEach(chk => chk.checked = false);
+
+  const groups = getStudentGroups();
+  const matchedGroupIds = [];
+  const catName = cat.name;
+
+  groups.forEach(g => {
+    // 그룹명에서 의미 있는 키워드 추출 (2글자 이상)
+    const grpKeywords = g.name.split(/\s+/).filter(k => k.length >= 2);
+    
+    if (grpKeywords.length === 0) {
+      // 그룹명이 매우 짧은 경우 직접 포함 여부 확인
+      if (catName.includes(g.name) || g.name.includes(catName)) {
+        matchedGroupIds.push(g.id);
+      }
+    } else {
+      // 그룹의 "모든" 키워드가 항목 이름에 포함되어 있는지 확인 (Stricter Matching)
+      // 예: 항목명이 "경동고 1학년 숙제"이고 그룹이 "경동고 1학년"이면 매칭 성공
+      const allGrpKeywordsInCat = grpKeywords.every(gk => catName.includes(gk));
+      if (allGrpKeywordsInCat) {
+        matchedGroupIds.push(g.id);
+      }
+    }
+  });
+
+  if (matchedGroupIds.length === 0) return;
+
+  // 2. 해당 그룹 학생들 체크
+  const targetStudentIds = new Set();
+  matchedGroupIds.forEach(gid => {
+    const g = groups.find(group => group.id === gid);
+    if (g && g.studentIds) {
+      g.studentIds.forEach(sid => targetStudentIds.add(sid));
+    }
+  });
+
+  let count = 0;
+  checkboxes.forEach(chk => {
+    if (targetStudentIds.has(chk.value)) {
+      chk.checked = true;
+      count++;
+    }
+  });
+
+  if (count > 0) {
+    showToast(`✨ 매칭되는 그룹 학생 ${count}명을 자동으로 선택했습니다.`);
+  }
 }
 function addHomework(){
   const title=document.getElementById('hw-title').value.trim();
@@ -1041,10 +1132,10 @@ function openHWStudentModal(hwId){
 function renderHWStudentList(hwId){
   const hw=getHomeworks().find(h=>h.id===hwId);
   if(!hw)return;
-  const users=getUsers();
+  const users=getUsers().filter(u=>u.role==='student');
   const comps=getCompletions();
   const el=document.getElementById('hw-modal-student-list');
-  el.innerHTML=hw.assignedTo.map(sid=>{
+  const assignedHTML=hw.assignedTo.map(sid=>{
     const s=users.find(u=>u.id===sid);
     if(!s)return'';
     const isDone=comps.some(c=>c.homeworkId===hwId&&c.studentId===sid);
@@ -1054,8 +1145,53 @@ function renderHWStudentList(hwId){
       <div class="hw-student-name">${s.name}</div>
       <span style="font-size:12px;color:${isDone?'var(--success)':'var(--warning)'};font-weight:600;margin-right:8px">${isDone?'✅ 완료':'⏳ 미완료'}</span>
       <button class="hw-toggle ${isDone?'done':'pending'}" onclick="toggleHWStudentDone('${hwId}','${sid}',${isDone})" title="${isDone?'완료 취소':'완료로 표시'}">${isDone?'✓':'○'}</button>
+      <button class="btn-del" style="margin-left:6px;padding:4px 8px;font-size:11px" onclick="removeStudentFromHW('${hwId}','${sid}')">삭제</button>
     </div>`;
   }).join('');
+  const unassigned=users.filter(u=>!hw.assignedTo.includes(u.id)).sort((a,b)=>{
+    const ga=getStudentGroupOf(a.id),gb=getStudentGroupOf(b.id);
+    const gna=ga?ga.name:'zzz',gnb=gb?gb.name:'zzz';
+    const cmp=gna.localeCompare(gnb,'ko');
+    return cmp!==0?cmp:a.name.localeCompare(b.name,'ko');
+  });
+  const unassignedHTML=unassigned.length?`
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <select id="add-hw-student-sel" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);font-size:12px">
+        <option value="">— 추가할 학생 선택 —</option>
+        ${unassigned.map(u=>{
+           const g=getStudentGroupOf(u.id);
+           return "<option value='"+u.id+"'>"+u.name+" "+(g?"["+g.name+"]":"")+"</option>";
+        }).join('')}
+      </select>
+      <button style="background:var(--primary);color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" onclick="addStudentToHW('${hwId}')">추가</button>
+    </div>`:'';
+  el.innerHTML=assignedHTML+unassignedHTML;
+}
+function addStudentToHW(hwId){
+  const sid=document.getElementById('add-hw-student-sel').value;
+  if(!sid)return;
+  const hws=getHomeworks();
+  const hw=hws.find(h=>h.id===hwId);
+  if(!hw||hw.assignedTo.includes(sid))return;
+  hw.assignedTo.push(sid);
+  saveHomeworks(hws);
+  openHWStudentModal(hwId); // 모달 전체 갱신 (프로그레스바, 수치 포함)
+  renderAdminHWList(); // 전체목록의 통계도 갱신
+  renderAdminStats();
+  showToast('학생이 추가되었습니다.');
+}
+function removeStudentFromHW(hwId,sid){
+  const hws=getHomeworks();
+  const hw=hws.find(h=>h.id===hwId);
+  if(!hw)return;
+  hw.assignedTo=hw.assignedTo.filter(id=>id!==sid);
+  saveHomeworks(hws);
+  // 해당 달성 기록도 삭제
+  saveCompletions(getCompletions().filter(c=>!(c.homeworkId===hwId&&c.studentId===sid)));
+  openHWStudentModal(hwId);
+  renderAdminHWList();
+  renderAdminStats();
+  showToast('해당 학생이 숙제 대상에서 삭제되었습니다.');
 }
 function toggleHWStudentDone(hwId,sid,isDone){
   let comps=getCompletions();
@@ -1099,7 +1235,15 @@ function renderAdminStudents(){
   }
   // 통계 select 갱신
   const adminStatSel=document.getElementById('admin-stat-student');
-  const students=getUsers().filter(u=>u.role==='student');
+  const allStudents=getUsers().filter(u=>u.role==='student');
+  const groups=getStudentGroups();
+  // 그룹명 가나다순 → 그룹 내 이름 가나다순으로 정렬
+  const students=allStudents.slice().sort((a,b)=>{
+    const ga=getStudentGroupOf(a.id),gb=getStudentGroupOf(b.id);
+    const gna=ga?ga.name:'zzz',gnb=gb?gb.name:'zzz'; // 미배정은 맨 뒤
+    const gcmp=gna.localeCompare(gnb,'ko');
+    return gcmp!==0?gcmp:a.name.localeCompare(b.name,'ko');
+  });
   if(adminStatSel){
     const prev=adminStatSel.value;
     adminStatSel.innerHTML='<option value="all">전체 학생 평균</option>'+students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
@@ -1120,6 +1264,7 @@ function renderAdminStudents(){
       <td style="white-space:nowrap">
         <span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
         <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>
+        <button class="btn-del" style="margin-left:8px;background:#f59e0b;color:#fff;border:none" onclick="event.stopPropagation();retireStudent('${s.id}','${safeName}')">퇴원</button>
       </td>
     </tr>`;
   }).join('');
@@ -1130,14 +1275,16 @@ function addStudent(){
   const pw=document.getElementById('new-student-pw').value.trim();
   const groupId=document.getElementById('new-student-group').value;
   const pw2=document.getElementById('new-student-pw2').value.trim();
+  const entered=document.getElementById('new-student-entered').value;
   if(!name){showToast('학생 이름을 입력하세요.','warn');return;}
   if(!loginId){showToast('접속 아이디를 입력하세요.','warn');return;}
+  if(!entered){showToast('입학 날짜를 입력하세요.','warn');return;}
   if(!pw){showToast('비밀번호를 입력하세요.','warn');return;}
   if(pw!==pw2){showToast('비밀번호가 일치하지 않습니다.','warn');document.getElementById('new-student-pw2').focus();return;}
   const users=getUsers();
   if(users.find(u=>u.id===loginId||u.loginId===loginId)){showToast('이미 사용 중인 아이디입니다.','warn');return;}
   const newId='student'+Date.now();
-  users.push({id:newId,name,password:pw,role:'student',loginId});
+  users.push({id:newId,name,password:pw,role:'student',loginId,enteredAt:entered});
   localStorage.setItem('hwapp_users',JSON.stringify(users));
   if(groupId){
     const groups=getStudentGroups();
@@ -1150,6 +1297,7 @@ function addStudent(){
   document.getElementById('new-student-pw').value='';
   document.getElementById('new-student-pw2').value='';
   document.getElementById('new-student-group').value='';
+  document.getElementById('new-student-entered').value=new Date().toISOString().slice(0,10);
   renderAdminStudents();renderAdminManage();
   showToast(`✅ "${name}" 학생이 추가되었습니다!`);
 }
@@ -1157,13 +1305,76 @@ function deleteStudent(sid,name){
   if(!confirm(`"${name}" 학생을 삭제하시겠습니까?\n해당 학생의 모든 숙제 완료 기록도 삭제됩니다.`))return;
   let users=getUsers().filter(u=>u.id!==sid);
   localStorage.setItem('hwapp_users',JSON.stringify(users));
+  cleanupStudentData(sid);
+  renderAdminStudents();renderAdminManage();renderAdminStats();
+  showToast(`"${name}" 학생이 삭제되었습니다.`);
+}
+function deleteRetiredStudent(sid,name){
+  if(!confirm(`"${name}" 학생을 영구히 삭제하시겠습니까?\n해당 학생의 모든 숙제 완료 기록도 함께 삭제됩니다.`))return;
+  let retired=getRetiredUsers().filter(u=>u.id!==sid);
+  saveRetiredUsers(retired);
+  cleanupStudentData(sid);
+  renderRetiredStudents();renderAdminStats();
+  showToast(`"${name}" 학생이 완전히 삭제되었습니다.`);
+}
+function cleanupStudentData(sid){
   saveCompletions(getCompletions().filter(c=>c.studentId!==sid));
   const hws=getHomeworks().map(h=>({...h,assignedTo:h.assignedTo.filter(id=>id!==sid)}));
   saveHomeworks(hws);
   const groups=getStudentGroups().map(g=>({...g,studentIds:(g.studentIds||[]).filter(id=>id!==sid)}));
   saveStudentGroups(groups);
-  renderAdminStudents();renderAdminManage();renderAdminStats();
-  showToast(`"${name}" 학생이 삭제되었습니다.`);
+}
+function retireStudent(id,name){
+  if(!confirm(`⚠️ "${name}" 학생을 정말 퇴원 처리하시겠습니까?\n퇴원 처리 시 학생 목록에서 숨겨지고 퇴원 현황으로 이동합니다.`))return;
+  const users=getUsers();
+  const retired=getRetiredUsers();
+  const studentIdx=users.findIndex(u=>u.id===id);
+  if(studentIdx>-1){
+    const st=users.splice(studentIdx,1)[0];
+    retired.push({...st, retiredAt:new Date().toISOString().slice(0,10)});
+    localStorage.setItem('hwapp_users',JSON.stringify(users));
+    saveRetiredUsers(retired);
+    renderAdminStudents();
+    showToast(`😢 "${name}" 학생이 퇴원 처리되었습니다.`);
+  }
+}
+function renderRetiredStudents(){
+  const retired=getRetiredUsers();
+  document.getElementById('retired-stat-body').innerHTML=retired.map(s=>{
+    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const initials=s.name.slice(0,1);
+    const grp=getStudentGroupOf(s.id);
+    const grpColor=grp?getGroupColor(grp.id):null;
+    const grpBadge=grp?`<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>`:''
+    const loginId=s.loginId||s.id;
+    const safeName=s.name.replace(/'/g,'\u2019');
+    const entered=s.enteredAt||'미정';
+    return`<tr onclick="openStudentDetail('${s.id}')">
+      <td><div class="student-name-cell"><div class="student-avatar" style="background:#cbd5e1">${initials}</div>${s.name}${grpBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${entered} 입학 / ${s.retiredAt} 퇴원</span></div></td>
+      <td>${total}</td><td>${done}</td>
+      <td><span class="pct-cell" style="color:#94a3b8">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%;background:#94a3b8"></div></div></td>
+      <td style="white-space:nowrap;text-align:right">
+        <span style="font-size:12px;color:var(--text-muted);cursor:pointer;margin-right:12px" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
+        <button class="btn-del" style="background:var(--success);color:#fff;border:none" onclick="event.stopPropagation();restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
+        <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation();deleteRetiredStudent('${s.id}','${safeName}')">탈퇴</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function restoreStudent(id,name){
+  if(!confirm(`✅ "${name}" 학생을 다시 재원생(복귀)으로 변경하시겠습니까?`))return;
+  const users=getUsers();
+  const retired=getRetiredUsers();
+  const rIdx=retired.findIndex(u=>u.id===id);
+  if(rIdx>-1){
+    const st=retired.splice(rIdx,1)[0];
+    delete st.retiredAt; // 퇴원일 정보 제거
+    users.push(st);
+    localStorage.setItem('hwapp_users',JSON.stringify(users));
+    saveRetiredUsers(retired);
+    renderRetiredStudents();
+    showToast(`🎉 "${name}" 학생이 복원되었습니다.`);
+  }
 }
 
 
@@ -1171,7 +1382,8 @@ function deleteStudent(sid,name){
 // ── STUDENT DETAIL MODAL ──────────────────────────────────
 function openStudentDetail(sid){
   currentModalStudent=sid;
-  const student=getUsers().find(u=>u.id===sid);
+  const student=getUsers().find(u=>u.id===sid) || getRetiredUsers().find(u=>u.id===sid);
+  if(!student) return;
   document.getElementById('modal-student-name').textContent=`${student.name} 학생`;
   renderModalContent(sid);
   document.getElementById('studentModal').classList.add('open');
