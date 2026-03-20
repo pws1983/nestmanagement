@@ -593,6 +593,71 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     cursor: pointer; transition: all 0.2s;
   }
   .btn-check-pay:hover { background: var(--success); color: #fff; border-color: var(--success); }
+
+  /* CLASS PROGRESS MANAGEMENT */
+  .progress-mgmt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:900px) { .progress-mgmt-grid { grid-template-columns: 1fr; } }
+  .prog-group-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 0; overflow: hidden; box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s;
+  }
+  .prog-group-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .prog-group-header {
+    padding: 18px 20px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .prog-group-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .prog-group-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .prog-group-summary {
+    padding: 14px 20px; display: flex; gap: 12px; align-items: center;
+    background: #f8fafc; border-bottom: 1px solid var(--border);
+  }
+  .prog-summary-stat { text-align: center; flex: 1; }
+  .prog-summary-val { font-size: 20px; font-weight: 900; }
+  .prog-summary-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .prog-topic-list { padding: 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+  .prog-topic-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px; background: #f8fafc;
+    border: 1px solid var(--border); transition: all .2s;
+  }
+  .prog-topic-item:hover { border-color: var(--primary-light); background: #fdfaff; }
+  .prog-topic-info { flex: 1; }
+  .prog-topic-title { font-size: 13px; font-weight: 600; }
+  .prog-topic-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .prog-topic-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+  .prog-topic-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+  .prog-topic-pct { font-size: 12px; font-weight: 700; min-width: 36px; text-align: right; }
+  .prog-student-detail {
+    padding: 8px 14px 8px 28px; display: flex; align-items: center; gap: 8px;
+    border-radius: 8px; transition: background .15s;
+  }
+  .prog-student-detail:hover { background: #f8f9ff; }
+  .prog-student-name { font-size: 12px; font-weight: 500; flex: 1; }
+  .prog-check-btn {
+    width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--border-strong);
+    background: transparent; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; transition: all .2s; flex-shrink: 0;
+  }
+  .prog-check-btn.done { background: var(--success); border-color: var(--success); color: #fff; }
+  .prog-check-btn:hover { transform: scale(1.1); }
+  .prog-add-form {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; box-shadow: var(--shadow);
+  }
+  .prog-filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .prog-expand-btn {
+    background: none; border: none; cursor: pointer; font-size: 16px;
+    transition: transform .2s; color: var(--text-muted); padding: 4px;
+  }
+  .prog-expand-btn.open { transform: rotate(90deg); }
+  .prog-topic-students { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+  .prog-topic-students.expanded { max-height: 1000px; }
+  .prog-no-data {
+    text-align: center; padding: 40px; color: var(--text-muted);
+    font-size: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid var(--border);
+  }
+  .prog-no-data .prog-icon { font-size: 40px; margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -711,6 +776,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('a','dashboard')" id="anav-dashboard"><span>🏠</span> 대시보드</div>
       <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 관리</div>
+      <div class="nav-item" onclick="showPanel('a','progress')" id="anav-progress"><span>📖</span> 수업 진도</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
@@ -736,6 +802,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="card">
           <div class="section-title">📚 이번 주 숙제</div>
           <div id="a-dashboard-hw-list"></div>
+        </div>
+      </div>
+      <div class="admin-grid" style="margin-top:20px; grid-template-columns: 1fr;">
+        <div class="card">
+          <div class="section-title">📖 최근 수업 진도 <span style="font-size:12px; font-weight:normal; color:var(--text-muted); margin-left:8px">(각 반별 가장 최근 수업)</span></div>
+          <div id="a-dashboard-progress-list"></div>
         </div>
       </div>
     </div>
@@ -958,6 +1030,49 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div id="admin-cls-list"></div>
       </div>
     </div>
+    <!-- Class Progress Management -->
+    <div class="panel" id="a-panel-progress">
+      <div class="panel-title">수업 진도</div>
+      <div class="panel-sub">반(그룹)별 교재/단원 진도 현황을 관리합니다</div>
+      <div class="prog-add-form" style="margin-bottom:20px">
+        <div class="section-title" id="prog-form-title">➕ 진도 항목 추가</div>
+        <div class="admin-grid" style="gap:12px">
+          <div>
+            <div class="form-row"><label>대상 반(그룹)</label>
+              <select id="prog-group">
+                <option value="">— 그룹 선택 —</option>
+              </select>
+            </div>
+            <div class="form-row"><label>교재/단원명/페이지 (최대 5개)</label>
+              <div id="prog-topic-inputs" style="display:flex; flex-direction:column; gap:4px">
+                <input id="prog-topic-1" type="text" placeholder="예) 수학의 정석 1단원 10~20p">
+                <input id="prog-topic-2" type="text" placeholder="추가 항목 2">
+                <input id="prog-topic-3" type="text" placeholder="추가 항목 3">
+                <input id="prog-topic-4" type="text" placeholder="추가 항목 4">
+                <input id="prog-topic-5" type="text" placeholder="추가 항목 5">
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="form-row"><label>수업 일자</label>
+              <input id="prog-target-date" type="date">
+            </div>
+            <div class="form-row"><label>총 페이지/문항 수</label>
+              <input id="prog-total-pages" type="number" placeholder="예) 50">
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:10px">
+          <button class="btn-add" id="btn-prog-submit" style="flex:2" onclick="addProgressTopic()">진도 항목 추가</button>
+          <button class="btn-del" id="btn-prog-cancel" style="flex:1; background:#94a3b8; display:none" onclick="cancelProgressEdit()">취소</button>
+        </div>
+      </div>
+      <div class="prog-filter-row">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">📋 반별 보기:</span>
+        <div id="prog-filter-tabs"></div>
+      </div>
+      <div id="progress-content"></div>
+    </div>
   </div>
 </div>
 
@@ -1066,7 +1181,7 @@ function migrateClassTypes() {
 let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly', currentModalStudent=null;
 let currentCalDate = new Date(); // 달력/일정 표시용 기준 날짜
 let currentClassView = 'daily'; // daily, weekly, monthly
-let editingClassId = null, editingStudentId = null;
+let editingClassId = null, editingStudentId = null, editingProgressId = null;
 
 // 그룹 색상 팔레트
 const GROUP_COLORS=[
@@ -1188,6 +1303,9 @@ function showPanel(who,name){
     currentCalDate = new Date();
     renderAdminClasses();
   }
+  if(who==='a'&&name==='progress') {
+    renderProgressPanel();
+  }
   if(who==='s'&&name==='classes') {
     currentClassView = 'daily';
     currentCalDate = new Date();
@@ -1202,6 +1320,9 @@ function renderDashboard(who) {
   currentClassView = 'daily';
   currentCalDate = new Date();
   renderClassView(prefix, isStudent);
+  if (!isStudent) {
+    renderDashboardProgress();
+  }
 
   const hwListId = isStudent ? 's-dashboard-hw-list' : 'a-dashboard-hw-list';
   const listEl = document.getElementById(hwListId);
@@ -1303,6 +1424,145 @@ function renderDashboard(who) {
 
     return header + items;
   }).join('');
+}
+
+function renderDashboardProgress() {
+  const el = document.getElementById('a-dashboard-progress-list');
+  if (!el) return;
+  const topics = getProgressTopics();
+  const comps = getProgressCompletions();
+  const groups = getStudentGroups();
+  const students = getUsers().filter(u => u.role === 'student');
+
+  if (!groups.length || !topics.length) {
+    el.innerHTML = '<div class="empty-state">최근 등록된 수업 진도가 없습니다.</div>';
+    return;
+  }
+
+  // 1. Find the most recent date for each group
+  const recentSessions = [];
+  groups.forEach((group, gi) => {
+    const gc = GROUP_COLORS[gi % GROUP_COLORS.length];
+    const groupTopics = topics.filter(t => t.groupId === group.id);
+    if (!groupTopics.length) return;
+
+    // Group by date
+    const datesMap = {};
+    groupTopics.forEach(t => {
+      const d = t.targetDate || '날짜 미지정';
+      if(!datesMap[d]) datesMap[d] = [];
+      datesMap[d].push(t);
+    });
+
+    const dates = Object.keys(datesMap).sort().reverse();
+    const mostRecentDate = dates[0];
+    const sessionTopics = datesMap[mostRecentDate];
+
+    recentSessions.push({
+      group,
+      gc,
+      date: mostRecentDate,
+      topics: sessionTopics,
+      sortDate: mostRecentDate === '날짜 미지정' ? '0000-00-00' : mostRecentDate
+    });
+  });
+
+  // Sort sessions: Most recent date first, then by group name
+  recentSessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.group.name.localeCompare(b.group.name));
+
+  if (!recentSessions.length) {
+    el.innerHTML = '<div class="empty-state">최근 등록된 수업 진도가 없습니다.</div>';
+    return;
+  }
+
+  const cardsHtml = recentSessions.map(session => {
+    const { group, gc, date, topics: sessionTopics } = session;
+    const memberIds = group.studentIds || [];
+    const members = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
+
+    let groupTotalItems = 0, groupDoneItems = 0;
+    sessionTopics.forEach(t => {
+      members.forEach(s => {
+        groupTotalItems++;
+        if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
+      });
+    });
+    const groupPct = groupTotalItems ? Math.round(groupDoneItems / groupTotalItems * 100) : 0;
+    const groupBarColor = groupPct === 100 ? 'var(--success)' : groupPct > 0 ? gc.color : 'var(--border-strong)';
+
+    let headerDateStr = '';
+    if (date !== '날짜 미지정') {
+      const dObj = new Date(date);
+      const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
+      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 ${date} ${dayName ? `(${dayName})` : ''}</span>`;
+    } else {
+      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 날짜 미지정</span>`;
+    }
+
+    const topicRows = sessionTopics.map(t => {
+      const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
+      const topicTotal = members.length;
+      const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
+      const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+      
+      const studentRows = members.map(s => {
+        const done = comps.some(c => c.topicId === t.id && c.studentId === s.id);
+        return `<div class="prog-student-detail">
+          <span class="prog-student-name">${s.name}</span>
+          <span style="font-size:11px;color:${done?'var(--success)':'var(--text-muted)'};font-weight:600">${done?'✅ 완료':'⏳ 진행중'}</span>
+          <button class="prog-check-btn ${done?'done':''}" onclick="toggleProgressCompletion('${t.id}','${s.id}',${done})" title="${done?'미완료로 변경':'완료로 표시'}">${done?'✓':'○'}</button>
+        </div>`;
+      }).join('');
+
+      // Add a specialized _dash id to prevent DOM id conflicts with the main progress tab
+      return `<div class="prog-topic-item" style="margin-bottom:4px">
+        <button class="prog-expand-btn" id="prog-expand-${t.id}_dash" onclick="toggleProgressExpand('${t.id}_dash')">▶</button>
+        <div class="prog-topic-info">
+          <div class="prog-topic-title">📖 ${t.topic}</div>
+          <div class="prog-topic-meta">
+            ${t.totalPages ? t.totalPages + '페이지' : ''}
+            · 등록: ${t.createdAt}
+          </div>
+        </div>
+        <div class="prog-topic-bar"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
+        <span class="prog-topic-pct" style="color:${topicColor}">${topicPct}%</span>
+        <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;background:var(--success);color:#fff;margin-left:4px" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+      </div>
+      <div class="prog-topic-students" id="prog-students-${t.id}_dash">${studentRows}</div>`;
+    }).join('');
+
+    return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
+      <div class="prog-group-header" style="background:${gc.bg}; padding:10px 14px; border-radius:10px 10px 0 0">
+        <div class="prog-group-title" style="color:${gc.color}; font-size:15px">🏫 ${group.name}
+          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${members.length}명</span>
+          ${headerDateStr}
+        </div>
+        <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
+      </div>
+      <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:14px">${groupPct}%</div>
+          <div class="prog-summary-label" style="font-size:11px">달성률</div>
+        </div>
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="color:var(--success); font-size:14px">${groupDoneItems}</div>
+          <div class="prog-summary-label" style="font-size:11px">완료</div>
+        </div>
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="color:var(--warning); font-size:14px">${groupTotalItems - groupDoneItems}</div>
+          <div class="prog-summary-label" style="font-size:11px">미완료</div>
+        </div>
+        <div style="flex:2; margin-left:10px">
+          <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
+        </div>
+      </div>
+      <div class="prog-topic-list" style="padding:12px 14px">${topicRows}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = cardsHtml;
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
@@ -1508,6 +1768,7 @@ function addStudentGroup(){
   renderStudentGroupPanel();showToast(`✅ "${name}" 그룹이 추가되었습니다!`);
 }
 function deleteStudentGroup(id){
+  if(!confirm('정말로 이 그룹을 삭제하시겠습니까?')) return;
   saveStudentGroups(getStudentGroups().filter(g=>g.id!==id));
   renderStudentGroupPanel();renderAdminManage();showToast('그룹이 삭제되었습니다.');
 }
@@ -2946,6 +3207,288 @@ function deleteClass(id) {
   saveClasses(classes);
   renderAdminClasses();
   showToast('수업 일정이 삭제되었습니다.');
+}
+
+// ── CLASS PROGRESS MANAGEMENT ─────────────────────────────
+const getProgressTopics = () => JSON.parse(localStorage.getItem('hwapp_progress_topics') || '[]');
+const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]');
+const saveProgressTopics = d => localStorage.setItem('hwapp_progress_topics', JSON.stringify(d));
+const saveProgressCompletions = d => localStorage.setItem('hwapp_progress_completions', JSON.stringify(d));
+
+let currentProgressFilter = '';
+
+function renderProgressPanel() {
+  const groups = getStudentGroups();
+  const sel = document.getElementById('prog-group');
+  sel.innerHTML = '<option value="">— 그룹 선택 —</option>' +
+    groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  
+  const targetDate = new Date();
+  document.getElementById('prog-target-date').value = formatDateLocal(targetDate);
+
+  const tabEl = document.getElementById('prog-filter-tabs');
+  tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
+    groups.map(g => `<button class="sftab ${currentProgressFilter===g.id?'active':''}" onclick="filterProgress('${g.id}',this)">${g.name}</button>`).join('');
+
+  renderProgressContent();
+}
+
+function filterProgress(groupId, btn) {
+  currentProgressFilter = groupId;
+  document.querySelectorAll('#prog-filter-tabs .sftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProgressContent();
+}
+
+function addProgressTopic() {
+  const groupId = document.getElementById('prog-group').value;
+  const totalPages = parseInt(document.getElementById('prog-total-pages').value) || 0;
+  const targetDate = document.getElementById('prog-target-date').value;
+  
+  if (!groupId) { showToast('대상 그룹을 선택하세요.', 'warn'); return; }
+  
+  const topicValues = [];
+  for (let i = 1; i <= 5; i++) {
+    const val = document.getElementById('prog-topic-' + i).value.trim();
+    if (val) topicValues.push(val);
+  }
+
+  if (topicValues.length === 0) {
+    showToast('교재/단원명/페이지를 최소 하나는 입력해야 합니다.', 'warn');
+    return;
+  }
+  
+  let topics = getProgressTopics();
+  if (editingProgressId) {
+    topics = topics.map(t => t.id === editingProgressId ? {
+      ...t, groupId, topic: topicValues[0], totalPages, targetDate
+    } : t);
+    showToast('✅ 진도 항목이 수정되었습니다.');
+  } else {
+    topicValues.forEach(val => {
+      topics.push({
+        id: 'prog' + Date.now() + Math.random().toString(36).substr(2, 5),
+        groupId,
+        topic: val,
+        totalPages,
+        targetDate,
+        createdAt: formatDateLocal(new Date())
+      });
+    });
+    showToast(`✅ ${topicValues.length}개의 진도 항목이 추가되었습니다!`);
+  }
+  saveProgressTopics(topics);
+  cancelProgressEdit();
+  renderProgressContent();
+}
+
+function editProgressTopic(id) {
+  const topics = getProgressTopics();
+  const t = topics.find(item => item.id === id);
+  if (!t) return;
+  
+  editingProgressId = id;
+  document.getElementById('prog-group').value = t.groupId;
+  
+  for (let i = 1; i <= 5; i++) document.getElementById('prog-topic-' + i).value = '';
+  document.getElementById('prog-topic-1').value = t.topic;
+  
+  document.getElementById('prog-total-pages').value = t.totalPages || '';
+  document.getElementById('prog-target-date').value = t.targetDate;
+  
+  const titleEl = document.getElementById('prog-form-title');
+  titleEl.innerText = '✏️ 진도 항목 수정';
+  titleEl.style.color = 'var(--danger)';
+  document.getElementById('btn-prog-submit').innerText = '수정 완료';
+  document.getElementById('btn-prog-submit').style.background = 'var(--danger)';
+  document.getElementById('btn-prog-cancel').style.display = 'block';
+  
+  document.getElementById('a-panel-progress').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelProgressEdit() {
+  editingProgressId = null;
+  document.getElementById('prog-group').value = '';
+  for (let i = 1; i <= 5; i++) document.getElementById('prog-topic-' + i).value = '';
+  document.getElementById('prog-total-pages').value = '';
+  document.getElementById('prog-target-date').value = formatDateLocal(new Date());
+  
+  const titleEl = document.getElementById('prog-form-title');
+  titleEl.innerText = '➕ 진도 항목 추가';
+  titleEl.style.color = '';
+  document.getElementById('btn-prog-submit').innerText = '진도 항목 추가';
+  document.getElementById('btn-prog-submit').style.background = '';
+  document.getElementById('btn-prog-cancel').style.display = 'none';
+}
+
+function deleteProgressTopic(id) {
+  const topics = getProgressTopics();
+  const topic = topics.find(t => t.id === id);
+  if (!topic) return;
+  if (!confirm(`"${topic.topic}" 진도 항목을 삭제하시겠습니까?\n해당 항목의 모든 완료 기록도 삭제됩니다.`)) return;
+  
+  saveProgressTopics(topics.filter(t => t.id !== id));
+  saveProgressCompletions(getProgressCompletions().filter(c => c.topicId !== id));
+  renderProgressContent();
+  showToast('진도 항목이 삭제되었습니다.');
+}
+
+function toggleProgressCompletion(topicId, studentId, isDone) {
+  let comps = getProgressCompletions();
+  if (isDone) {
+    comps = comps.filter(c => !(c.topicId === topicId && c.studentId === studentId));
+  } else {
+    comps.push({ topicId, studentId, completedAt: formatDateLocal(new Date()) });
+  }
+  saveProgressCompletions(comps);
+  renderProgressContent();
+  showToast(isDone ? '미완료로 변경되었습니다.' : '✅ 완료로 표시했습니다!');
+}
+
+function toggleProgressExpand(topicId) {
+  const el = document.getElementById('prog-students-' + topicId);
+  const btn = document.getElementById('prog-expand-' + topicId);
+  if (el) {
+    el.classList.toggle('expanded');
+    btn.classList.toggle('open');
+  }
+}
+
+function renderProgressContent() {
+  const topics = getProgressTopics();
+  const comps = getProgressCompletions();
+  const groups = getStudentGroups();
+  const students = getUsers().filter(u => u.role === 'student');
+  const el = document.getElementById('progress-content');
+
+  const filteredGroups = currentProgressFilter
+    ? groups.filter(g => g.id === currentProgressFilter)
+    : groups;
+
+  if (!filteredGroups.length) {
+    el.innerHTML = '<div class="prog-no-data"><div class="prog-icon">📋</div><div>등록된 그룹이 없습니다.<br>먼저 학생 그룹을 만들어주세요.</div></div>';
+    return;
+  }
+
+  // Group topics by (GroupId, TargetDate)
+  const sessions = [];
+  filteredGroups.forEach((group, gi) => {
+    const gc = GROUP_COLORS[gi % GROUP_COLORS.length];
+    const groupTopics = topics.filter(t => t.groupId === group.id);
+    
+    const datesMap = {};
+    groupTopics.forEach(t => {
+      const d = t.targetDate || '날짜 미지정';
+      if(!datesMap[d]) datesMap[d] = [];
+      datesMap[d].push(t);
+    });
+
+    Object.keys(datesMap).forEach(date => {
+      sessions.push({
+        group,
+        gc,
+        date,
+        topics: datesMap[date],
+        sortDate: date === '날짜 미지정' ? '0000-00-00' : date
+      });
+    });
+  });
+
+  // Sort sessions: Most recent date first, then by group name
+  sessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.group.name.localeCompare(b.group.name));
+
+  if (!sessions.length) {
+    el.innerHTML = '<div class="prog-no-data"><div class="prog-icon">📋</div><div>등록된 진도 항목이 없습니다.<br>위에서 진도 항목을 추가해보세요.</div></div>';
+    return;
+  }
+
+  const cardsHtml = sessions.map(session => {
+    const { group, gc, date, topics: sessionTopics } = session;
+    const memberIds = group.studentIds || [];
+    const members = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
+
+    let groupTotalItems = 0, groupDoneItems = 0;
+    sessionTopics.forEach(t => {
+      members.forEach(s => {
+        groupTotalItems++;
+        if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
+      });
+    });
+    const groupPct = groupTotalItems ? Math.round(groupDoneItems / groupTotalItems * 100) : 0;
+    const groupBarColor = groupPct === 100 ? 'var(--success)' : groupPct > 0 ? gc.color : 'var(--border-strong)';
+
+    let headerDateStr = '';
+    if (date !== '날짜 미지정') {
+      const dObj = new Date(date);
+      const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
+      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8">📅 ${date} ${dayName ? `(${dayName})` : ''}</span>`;
+    } else {
+      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 날짜 미지정</span>`;
+    }
+
+    const topicRows = sessionTopics.map(t => {
+      const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
+      const topicTotal = members.length;
+      const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
+      const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+      
+      const studentRows = members.map(s => {
+        const done = comps.some(c => c.topicId === t.id && c.studentId === s.id);
+        return `<div class="prog-student-detail">
+          <span class="prog-student-name">${s.name}</span>
+          <span style="font-size:11px;color:${done?'var(--success)':'var(--text-muted)'};font-weight:600">${done?'✅ 완료':'⏳ 진행중'}</span>
+          <button class="prog-check-btn ${done?'done':''}" onclick="toggleProgressCompletion('${t.id}','${s.id}',${done})" title="${done?'미완료로 변경':'완료로 표시'}">${done?'✓':'○'}</button>
+        </div>`;
+      }).join('');
+
+      return `<div class="prog-topic-item" style="margin-bottom:4px">
+        <button class="prog-expand-btn" id="prog-expand-${t.id}" onclick="toggleProgressExpand('${t.id}')">▶</button>
+        <div class="prog-topic-info">
+          <div class="prog-topic-title">📖 ${t.topic}</div>
+          <div class="prog-topic-meta">
+            ${t.totalPages ? t.totalPages + '페이지' : ''}
+            · 등록: ${t.createdAt}
+          </div>
+        </div>
+        <div class="prog-topic-bar"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
+        <span class="prog-topic-pct" style="color:${topicColor}">${topicPct}%</span>
+        <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;background:var(--success);color:#fff;margin-left:4px" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+      </div>
+      <div class="prog-topic-students" id="prog-students-${t.id}">${studentRows}</div>`;
+    }).join('');
+
+    return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
+      <div class="prog-group-header" style="background:${gc.bg}; padding:10px 14px; border-radius:10px 10px 0 0">
+        <div class="prog-group-title" style="color:${gc.color}; font-size:15px">🏫 ${group.name}
+          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${members.length}명</span>
+          ${headerDateStr}
+        </div>
+        <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
+      </div>
+      <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:14px">${groupPct}%</div>
+          <div class="prog-summary-label" style="font-size:11px">달성률</div>
+        </div>
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="color:var(--success); font-size:14px">${groupDoneItems}</div>
+          <div class="prog-summary-label" style="font-size:11px">완료</div>
+        </div>
+        <div class="prog-summary-stat">
+          <div class="prog-summary-val" style="color:var(--warning); font-size:14px">${groupTotalItems - groupDoneItems}</div>
+          <div class="prog-summary-label" style="font-size:11px">미완료</div>
+        </div>
+        <div style="flex:2; margin-left:10px">
+          <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
+        </div>
+      </div>
+      <div class="prog-topic-list" style="padding:12px 14px">${topicRows}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="progress-mgmt-grid">${cardsHtml}</div>`;
 }
 </script>
 </body>
