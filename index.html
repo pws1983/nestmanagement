@@ -716,7 +716,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="panel-sub">한눈에 보는 일정과 숙제</div>
       <div class="admin-grid">
         <div class="card">
-          <div class="section-title">📅 일정 조회</div>
+          <div class="section-title">📅 내 일정 (오늘)</div>
           <div class="period-tabs" style="margin-bottom:16px">
             <button class="tab-btn active" onclick="switchClassView('sd', 'daily', this)">오늘</button>
             <button class="tab-btn" onclick="switchClassView('sd', 'weekly', this)">주간</button>
@@ -814,37 +814,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <!-- Manage -->
     <div class="panel" id="a-panel-manage">
       <div class="panel-title">숙제 관리</div>
-      <div class="panel-sub">학생에게 숙제를 추가하고 관리합니다</div>
-      <div class="admin-grid">
-        <div class="card">
-          <div class="section-title">➕ 숙제 추가</div>
-          <div class="form-row"><label>숙제 제목</label><input id="hw-title" type="text" placeholder="예) 1단원 받아쓰기"></div>
-          <div class="form-row"><label>항목 (카테고리)</label>
-            <select id="hw-category" onchange="handleCategoryChange(this.value)"><option value="">— 항목 없음 —</option></select>
-          </div>
-          <div class="form-row"><label>숙제 등록일</label><input id="hw-created" type="date"></div>
-          <div class="form-row"><label>마감일</label><input id="hw-due" type="date"></div>
-          <div class="form-row">
-            <label>대상 학생 (복수 선택 가능)</label>
-            <div class="student-filter-tabs" id="student-group-tabs"></div>
-            <div class="multi-check-wrap" id="student-checks"></div>
-          </div>
-          <button class="btn-add" onclick="addHomework()">숙제 추가</button>
-        </div>
+      <div class="panel-sub">학생들의 전체 과제 현황을 조회하고 관리합니다</div>
+      <div class="admin-grid" style="grid-template-columns: 1fr;">
         <div class="card">
           <div class="section-title">📋 전체 숙제 목록</div>
           <div id="admin-hw-list"></div>
         </div>
       </div>
-      <div class="admin-grid" style="margin-top:20px">
-        <div class="card">
-          <div class="section-title">🏷️ 항목(카테고리) 관리</div>
-          <div id="cat-list"></div>
-          <div class="cat-add-row">
-            <input id="cat-input" type="text" placeholder="새 항목 이름 (예: 문학, 독서, 내신)" onkeydown="if(event.key==='Enter')addCategory()">
-            <button class="btn-cat-add" onclick="addCategory()">➕ 추가</button>
-          </div>
-        </div>
+      <div class="admin-grid" style="margin-top:20px; grid-template-columns: 1fr;">
         <div class="card">
           <div class="section-title">👥 학생별 숙제 달성 현황</div>
           <table class="student-stat-table">
@@ -1043,22 +1020,37 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
                 <option value="">— 그룹 선택 —</option>
               </select>
             </div>
-            <div class="form-row"><label>교재/단원명/페이지 (최대 5개)</label>
-              <div id="prog-topic-inputs" style="display:flex; flex-direction:column; gap:4px">
-                <input id="prog-topic-1" type="text" placeholder="예) 수학의 정석 1단원 10~20p">
-                <input id="prog-topic-2" type="text" placeholder="추가 항목 2">
-                <input id="prog-topic-3" type="text" placeholder="추가 항목 3">
-                <input id="prog-topic-4" type="text" placeholder="추가 항목 4">
-                <input id="prog-topic-5" type="text" placeholder="추가 항목 5">
-              </div>
+            <div class="form-row"><label>수업 일자 (숙제 등록일)</label>
+              <input id="prog-target-date" type="date" onchange="autoSetProgressDue()">
+            </div>
+            <div class="form-row"><label>숙제 마감일 (자동: 수업일 + 7일)</label>
+              <input id="prog-hw-due" type="date">
             </div>
           </div>
           <div>
-            <div class="form-row"><label>수업 일자</label>
-              <input id="prog-target-date" type="date">
-            </div>
-            <div class="form-row"><label>총 페이지/문항 수</label>
-              <input id="prog-total-pages" type="number" placeholder="예) 50">
+            <div class="form-row"><label>진도 항목 및 해당 숙제 내용 (최대 5개)</label>
+              <div id="prog-topic-inputs" style="display:flex; flex-direction:column; gap:4px">
+                <div style="display:flex; gap:4px">
+                  <input id="prog-topic-1" type="text" style="flex:1" placeholder="진도: 예) 수학의 정석 1단원">
+                  <input id="prog-hw-title-1" type="text" style="flex:1" placeholder="숙제(선택): 1단원 문제풀기">
+                </div>
+                <div style="display:flex; gap:4px">
+                  <input id="prog-topic-2" type="text" style="flex:1" placeholder="진도 추가 2">
+                  <input id="prog-hw-title-2" type="text" style="flex:1" placeholder="숙제 2">
+                </div>
+                <div style="display:flex; gap:4px">
+                  <input id="prog-topic-3" type="text" style="flex:1" placeholder="진도 추가 3">
+                  <input id="prog-hw-title-3" type="text" style="flex:1" placeholder="숙제 3">
+                </div>
+                <div style="display:flex; gap:4px">
+                  <input id="prog-topic-4" type="text" style="flex:1" placeholder="진도 추가 4">
+                  <input id="prog-hw-title-4" type="text" style="flex:1" placeholder="숙제 4">
+                </div>
+                <div style="display:flex; gap:4px">
+                  <input id="prog-topic-5" type="text" style="flex:1" placeholder="진도 추가 5">
+                  <input id="prog-hw-title-5" type="text" style="flex:1" placeholder="숙제 5">
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1327,25 +1319,24 @@ function renderDashboard(who) {
   const hwListId = isStudent ? 's-dashboard-hw-list' : 'a-dashboard-hw-list';
   const listEl = document.getElementById(hwListId);
   const hws = getHomeworks();
-  const cats = getCategories();
+  const studentGroups = getStudentGroups();
   const comps = getCompletions();
   const classes = getClasses().filter(c => c.type === 'regular');
   const users = getUsers();
   
   const today = new Date();
   today.setHours(0,0,0,0);
-  const sixDaysLater = new Date(today);
-  sixDaysLater.setDate(today.getDate() + 6);
   
-  // Filter homeworks within range
+  // Filter homeworks within range: due today or in the future
   const filteredHws = hws.filter(h => {
     if (!h.dueDate) return false;
     // Parse YYYY-MM-DD as local date
     const parts = h.dueDate.split('-');
     const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
     dueDate.setHours(0,0,0,0);
-    const isWithinRange = dueDate >= today && dueDate <= sixDaysLater;
-    if (!isWithinRange) return false;
+    
+    const isUpcoming = dueDate >= today;
+    if (!isUpcoming) return false;
     
     if (isStudent) {
       const isAssigned = h.assignedTo.includes(currentUser.id);
@@ -1356,21 +1347,17 @@ function renderDashboard(who) {
   });
 
   if (filteredHws.length === 0) {
-    listEl.innerHTML = '<div class="empty-state">🎉 이번 주 예정된 숙제가 없습니다.</div>';
+    listEl.innerHTML = '<div class="empty-state">🎉 예정된 숙제가 없습니다.</div>';
     return;
   }
 
-  // Use buildGroups to group them by category
-  const groups = buildGroups(filteredHws, cats);
+  const hwGroups = buildGroups(filteredHws, studentGroups);
 
-  listEl.innerHTML = groups.map(g => {
-    // Find a related regular class name for this category
+  listEl.innerHTML = hwGroups.map(g => {
     const relatedClass = classes.find(c => c.title.includes(g.label) || g.label.includes(c.title));
     const displayLabel = relatedClass ? relatedClass.title : g.label;
     
-    // Group header style (copying logic from renderAdminHWList)
-    const studentGroups = getStudentGroups();
-    const matchedGrp = studentGroups.find(sg => g.label.includes(sg.name) || sg.name.includes(g.label));
+    const matchedGrp = studentGroups.find(sg => sg.id === g.catId);
     const matchedGi = matchedGrp ? studentGroups.indexOf(matchedGrp) : -1;
     const gc = matchedGrp ? GROUP_COLORS[matchedGi % GROUP_COLORS.length] : null;
     const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
@@ -1433,6 +1420,10 @@ function renderDashboardProgress() {
   const comps = getProgressCompletions();
   const groups = getStudentGroups();
   const students = getUsers().filter(u => u.role === 'student');
+  const hws = getHomeworks();
+  const hwComps = getCompletions();
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
   if (!groups.length || !topics.length) {
     el.innerHTML = '<div class="empty-state">최근 등록된 수업 진도가 없습니다.</div>';
@@ -1499,6 +1490,42 @@ function renderDashboardProgress() {
       headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 날짜 미지정</span>`;
     }
 
+    const homeworkRows = sessionTopics.map(t => {
+      if(!t.hwId) return '';
+      const h = hws.find(x => x.id === t.hwId);
+      if(!h) return '';
+      
+      const doneCount = hwComps.filter(c => c.homeworkId === h.id).length;
+      const hwTotal = h.assignedTo.length;
+      const pct = hwTotal ? Math.round(doneCount / hwTotal * 100) : 0;
+      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+      
+      let diffStr = '';
+      if(h.dueDate) {
+        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
+        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+        const color = diff < 0 ? 'var(--danger)' : diff <= 2 ? 'var(--danger)' : 'var(--text-muted)';
+        diffStr = `<span style="color:${color};font-weight:700">(D${diff>=0 ? '-'+diff : '+'+Math.abs(diff)})</span>`;
+      } else {
+        diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
+      }
+
+      return `
+        <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
+          <div class="admin-hw-info">
+            <div class="admin-hw-title" style="font-size:13px">📄 ${h.title}</div>
+            <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
     const topicRows = sessionTopics.map(t => {
       const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
       const topicTotal = members.length;
@@ -1558,17 +1585,26 @@ function renderDashboardProgress() {
           <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
         </div>
       </div>
-      <div class="prog-topic-list" style="padding:12px 14px">${topicRows}</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff; align-items:start">
+        <div class="prog-topic-list-col">
+          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📖 진도 항목</div>
+          ${topicRows}
+        </div>
+        <div class="prog-hw-list-col">
+          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📚 해당 수업 숙제</div>
+          ${homeworkRows || '<div style="font-size:12px; color:var(--text-muted); padding:10px">등록된 숙제가 없습니다.</div>'}
+        </div>
+      </div>
     </div>`;
   }).join('');
 
-  el.innerHTML = cardsHtml;
+  el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
 function renderStudentHomework(){
   const hws=getHomeworks().filter(h=>h.assignedTo.includes(currentUser.id));
-  const cats=getCategories();
+  const studentGroups=getStudentGroups();
   const comps=getCompletions();
   const isDone=id=>comps.some(c=>c.homeworkId===id&&c.studentId===currentUser.id);
   const total=hws.length, done=hws.filter(h=>isDone(h.id)).length, pct=total?Math.round(done/total*100):0;
@@ -1585,9 +1621,9 @@ function renderStudentHomework(){
       <div class="stat-detail">숙제 완료</div></div>`;
   const list=document.getElementById('s-hw-list');
   if(!hws.length){list.innerHTML='<div class="empty-state"><div class="ei">🎉</div><div>배정된 숙제가 없습니다</div></div>';return;}
-  // group by category
-  const groups=buildGroups(hws,cats);
-  list.innerHTML=groups.map(g=>{
+  
+  const hwGroups=buildGroups(hws,studentGroups);
+  list.innerHTML=hwGroups.map(g=>{
     const header=`<div class="cat-group-header">🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
     const items=g.items.map(h=>{
       const d=isDone(h.id);
@@ -1685,48 +1721,15 @@ function renderStatsForStudent(sid,cid,period){
 }
 
 // ── CATEGORY HELPERS ─────────────────────────────────────
-function buildGroups(hws,cats){
-  const groups=[];
-  cats.forEach(c=>{
+function buildGroups(hws,groups){
+  const res=[];
+  groups.forEach(c=>{
     const items=hws.filter(h=>h.categoryId===c.id);
-    if(items.length)groups.push({label:c.name,catId:c.id,items});
+    if(items.length)res.push({label:c.name,catId:c.id,items});
   });
-  const uncatItems=hws.filter(h=>!h.categoryId||!cats.find(c=>c.id===h.categoryId));
-  if(uncatItems.length)groups.push({label:'미분류',catId:null,items:uncatItems});
-  return groups;
-}
-function renderCatList(){
-  const cats=getCategories();
-  const el=document.getElementById('cat-list');
-  if(!cats.length){el.innerHTML='<div style="font-size:13px;color:var(--text-muted);padding:8px 0">등록된 항목이 없습니다.</div>';}
-  else el.innerHTML=cats.map(c=>`<div class="cat-manage-item"><span>🏷️ ${c.name}</span><button class="btn-del" onclick="deleteCategory('${c.id}')">삭제</button></div>`).join('');
-  // update select
-  const sel=document.getElementById('hw-category');
-  sel.innerHTML='<option value="">— 항목 없음 —</option>'+cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-}
-function addCategory(){
-  const inp=document.getElementById('cat-input');
-  const name=inp.value.trim();
-  if(!name){showToast('항목 이름을 입력하세요.','warn');return;}
-  const cats=getCategories();
-  if(cats.find(c=>c.name===name)){showToast('이미 존재하는 항목입니다.','warn');return;}
-  cats.push({id:'cat'+Date.now(),name});
-  saveCategories(cats);inp.value='';
-  renderCatList();showToast(`✅ "${name}" 항목이 추가되었습니다!`);
-}
-function deleteCategory(id){
-  const cats=getCategories();
-  const cat=cats.find(c=>c.id===id);
-  if(!cat) return;
-  if(!confirm(`"${cat.name}" 항목을 삭제하시겠습니까?\n삭제 시 해당 항목으로 연결된 모든 숙제는 '미분류' 상태가 됩니다.`)) return;
-
-  const newCats=cats.filter(c=>c.id!==id);
-  saveCategories(newCats);
-  // unlink homeworks in this category
-  const hws=getHomeworks().map(h=>h.categoryId===id?{...h,categoryId:''}:h);
-  saveHomeworks(hws);
-  renderCatList();renderAdminHWList();
-  showToast('항목이 삭제되었습니다.');
+  const uncatItems=hws.filter(h=>!h.categoryId||!groups.find(c=>c.id===h.categoryId));
+  if(uncatItems.length)res.push({label:'대상그룹 없음',catId:null,items:uncatItems});
+  return res;
 }
 // ── STUDENT GROUP MANAGEMENT ──────────────────────────────
 function getStudentGroupOf(sid){
@@ -1791,7 +1794,6 @@ function removeFromGroup(gId,sId){
 }
 function renderAdminManage(){
   const groups=getStudentGroups();
-  // group filter tabs
   const tabEl=document.getElementById('student-group-tabs');
   tabEl.innerHTML=`<button class="sftab active" onclick="filterStudentChecks('',this)">전체</button>`
     +groups.map(g=>`<button class="sftab" onclick="filterStudentChecks('${g.id}',this)">${g.name}</button>`).join('');
@@ -1801,7 +1803,10 @@ function renderAdminManage(){
   document.getElementById('hw-created').value=today;
   document.getElementById('hw-due').value=nextWeek;
   document.getElementById('new-student-entered').value=today;
-  renderCatList();
+
+  const sel=document.getElementById('hw-category');
+  if(sel) sel.innerHTML='<option value="">— 대상그룹 없음 —</option>'+groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+
   renderAdminHWList();
   renderAdminStudents();
 }
@@ -1835,13 +1840,12 @@ function filterStudentChecks(groupId,btn){
   renderStudentChecks(groupId);
 }
 function renderAdminHWList(){
-  const hws=getHomeworks(),users=getUsers(),cats=getCategories(),el=document.getElementById('admin-hw-list');
+  const hws=getHomeworks(),users=getUsers(),studentGroups=getStudentGroups(),el=document.getElementById('admin-hw-list');
   if(!hws.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';return;}
-  const groups=buildGroups(hws,cats).map(g=>({...g,items:g.items.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))}));
-  const studentGroups=getStudentGroups();
-  el.innerHTML=groups.map(g=>{
-    // 카테고리 라벨과 학생 그룹 이름 비교 (서로 포함 여부)
-    const matchedGrp=studentGroups.find((sg,i)=>g.label.includes(sg.name)||sg.name.includes(g.label));
+  const hwGroups=buildGroups(hws,studentGroups).map(g=>({...g,items:g.items.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))}));
+  
+  el.innerHTML=hwGroups.map(g=>{
+    const matchedGrp=studentGroups.find(sg=>sg.id===g.catId);
     const matchedGi=matchedGrp?studentGroups.indexOf(matchedGrp):-1;
     const gc=matchedGrp?GROUP_COLORS[matchedGi%GROUP_COLORS.length]:null;
     const headerStyle=gc?`style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"`:'';
@@ -1869,13 +1873,8 @@ function renderAdminHWList(){
     return header+items;
   }).join('');
 }
-function handleCategoryChange(catId){
-  if(!catId) return;
-  const cats = getCategories();
-  const cat = cats.find(c => c.id === catId);
-  if(!cat) return;
-
-  // 1. 전체 학생 목록으로 리셋 및 기존 체크 해제
+function handleCategoryChange(groupId){
+  if(!groupId) return;
   const allTab = document.querySelector('#student-group-tabs .sftab');
   if (allTab) filterStudentChecks('', allTab);
   
@@ -1883,39 +1882,10 @@ function handleCategoryChange(catId){
   checkboxes.forEach(chk => chk.checked = false);
 
   const groups = getStudentGroups();
-  const matchedGroupIds = [];
-  const catName = cat.name;
+  const group = groups.find(g => g.id === groupId);
+  if(!group || !group.studentIds) return;
 
-  groups.forEach(g => {
-    // 그룹명에서 의미 있는 키워드 추출 (2글자 이상)
-    const grpKeywords = g.name.split(/\s+/).filter(k => k.length >= 2);
-    
-    if (grpKeywords.length === 0) {
-      // 그룹명이 매우 짧은 경우 직접 포함 여부 확인
-      if (catName.includes(g.name) || g.name.includes(catName)) {
-        matchedGroupIds.push(g.id);
-      }
-    } else {
-      // 그룹의 "모든" 키워드가 항목 이름에 포함되어 있는지 확인 (Stricter Matching)
-      // 예: 항목명이 "경동고 1학년 숙제"이고 그룹이 "경동고 1학년"이면 매칭 성공
-      const allGrpKeywordsInCat = grpKeywords.every(gk => catName.includes(gk));
-      if (allGrpKeywordsInCat) {
-        matchedGroupIds.push(g.id);
-      }
-    }
-  });
-
-  if (matchedGroupIds.length === 0) return;
-
-  // 2. 해당 그룹 학생들 체크
-  const targetStudentIds = new Set();
-  matchedGroupIds.forEach(gid => {
-    const g = groups.find(group => group.id === gid);
-    if (g && g.studentIds) {
-      g.studentIds.forEach(sid => targetStudentIds.add(sid));
-    }
-  });
-
+  const targetStudentIds = new Set(group.studentIds);
   let count = 0;
   checkboxes.forEach(chk => {
     if (targetStudentIds.has(chk.value)) {
@@ -1925,42 +1895,23 @@ function handleCategoryChange(catId){
   });
 
   if (count > 0) {
-    showToast(`✨ 매칭되는 그룹 학생 ${count}명을 자동으로 선택했습니다.`);
+    showToast(`✨ 해당 그룹 학생 ${count}명을 자동으로 선택했습니다.`);
   }
 }
-function addHomework(){
-  const title=document.getElementById('hw-title').value.trim();
-  const categoryId=document.getElementById('hw-category').value;
-  const created=document.getElementById('hw-created').value;
-  const due=document.getElementById('hw-due').value;
-  const checked=[...document.querySelectorAll('.student-hw-chk:checked')].map(c=>c.value);
-  if(!title){showToast('숙제 제목을 입력하세요.','warn');return;}
-  if(!created){showToast('등록일을 선택하세요.','warn');return;}
-  if(!checked.length){showToast('학생을 1명 이상 선택하세요.','warn');return;}
-  const hws=getHomeworks();
-  hws.push({id:'hw'+Date.now(),title,categoryId,assignedTo:checked,dueDate:due,createdAt:created});
-  saveHomeworks(hws);
-  document.getElementById('hw-title').value='';
-  document.getElementById('hw-category').value='';
-  const today=formatDateLocal(new Date());
-  document.getElementById('hw-created').value=today;
-  document.getElementById('hw-due').value=today;
-  document.querySelectorAll('.student-hw-chk').forEach(c=>c.checked=false);
-  renderAdminHWList();showToast('✅ 숙제가 추가되었습니다!');
-}
+// addHomework function removed because it is merged into addProgressTopic
 // ── HW STUDENT MODAL ─────────────────────────────────────
 function openHWStudentModal(hwId){
   const hw=getHomeworks().find(h=>h.id===hwId);
   if(!hw)return;
   const users=getUsers();
   const comps=getCompletions();
-  const cats=getCategories();
-  const cat=cats.find(c=>c.id===hw.categoryId);
+  const groups=getStudentGroups();
+  const grp=groups.find(c=>c.id===hw.categoryId);
   const done=comps.filter(c=>c.homeworkId===hwId).length;
   const total=hw.assignedTo.length;
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('hw-modal-title').textContent='📄 '+hw.title;
-  document.getElementById('hw-modal-sub').textContent=(cat?'['+cat.name+'] ':'')+' 등록: '+hw.createdAt+' · 마감: '+(hw.dueDate||'미정');
+  document.getElementById('hw-modal-sub').textContent=(grp?'['+grp.name+'] ':'')+' 등록: '+hw.createdAt+' · 마감: '+(hw.dueDate||'미정');
   document.getElementById('hw-modal-summary').innerHTML=`
     <div class="msummary-card"><div class="msummary-label">달성률</div><div class="msummary-val">${pct}%</div></div>
     <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none;font-size:22px;font-weight:900">${done}</div></div>
@@ -3217,6 +3168,15 @@ const saveProgressCompletions = d => localStorage.setItem('hwapp_progress_comple
 
 let currentProgressFilter = '';
 
+function autoSetProgressDue() {
+  const targetDateVal = document.getElementById('prog-target-date').value;
+  if(!targetDateVal) return;
+  const d = new Date(targetDateVal);
+  d.setDate(d.getDate() + 7);
+  const dueEl = document.getElementById('prog-hw-due');
+  if(dueEl) dueEl.value = formatDateLocal(d);
+}
+
 function renderProgressPanel() {
   const groups = getStudentGroups();
   const sel = document.getElementById('prog-group');
@@ -3225,6 +3185,7 @@ function renderProgressPanel() {
   
   const targetDate = new Date();
   document.getElementById('prog-target-date').value = formatDateLocal(targetDate);
+  autoSetProgressDue();
 
   const tabEl = document.getElementById('prog-filter-tabs');
   tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
@@ -3242,44 +3203,71 @@ function filterProgress(groupId, btn) {
 
 function addProgressTopic() {
   const groupId = document.getElementById('prog-group').value;
-  const totalPages = parseInt(document.getElementById('prog-total-pages').value) || 0;
   const targetDate = document.getElementById('prog-target-date').value;
+  const hwDue = document.getElementById('prog-hw-due').value;
   
   if (!groupId) { showToast('대상 그룹을 선택하세요.', 'warn'); return; }
   
-  const topicValues = [];
+  const entries = [];
   for (let i = 1; i <= 5; i++) {
     const val = document.getElementById('prog-topic-' + i).value.trim();
-    if (val) topicValues.push(val);
+    const hwValEl = document.getElementById('prog-hw-title-' + i);
+    const hwVal = hwValEl ? hwValEl.value.trim() : '';
+    if (val) entries.push({ topic: val, hwTitle: hwVal });
   }
 
-  if (topicValues.length === 0) {
-    showToast('교재/단원명/페이지를 최소 하나는 입력해야 합니다.', 'warn');
+  if (entries.length === 0) {
+    showToast('진도 항목을 최소 하나는 입력해야 합니다.', 'warn');
     return;
   }
   
   let topics = getProgressTopics();
+  let hws = getHomeworks();
+  const groups = getStudentGroups();
+  const group = groups.find(g => g.id === groupId);
+  const studentIds = group ? (group.studentIds || []) : [];
+
   if (editingProgressId) {
     topics = topics.map(t => t.id === editingProgressId ? {
-      ...t, groupId, topic: topicValues[0], totalPages, targetDate
+      ...t, groupId, topic: entries[0].topic, targetDate
     } : t);
-    showToast('✅ 진도 항목이 수정되었습니다.');
+    
+    const oldTopic = getProgressTopics().find(t => t.id === editingProgressId);
+    if(oldTopic && oldTopic.hwId) {
+       hws = hws.map(h => h.id === oldTopic.hwId ? {
+         ...h, title: entries[0].hwTitle || entries[0].topic, categoryId: groupId, dueDate: hwDue, createdAt: targetDate
+       } : h);
+       saveHomeworks(hws);
+    }
+    showToast('✅ 진도 항목 및 연동 숙제가 수정되었습니다.');
   } else {
-    topicValues.forEach(val => {
+    entries.forEach(entry => {
+      const topicId = 'prog' + Date.now() + Math.random().toString(36).substr(2, 5);
+      const hwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
       topics.push({
-        id: 'prog' + Date.now() + Math.random().toString(36).substr(2, 5),
+        id: topicId,
         groupId,
-        topic: val,
-        totalPages,
+        topic: entry.topic,
         targetDate,
-        createdAt: formatDateLocal(new Date())
+        createdAt: formatDateLocal(new Date()),
+        hwId: hwId
+      });
+      hws.push({
+        id: hwId,
+        title: entry.hwTitle || entry.topic,
+        categoryId: groupId,
+        assignedTo: studentIds,
+        dueDate: hwDue,
+        createdAt: targetDate
       });
     });
-    showToast(`✅ ${topicValues.length}개의 진도 항목이 추가되었습니다!`);
+    saveHomeworks(hws);
+    showToast(`✅ ${entries.length}개의 진도 항목과 자동 숙제가 추가되었습니다!`);
   }
   saveProgressTopics(topics);
   cancelProgressEdit();
   renderProgressContent();
+  renderAdminHWList();
 }
 
 function editProgressTopic(id) {
@@ -3290,14 +3278,25 @@ function editProgressTopic(id) {
   editingProgressId = id;
   document.getElementById('prog-group').value = t.groupId;
   
-  for (let i = 1; i <= 5; i++) document.getElementById('prog-topic-' + i).value = '';
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('prog-topic-' + i).value = '';
+    const hwTitleEl = document.getElementById('prog-hw-title-' + i);
+    if(hwTitleEl) hwTitleEl.value = '';
+  }
   document.getElementById('prog-topic-1').value = t.topic;
   
-  document.getElementById('prog-total-pages').value = t.totalPages || '';
   document.getElementById('prog-target-date').value = t.targetDate;
   
+  const hws = getHomeworks();
+  const linkedHw = hws.find(h => h.id === t.hwId);
+  const dueEl = document.getElementById('prog-hw-due');
+  if(dueEl) dueEl.value = linkedHw && linkedHw.dueDate ? linkedHw.dueDate : '';
+  
+  const titleElInput1 = document.getElementById('prog-hw-title-1');
+  if(titleElInput1) titleElInput1.value = linkedHw && linkedHw.title && linkedHw.title !== t.topic ? linkedHw.title : '';
+  
   const titleEl = document.getElementById('prog-form-title');
-  titleEl.innerText = '✏️ 진도 항목 수정';
+  titleEl.innerText = '✏️ 진도 항목 및 연동 숙제 수정';
   titleEl.style.color = 'var(--danger)';
   document.getElementById('btn-prog-submit').innerText = '수정 완료';
   document.getElementById('btn-prog-submit').style.background = 'var(--danger)';
@@ -3309,9 +3308,14 @@ function editProgressTopic(id) {
 function cancelProgressEdit() {
   editingProgressId = null;
   document.getElementById('prog-group').value = '';
-  for (let i = 1; i <= 5; i++) document.getElementById('prog-topic-' + i).value = '';
-  document.getElementById('prog-total-pages').value = '';
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('prog-topic-' + i).value = '';
+    const hwTitleEl = document.getElementById('prog-hw-title-' + i);
+    if(hwTitleEl) hwTitleEl.value = '';
+  }
   document.getElementById('prog-target-date').value = formatDateLocal(new Date());
+  
+  autoSetProgressDue();
   
   const titleEl = document.getElementById('prog-form-title');
   titleEl.innerText = '➕ 진도 항목 추가';
@@ -3325,12 +3329,18 @@ function deleteProgressTopic(id) {
   const topics = getProgressTopics();
   const topic = topics.find(t => t.id === id);
   if (!topic) return;
-  if (!confirm(`"${topic.topic}" 진도 항목을 삭제하시겠습니까?\n해당 항목의 모든 완료 기록도 삭제됩니다.`)) return;
+  if (!confirm(`"${topic.topic}" 진도 항목을 삭제하시겠습니까?\n해당 항목의 모든 진행 및 자동으로 생성된 숙제 기록도 함께 삭제됩니다.`)) return;
   
+  if (topic.hwId) {
+    saveHomeworks(getHomeworks().filter(h => h.id !== topic.hwId));
+    saveCompletions(getCompletions().filter(c => c.homeworkId !== topic.hwId));
+  }
+
   saveProgressTopics(topics.filter(t => t.id !== id));
   saveProgressCompletions(getProgressCompletions().filter(c => c.topicId !== id));
   renderProgressContent();
-  showToast('진도 항목이 삭제되었습니다.');
+  renderAdminHWList();
+  showToast('진도 항목 및 자동 생성된 숙제가 삭제되었습니다.');
 }
 
 function toggleProgressCompletion(topicId, studentId, isDone) {
@@ -3360,6 +3370,10 @@ function renderProgressContent() {
   const groups = getStudentGroups();
   const students = getUsers().filter(u => u.role === 'student');
   const el = document.getElementById('progress-content');
+  const hws = getHomeworks();
+  const hwComps = getCompletions();
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
   const filteredGroups = currentProgressFilter
     ? groups.filter(g => g.id === currentProgressFilter)
@@ -3426,6 +3440,42 @@ function renderProgressContent() {
       headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 날짜 미지정</span>`;
     }
 
+    const homeworkRows = sessionTopics.map(t => {
+      if(!t.hwId) return '';
+      const h = hws.find(x => x.id === t.hwId);
+      if(!h) return '';
+      
+      const doneCount = hwComps.filter(c => c.homeworkId === h.id).length;
+      const hwTotal = h.assignedTo.length;
+      const pct = hwTotal ? Math.round(doneCount / hwTotal * 100) : 0;
+      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+      
+      let diffStr = '';
+      if(h.dueDate) {
+        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
+        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+        const color = diff < 0 ? 'var(--danger)' : diff <= 2 ? 'var(--danger)' : 'var(--text-muted)';
+        diffStr = `<span style="color:${color};font-weight:700">(D${diff>=0 ? '-'+diff : '+'+Math.abs(diff)})</span>`;
+      } else {
+        diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
+      }
+
+      return `
+        <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
+          <div class="admin-hw-info">
+            <div class="admin-hw-title" style="font-size:13px">📄 ${h.title}</div>
+            <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
     const topicRows = sessionTopics.map(t => {
       const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
       const topicTotal = members.length;
@@ -3446,8 +3496,7 @@ function renderProgressContent() {
         <div class="prog-topic-info">
           <div class="prog-topic-title">📖 ${t.topic}</div>
           <div class="prog-topic-meta">
-            ${t.totalPages ? t.totalPages + '페이지' : ''}
-            · 등록: ${t.createdAt}
+            등록: ${t.createdAt}
           </div>
         </div>
         <div class="prog-topic-bar"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
@@ -3484,11 +3533,20 @@ function renderProgressContent() {
           <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
         </div>
       </div>
-      <div class="prog-topic-list" style="padding:12px 14px">${topicRows}</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff; align-items:start">
+        <div class="prog-topic-list-col">
+          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📖 진도 항목</div>
+          ${topicRows}
+        </div>
+        <div class="prog-hw-list-col">
+          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📚 해당 수업 숙제</div>
+          ${homeworkRows || '<div style="font-size:12px; color:var(--text-muted); padding:10px">등록된 숙제가 없습니다.</div>'}
+        </div>
+      </div>
     </div>`;
   }).join('');
 
-  el.innerHTML = `<div class="progress-mgmt-grid">${cardsHtml}</div>`;
+  el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
 }
 </script>
 </body>
