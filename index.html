@@ -891,14 +891,33 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           </div>
         </div>
         <div class="payment-sum-card" id="payment-summary-widget">
-          <div class="payment-sum-header">💳 전체 수금 현황</div>
+          <div class="payment-sum-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>💳 전체 수금 현황</div>
+            <div style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:12px;">
+              <div style="display:flex; align-items:center; background:#fff; border:1px solid var(--border); border-radius:6px; overflow:hidden; font-weight:normal">
+                <button onclick="shiftStudentMonth(-1)" style="border:none; border-right:1px solid var(--border); background:#f8fafc; padding:4px 8px; cursor:pointer; color:var(--text-muted); font-size:12px" title="이전 달">◀</button>
+                <input type="month" id="summary-month-filter" style="padding:4px 8px; border:none; font-family:inherit; outline:none; font-weight:normal; color:#333;" onchange="changeStudentMonth(this.value)">
+                <button onclick="shiftStudentMonth(1)" style="border:none; border-left:1px solid var(--border); background:#f8fafc; padding:4px 8px; cursor:pointer; color:var(--text-muted); font-size:12px" title="다음 달">▶</button>
+              </div>
+            </div>
+          </div>
           <div id="payment-summary-content">
             <!-- Dynamic Content -->
           </div>
         </div>
       </div>
       <div class="card" style="margin-top:20px">
-        <div class="section-title">📋 전체 학생 현황 <span style="font-weight:normal; font-size:12px; color:var(--text-muted); margin-left:10px;">(모든 등록 정보 포함)</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="section-title" style="margin-bottom:0">📋 전체 학생 현황 <span style="font-weight:normal; font-size:12px; color:var(--text-muted); margin-left:10px;">(모든 등록 정보 포함)</span></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 내역 기준월:</label>
+            <div style="display:flex; align-items:center; background:#fff; border:1px solid var(--border); border-radius:6px; overflow:hidden">
+              <button onclick="shiftStudentMonth(-1)" style="border:none; border-right:1px solid var(--border); background:#f8fafc; padding:4px 8px; cursor:pointer; color:var(--text-muted); font-size:12px" title="이전 달">◀</button>
+              <input type="month" id="student-month-filter" style="padding:4px 8px; border:none; font-family:inherit; outline:none;" onchange="changeStudentMonth(this.value)">
+              <button onclick="shiftStudentMonth(1)" style="border:none; border-left:1px solid var(--border); background:#f8fafc; padding:4px 8px; cursor:pointer; color:var(--text-muted); font-size:12px" title="다음 달">▶</button>
+            </div>
+          </div>
+        </div>
         <div style="overflow-x:auto">
           <table class="student-stat-table" style="min-width:1000px">
             <thead>
@@ -1102,6 +1121,85 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="modal-summary" id="hw-modal-summary"></div>
       <div class="hw-modal-prog"><div class="hw-modal-prog-bar" id="hw-modal-prog-bar"></div></div>
       <div id="hw-modal-student-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS EDIT MODAL -->
+<div class="modal-overlay" id="progEditModal" onclick="closeProgEditModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="prog-edit-title">✏️ 진도 및 숙제 수정</div>
+        <div class="modal-sub">항목의 상세 내용을 수정합니다.</div>
+      </div>
+      <button class="modal-close" onclick="closeProgEditModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><label>대상 반(그룹)</label>
+        <select id="edit-prog-group" disabled style="background:#f1f5f9; cursor:not-allowed"></select>
+      </div>
+      <div class="form-row"><label>수업 일자</label><input id="edit-prog-target-date" type="date"></div>
+      <div class="form-row"><label>진도 항목</label><input id="edit-prog-topic" type="text" placeholder="예: 수학의 정석 1단원"></div>
+      
+      <div style="margin:20px 0; padding:15px; background:#f8fafc; border-radius:12px; border:1px solid var(--border)">
+        <div style="font-size:13px; font-weight:700; color:var(--primary); margin-bottom:10px">📚 연동 숙제 정보</div>
+        <div class="form-row"><label>숙제 제목 (입력 시 자동 생성/수정)</label>
+          <input id="edit-prog-hw-title" type="text" placeholder="예: 1단원 연습문제 풀이">
+        </div>
+        <div class="form-row"><label>숙제 마감일</label><input id="edit-prog-hw-due" type="date"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px">
+        <button class="btn-add" id="btn-prog-edit-submit" style="flex:2" onclick="submitProgEdit()">수정 완료</button>
+        <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeProgEditModalDirect()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT EDIT MODAL -->
+<div class="modal-overlay" id="studentEditModal" onclick="closeStudentEditModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="student-edit-title">✏️ 학생 정보 수정</div>
+        <div class="modal-sub">학생의 기본 정보와 학원비 납부 상태를 수정합니다.</div>
+      </div>
+      <button class="modal-close" onclick="closeStudentEditModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" style="padding-top:10px">
+      <div class="form-row"><label>학생 이름</label><input id="edit-popup-student-name" type="text" placeholder="예) 홍길동"></div>
+      <div class="form-row"><label>접속 아이디</label>
+        <input id="edit-popup-student-id" type="text" readonly style="background:#f1f5f9; cursor:not-allowed">
+      </div>
+      <div class="form-row"><label>비밀번호 (변경 시에만 입력)</label><input id="edit-popup-student-pw" type="password" placeholder="새 비밀번호 입력"></div>
+      <div class="form-row"><label>비밀번호 확인</label><input id="edit-popup-student-pw2" type="password" placeholder="새 비밀번호 재입력"></div>
+      <div class="form-row"><label>학부모 HP</label><input id="edit-popup-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
+      <div class="form-row"><label>학생 HP</label><input id="edit-popup-student-hp" type="text" placeholder="예) 010-9876-5432"></div>
+      <div class="form-row"><label>과목 (복수 선택 가능)</label>
+        <div id="edit-popup-subject-wrap" class="subject-chip-group">
+          <!-- JS will populate -->
+        </div>
+      </div>
+      <div class="form-row"><label>학원비 (원)</label><input id="edit-popup-student-fee" type="number" placeholder="예) 300000"></div>
+      
+      <div class="payment-toggle-row" id="edit-popup-payment-toggle-container" onclick="document.getElementById('edit-popup-student-ispaid').click()">
+        <div class="payment-toggle-label">💰 학원비 수금 완료</div>
+        <input id="edit-popup-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.classList.toggle('active', this.checked)">
+      </div>
+
+      <div class="form-row"><label>소속 그룹 (선택)</label>
+        <select id="edit-popup-student-group" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
+          <option value="">— 그룹 없음 —</option>
+        </select>
+      </div>
+      <div class="form-row"><label>입학 날짜</label><input id="edit-popup-student-entered" type="date"></div>
+
+      <div style="display:flex; gap:10px; margin-top:20px">
+        <button class="btn-add" id="btn-edit-popup-submit" style="flex:2" onclick="submitStudentEditModal()">수정 완료</button>
+        <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeStudentEditModalDirect()">취소</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2219,7 +2317,8 @@ function addStudent(){
       users[sIdx].studentHp = studentHp;
       users[sIdx].subject = subject;
       users[sIdx].fee = fee;
-      users[sIdx].isPaid = isPaid;
+      if (!users[sIdx].payments) users[sIdx].payments = {};
+      users[sIdx].payments[currentPaymentMonth] = isPaid;
       users[sIdx].enteredAt = entered;
       localStorage.setItem('hwapp_users', JSON.stringify(users));
 
@@ -2242,7 +2341,7 @@ function addStudent(){
     const newId='student'+Date.now();
     const finalId = loginId || newId; // Fallback to auto-gen ID if loginId missing
     const finalPw = pw || '1234'; // Default password if missing
-    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, isPaid});
+    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, payments: { [currentPaymentMonth]: isPaid }});
     localStorage.setItem('hwapp_users',JSON.stringify(users));
 
     if(groupId){
@@ -2335,12 +2434,12 @@ function restoreStudent(id,name){
 function renderPaymentSummary() {
   const students = getUsers().filter(u => u.role === 'student');
   const total = students.length;
-  const paidStudents = students.filter(s => s.isPaid);
+  const paidStudents = students.filter(s => isPaidForMonth(s, currentPaymentMonth));
   const paidCount = paidStudents.length;
   const pendingCount = total - paidCount;
   const pct = total ? Math.round((paidCount / total) * 100) : 0;
   
-  const pendingStudents = students.filter(s => !s.isPaid && s.fee);
+  const pendingStudents = students.filter(s => !isPaidForMonth(s, currentPaymentMonth) && s.fee);
 
   // 학원 전체 수금액 계산
   let totalAcademyExpected = 0;
@@ -2355,14 +2454,15 @@ function renderPaymentSummary() {
 
   students.forEach(s => {
     const fee = parseInt(s.fee) || 0;
+    const isPaid = isPaidForMonth(s, currentPaymentMonth);
     totalAcademyExpected += fee;
-    if (s.isPaid) totalAcademyCollected += fee;
+    if (isPaid) totalAcademyCollected += fee;
 
     const sSubjs = (s.subject || '').split(',').filter(x => x);
     sSubjs.forEach(sub => {
       if (subjStats[sub]) {
         subjStats[sub].expected += fee;
-        if (s.isPaid) subjStats[sub].collected += fee;
+        if (isPaid) subjStats[sub].collected += fee;
       }
     });
   });
@@ -2452,11 +2552,11 @@ function renderPaymentSummary() {
             <span class="pay-detail-val">${totalAcademyExpected.toLocaleString()}원</span>
           </div>
           <div class="pay-detail-row">
-            <span class="pay-detail-label">현재 실수령액</span>
-            <span class="pay-detail-val" style="color:var(--success)">${totalAcademyCollected.toLocaleString()}원</span>
+            <span class="pay-detail-label">당월 실수령액</span>
+            <span class="pay-detail-val" style="color:var(--primary)">${totalAcademyCollected.toLocaleString()}원</span>
           </div>
           <div class="pay-detail-row">
-            <span class="pay-detail-label">현재 미수령액</span>
+            <span class="pay-detail-label">당월 미수령액</span>
             <span class="pay-detail-val" style="color:var(--danger)">${(totalAcademyExpected - totalAcademyCollected).toLocaleString()}원</span>
           </div>
           <div class="progress-bar-wrap" style="height:4px; margin-top:8px; background:rgba(0,0,0,0.05)">
@@ -2467,7 +2567,7 @@ function renderPaymentSummary() {
     </div>
 
     <div class="pay-stat-pct" style="margin-top:5px">
-      <div class="pay-stat-pct-val">${pct}%</div>
+      <div class="pay-stat-pct-val">${pct}% <span style="font-size:16px; opacity:0.9; font-weight:700; margin-left:8px">(${totalAcademyCollected.toLocaleString()}원)</span></div>
       <div class="pay-stat-pct-label">최종 수납 완료율</div>
       <div class="progress-bar-wrap" style="height:6px; background:rgba(255,255,255,0.2); margin-top:10px">
         <div class="progress-bar" style="width:${pct}%; background:#fff"></div>
@@ -2507,7 +2607,7 @@ function renderDetailedStudentList() {
     const safeName = s.name.replace(/'/g, '\u2019');
 
     return `
-      <tr onclick="editStudent('${s.id}')" style="cursor:pointer">
+      <tr style="cursor:default">
         <td><div class="student-name-cell"><div class="student-avatar" style="width:24px;height:24px;font-size:11px">${initials}</div>${s.name}</div></td>
         <td style="font-size:13px;color:var(--text-muted)">${s.loginId || s.id}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
@@ -2516,18 +2616,131 @@ function renderDetailedStudentList() {
         <td style="font-size:13px;"><div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">${subjectTags}</div></td>
         <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
         <td>
-          <input type="checkbox" ${s.isPaid ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
+          <input type="checkbox" ${isPaidForMonth(s, currentPaymentMonth) ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
         </td>
         <td>${grpBadge}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt || '-'}</td>
         <td style="white-space:nowrap">
           <button class="btn-del" onclick="event.stopPropagation(); retireStudent('${s.id}','${safeName}')" style="background:#f59e0b;color:#fff;border:none">퇴원</button>
+          <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
           <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>
         </td>
       </tr>
     `;
   }).join('');
   renderPaymentSummary();
+}
+
+// ── STUDENT EDIT MODAL LOGIC ────────────────────────────────
+function openStudentEditModal(sid) {
+  const student = getUsers().find(u => u.id === sid);
+  if (!student) return;
+  editingStudentId = sid;
+
+  document.getElementById('edit-popup-student-name').value = student.name || '';
+  document.getElementById('edit-popup-student-id').value = student.loginId || student.id || '';
+  document.getElementById('edit-popup-student-pw').value = '';
+  document.getElementById('edit-popup-student-pw2').value = '';
+  document.getElementById('edit-popup-parent-hp').value = student.parentHp || '';
+  document.getElementById('edit-popup-student-hp').value = student.studentHp || '';
+  document.getElementById('edit-popup-student-fee').value = student.fee || '';
+  document.getElementById('edit-popup-student-entered').value = student.enteredAt || '';
+
+  const isMonthPaid = isPaidForMonth(student, currentPaymentMonth);
+  const isPaidCb = document.getElementById('edit-popup-student-ispaid');
+  isPaidCb.checked = isMonthPaid;
+  const toggleContainer = document.getElementById('edit-popup-payment-toggle-container');
+  if (isMonthPaid) toggleContainer.classList.add('active');
+  else toggleContainer.classList.remove('active');
+
+  // Subjects
+  const cats = getCategories();
+  const subjWrap = document.getElementById('edit-popup-subject-wrap');
+  const subjs = (student.subject || '').split(',');
+  subjWrap.innerHTML = cats.map(c => {
+    const isChecked = subjs.includes(c.name);
+    return `<label class="subject-chip ${isChecked ? 'active' : ''}"><input type="checkbox" name="edit-popup-subj" value="${c.name}" ${isChecked ? 'checked' : ''} onchange="this.parentElement.classList.toggle('active', this.checked)"> ${c.name}</label>`;
+  }).join('');
+
+  // Groups
+  const groups = getStudentGroups();
+  const grpSel = document.getElementById('edit-popup-student-group');
+  grpSel.innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  const currentGroup = groups.find(g => g.studentIds && g.studentIds.includes(sid));
+  grpSel.value = currentGroup ? currentGroup.id : '';
+
+  document.getElementById('studentEditModal').classList.add('open');
+}
+
+function closeStudentEditModal(e) {
+  if (e.target === document.getElementById('studentEditModal')) closeStudentEditModalDirect();
+}
+
+function closeStudentEditModalDirect() {
+  document.getElementById('studentEditModal').classList.remove('open');
+  editingStudentId = null;
+}
+
+function submitStudentEditModal() {
+  if (!editingStudentId) return;
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === editingStudentId);
+  if (idx === -1) return;
+  
+  const student = users[idx];
+  const pw = document.getElementById('edit-popup-student-pw').value;
+  const pw2 = document.getElementById('edit-popup-student-pw2').value;
+  
+  if (pw || pw2) {
+    if (pw !== pw2) {
+      showToast('비밀번호가 일치하지 않습니다.', 'error');
+      return;
+    }
+    student.password = pw;
+  }
+  
+  student.name = document.getElementById('edit-popup-student-name').value.trim() || student.name;
+  student.parentHp = document.getElementById('edit-popup-parent-hp').value.trim();
+  student.studentHp = document.getElementById('edit-popup-student-hp').value.trim();
+  student.fee = document.getElementById('edit-popup-student-fee').value || 0;
+  student.enteredAt = document.getElementById('edit-popup-student-entered').value;
+  
+  if (!student.payments) student.payments = {};
+  student.payments[currentPaymentMonth] = document.getElementById('edit-popup-student-ispaid').checked;
+
+  const cb = document.querySelectorAll('input[name="edit-popup-subj"]:checked');
+  student.subject = Array.from(cb).map(x => x.value).join(',');
+  
+  const newGroupId = document.getElementById('edit-popup-student-group').value;
+  const groups = getStudentGroups();
+  
+  groups.forEach(g => {
+    if (g.studentIds && g.studentIds.includes(editingStudentId)) {
+      g.studentIds = g.studentIds.filter(id => id !== editingStudentId);
+    }
+  });
+
+  if (newGroupId) {
+    const targetGroup = groups.find(g => g.id === newGroupId);
+    if (targetGroup) {
+      if (!targetGroup.studentIds) targetGroup.studentIds = [];
+      targetGroup.studentIds.push(editingStudentId);
+    }
+  }
+
+  users[idx] = student;
+  saveUsers(users);
+  saveStudentGroups(groups);
+  
+  closeStudentEditModalDirect();
+  
+  renderDetailedStudentList();
+  renderStudentGroupPanel();
+  renderProgressContent();
+  renderAdminStats();
+  renderDashboardProgress();
+  
+  showToast('✅ 학생 정보가 수정되었습니다.');
 }
 
 // ── STUDENT EDIT LOGIC ────────────────────────────────────
@@ -2617,20 +2830,69 @@ function cancelStudentEdit() {
   document.getElementById('btn-student-cancel').style.display = 'none';
 }
 
+// ── STUDENT PAYMENT UTILS ─────────────────────────────────
+function changeStudentMonth(monthStr) {
+  if (!monthStr) monthStr = new Date().toISOString().slice(0, 7);
+  currentPaymentMonth = monthStr;
+  
+  const el1 = document.getElementById('student-month-filter');
+  if (el1) el1.value = currentPaymentMonth;
+  
+  const el2 = document.getElementById('summary-month-filter');
+  if (el2) el2.value = currentPaymentMonth;
+  
+  renderDetailedStudentList();
+}
+
+function shiftStudentMonth(delta) {
+  if(!currentPaymentMonth) return;
+  const parts = currentPaymentMonth.split('-');
+  let y = parseInt(parts[0], 10);
+  let m = parseInt(parts[1], 10);
+  
+  m += delta;
+  if(m < 1) {
+    m = 12;
+    y -= 1;
+  } else if(m > 12) {
+    m = 1;
+    y += 1;
+  }
+  
+  const newMonth = `${y}-${String(m).padStart(2, '0')}`;
+  changeStudentMonth(newMonth);
+}
+
+function isPaidForMonth(student, monthStr) {
+  if (student.payments && typeof student.payments[monthStr] !== 'undefined') {
+    return student.payments[monthStr];
+  }
+  return false;
+}
+
 function togglePaymentStatus(sid, isPaid) {
   const users = getUsers();
   const sIdx = users.findIndex(u => u.id === sid);
   if (sIdx > -1) {
-    users[sIdx].isPaid = isPaid;
-    localStorage.setItem('hwapp_users', JSON.stringify(users));
-    showToast(`✅ "${users[sIdx].name}" 학생의 수금 상태가 변경되었습니다.`);
+    const s = users[sIdx];
+    if (!s.payments) s.payments = {};
     
-    // 현재 수정 중인 학생과 같다면 양식도 동기화
+    s.payments[currentPaymentMonth] = isPaid;
+    
+    localStorage.setItem('hwapp_users', JSON.stringify(users));
+    showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 상태가 변경되었습니다.`);
+    
+    // 현재 수정 중인 학생과 같다면 폼도 동기화 (학생 추가/수정 폼)
     if (editingStudentId === sid) {
       const cb = document.getElementById('new-student-ispaid');
       if (cb) {
         cb.checked = isPaid;
         cb.parentElement.classList.toggle('active', isPaid);
+      }
+      const editPopupCb = document.getElementById('edit-popup-student-ispaid');
+      if (editPopupCb) {
+        editPopupCb.checked = isPaid;
+        editPopupCb.parentElement.classList.toggle('active', isPaid);
       }
     }
 
@@ -2638,6 +2900,7 @@ function togglePaymentStatus(sid, isPaid) {
     renderDetailedStudentList();
   }
 }
+
 
 function toggleSubjectChip(el) {
   el.parentElement.classList.toggle('active', el.checked);
@@ -2719,6 +2982,106 @@ function toggleAdminCompletion(hId,sid,currentlyDone){
 }
 function closeModal(e){if(e.target===document.getElementById('studentModal'))closeModalDirect();}
 function closeModalDirect(){document.getElementById('studentModal').classList.remove('open');}
+
+// ── PROGRESS MODAL ───────────────────────────────────────
+function openProgEditModal(topicId) {
+  const topics = getProgressTopics();
+  const t = topics.find(tp => tp.id === topicId);
+  if (!t) return;
+
+  editingProgressId = topicId;
+  const groups = getStudentGroups();
+  
+  // Fill group select in modal
+  const sel = document.getElementById('edit-prog-group');
+  sel.innerHTML = groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  sel.value = t.groupId;
+
+  document.getElementById('edit-prog-target-date').value = t.targetDate;
+  document.getElementById('edit-prog-topic').value = t.topic;
+
+  const hws = getHomeworks();
+  const linkedHw = hws.find(h => h.id === t.hwId);
+  document.getElementById('edit-prog-hw-title').value = linkedHw ? linkedHw.title : '';
+  document.getElementById('edit-prog-hw-due').value = linkedHw ? (linkedHw.dueDate || '') : '';
+
+  document.getElementById('progEditModal').classList.add('open');
+}
+
+function closeProgEditModal(e) {
+  if (e.target === document.getElementById('progEditModal')) closeProgEditModalDirect();
+}
+
+function closeProgEditModalDirect() {
+  document.getElementById('progEditModal').classList.remove('open');
+  editingProgressId = null;
+}
+
+function submitProgEdit() {
+  const topicId = editingProgressId;
+  if (!topicId) return;
+
+  const targetDate = document.getElementById('edit-prog-target-date').value;
+  const topicTitle = document.getElementById('edit-prog-topic').value.trim();
+  const hwTitle = document.getElementById('edit-prog-hw-title').value.trim();
+  const hwDue = document.getElementById('edit-prog-hw-due').value;
+
+  if (!topicTitle) {
+    showToast('진도 항목 제목을 입력해 주세요.', 'warn');
+    return;
+  }
+
+  let topics = getProgressTopics();
+  let hws = getHomeworks();
+  const tIdx = topics.findIndex(t => t.id === topicId);
+  if (tIdx === -1) return;
+
+  const topic = topics[tIdx];
+  // Update topic
+  topic.topic = topicTitle;
+  topic.targetDate = targetDate;
+
+  // Handle Homework
+  if (topic.hwId) {
+    const hIdx = hws.findIndex(h => h.id === topic.hwId);
+    if (hIdx > -1) {
+      if (hwTitle) {
+        // Update existing homework
+        hws[hIdx].title = hwTitle;
+        hws[hIdx].dueDate = hwDue;
+        hws[hIdx].createdAt = targetDate;
+      } else {
+        // User cleared the homework title -> Delete linked homework?
+        // Let's just keep it empty for now or show warning.
+        // Usually better to just update.
+        hws[hIdx].title = hwTitle;
+        hws[hIdx].dueDate = hwDue;
+      }
+    }
+  } else if (hwTitle) {
+    // Create new homework if previously absent
+    const group = getStudentGroups().find(g => g.id === topic.groupId);
+    const hwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
+    hws.push({
+      id: hwId,
+      title: hwTitle,
+      categoryId: topic.groupId,
+      assignedTo: group ? [...group.studentIds] : [],
+      dueDate: hwDue,
+      createdAt: targetDate
+    });
+    topic.hwId = hwId;
+  }
+
+  saveProgressTopics(topics);
+  saveHomeworks(hws);
+  
+  closeProgEditModalDirect();
+  renderProgressContent();
+  renderAdminHWList();
+  renderDashboardProgress();
+  showToast('✅ 수정 사항이 반영되었습니다.');
+}
 
 // ── ADMIN STATS ───────────────────────────────────────────
 function switchAdminTab(btn,t){
@@ -3415,38 +3778,7 @@ function addProgressTopic() {
 }
 
 function editProgressTopic(id) {
-  const topics = getProgressTopics();
-  const t = topics.find(item => item.id === id);
-  if (!t) return;
-  
-  editingProgressId = id;
-  document.getElementById('prog-group').value = t.groupId;
-  
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById('prog-topic-' + i).value = '';
-    const hwTitleEl = document.getElementById('prog-hw-title-' + i);
-    if(hwTitleEl) hwTitleEl.value = '';
-  }
-  document.getElementById('prog-topic-1').value = t.topic;
-  
-  document.getElementById('prog-target-date').value = t.targetDate;
-  
-  const hws = getHomeworks();
-  const linkedHw = hws.find(h => h.id === t.hwId);
-  const dueEl = document.getElementById('prog-hw-due');
-  if(dueEl) dueEl.value = linkedHw && linkedHw.dueDate ? linkedHw.dueDate : '';
-  
-  const titleElInput1 = document.getElementById('prog-hw-title-1');
-  if(titleElInput1) titleElInput1.value = linkedHw && linkedHw.title && linkedHw.title !== t.topic ? linkedHw.title : '';
-  
-  const titleEl = document.getElementById('prog-form-title');
-  titleEl.innerText = '✏️ 진도 항목 및 연동 숙제 수정';
-  titleEl.style.color = 'var(--danger)';
-  document.getElementById('btn-prog-submit').innerText = '수정 완료';
-  document.getElementById('btn-prog-submit').style.background = 'var(--danger)';
-  document.getElementById('btn-prog-cancel').style.display = 'block';
-  
-  document.getElementById('a-panel-progress').scrollTo({ top: 0, behavior: 'smooth' });
+  openProgEditModal(id);
 }
 
 function cancelProgressEdit() {
@@ -3713,6 +4045,15 @@ function renderProgressContent() {
 
   el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
 }
+
+// 초기 UI 세팅
+document.addEventListener('DOMContentLoaded', () => {
+  const mFiltered1 = document.getElementById('student-month-filter');
+  if (mFiltered1) mFiltered1.value = currentPaymentMonth;
+  
+  const mFiltered2 = document.getElementById('summary-month-filter');
+  if (mFiltered2) mFiltered2.value = currentPaymentMonth;
+});
 </script>
 </body>
 </html>
