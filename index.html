@@ -874,9 +874,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           </div>
           <div class="form-row"><label>학원비 (원)</label><input id="new-student-fee" type="number" placeholder="예) 300000"></div>
           
-          <div class="payment-toggle-row" id="payment-toggle-container" onclick="document.getElementById('new-student-ispaid').click()">
-            <div class="payment-toggle-label">💰 학원비 수금 완료</div>
-            <input id="new-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.classList.toggle('active', this.checked); if(editingStudentId) togglePaymentStatus(editingStudentId, this.checked)">
+          <div class="payment-toggle-row" id="payment-toggle-container" onclick="document.getElementById('new-student-ispaid').click()" style="display:flex; align-items:center; gap:20px;">
+            <div style="flex:none; display:flex; align-items:center; gap:10px">
+              <div class="payment-toggle-label">💰 학원비 수금 완료</div>
+              <input id="new-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.parentElement.classList.toggle('active', this.checked); if(editingStudentId) togglePaymentStatus(editingStudentId, this.checked)">
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 연월일:</label>
+              <input type="date" id="new-student-paydate" style="padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; outline:none; font-size:12px">
+            </div>
           </div>
 
           <div class="form-row"><label>소속 그룹 (선택)</label>
@@ -927,8 +933,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
                 <th style="width:100px">비밀번호</th>
                 <th style="width:130px">학부모 HP</th>
                 <th style="width:130px">학생 HP</th>
+                <th style="width:80px">상태</th>
                 <th style="width:160px">과목</th>
                 <th style="width:120px">학원비</th>
+                <th style="width:100px">수금일</th>
                 <th style="width:60px">수금</th>
                 <th style="width:130px">소속 그룹</th>
                 <th style="width:110px">입학일</th>
@@ -1184,9 +1192,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div class="form-row"><label>학원비 (원)</label><input id="edit-popup-student-fee" type="number" placeholder="예) 300000"></div>
       
-      <div class="payment-toggle-row" id="edit-popup-payment-toggle-container" onclick="document.getElementById('edit-popup-student-ispaid').click()">
-        <div class="payment-toggle-label">💰 학원비 수금 완료</div>
-        <input id="edit-popup-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.classList.toggle('active', this.checked)">
+      <div class="payment-toggle-row" id="edit-popup-payment-toggle-container" onclick="document.getElementById('edit-popup-student-ispaid').click()" style="display:flex; align-items:center; gap:20px;">
+        <div style="flex:none; display:flex; align-items:center; gap:10px">
+          <div class="payment-toggle-label">💰 학원비 수금 완료</div>
+          <input id="edit-popup-student-ispaid" type="checkbox" onclick="event.stopPropagation()" onchange="this.parentElement.parentElement.classList.toggle('active', this.checked)">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 연월일:</label>
+          <input type="date" id="edit-popup-student-paydate" style="padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; outline:none; font-size:12px">
+        </div>
       </div>
 
       <div class="form-row"><label>소속 그룹 (선택)</label>
@@ -1514,7 +1528,7 @@ function renderDashboard(who) {
         const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
 
         return `
-          <div class="admin-hw-item" style="cursor:default">
+          <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer">
             <div class="admin-hw-info">
               <div class="admin-hw-title">📄 ${h.title}</div>
               <div class="admin-hw-meta">대상: ${names} · 마감: ${h.dueDate} <span style="color:var(--danger);font-weight:700">(D-${diff})</span></div>
@@ -1643,7 +1657,7 @@ function renderDashboardProgress() {
       }).join('');
 
       return `
-        <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
+        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
           <div class="admin-hw-info">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
               <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
@@ -2299,6 +2313,7 @@ function addStudent(){
   const subject = subjs.join(',');
   const fee = document.getElementById('new-student-fee').value.trim();
   const isPaid = document.getElementById('new-student-ispaid').checked;
+  const payDate = document.getElementById('new-student-paydate').value;
 
   if(!name){
     showToast('학생 이름을 입력하세요.', 'warn');
@@ -2318,7 +2333,7 @@ function addStudent(){
       users[sIdx].subject = subject;
       users[sIdx].fee = fee;
       if (!users[sIdx].payments) users[sIdx].payments = {};
-      users[sIdx].payments[currentPaymentMonth] = isPaid;
+      users[sIdx].payments[currentPaymentMonth] = isPaid ? (payDate || formatDateLocal(new Date())) : false;
       users[sIdx].enteredAt = entered;
       localStorage.setItem('hwapp_users', JSON.stringify(users));
 
@@ -2341,7 +2356,13 @@ function addStudent(){
     const newId='student'+Date.now();
     const finalId = loginId || newId; // Fallback to auto-gen ID if loginId missing
     const finalPw = pw || '1234'; // Default password if missing
-    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, payments: { [currentPaymentMonth]: isPaid }});
+    
+    const initialPayments = {};
+    if (isPaid) {
+      initialPayments[currentPaymentMonth] = payDate || formatDateLocal(new Date());
+    }
+    
+    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, payments: initialPayments});
     localStorage.setItem('hwapp_users',JSON.stringify(users));
 
     if(groupId){
@@ -2432,10 +2453,27 @@ function restoreStudent(id,name){
 }
 
 function renderPaymentSummary() {
-  const allStudents = getUsers().filter(u => u.role === 'student');
+  const activeStudents = getUsers().filter(u => u.role === 'student');
+  const retiredUsers = getRetiredUsers();
+  
+  // 조회월에 따라 학생 목록 구성
+  const studentsInView = [
+    ...activeStudents.map(s => ({ ...s, status: '재원' })),
+    ...retiredUsers.filter(s => {
+      if (!s.retiredAt) return false;
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      // 퇴원 전 달까지는 '재원'으로 노출, 퇴원 당월은 3월 이후만 '퇴원'으로 노출
+      if (currentPaymentMonth < retiredMonth) return true;
+      if (currentPaymentMonth === retiredMonth && currentPaymentMonth >= '2026-03') return true;
+      return false;
+    }).map(s => {
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      return { ...s, status: currentPaymentMonth === retiredMonth ? '퇴원' : '재원' };
+    })
+  ];
   
   // 기준월 필터링: 입학일이 기준월보다 늦은 학생 제외
-  const students = allStudents.filter(s => {
+  const students = studentsInView.filter(s => {
     if (!s.enteredAt) return true;
     const entryMonth = s.enteredAt.slice(0, 7); // YYYY-MM
     return entryMonth <= currentPaymentMonth;
@@ -2520,7 +2558,7 @@ function renderPaymentSummary() {
                     <div class="pay-pending-fee" style="margin-top:0">${(parseInt(s.fee)||0).toLocaleString()}원</div>
                   </div>
                 </div>
-                <button class="btn-check-pay" onclick="confirmPayment('${s.id}', '${s.name}', '${s.fee}')">수금 체크</button>
+                <button class="btn-check-pay" onclick="confirmPayment('${s.id}')">수금 체크</button>
               </div>
             `;
           }).join('') : '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px">미납 학생이 없습니다. 🎉</div>'}
@@ -2584,20 +2622,34 @@ function renderPaymentSummary() {
   `;
 }
 
-function confirmPayment(sid, name, fee) {
-  const formattedFee = (parseInt(fee)||0).toLocaleString();
-  if (!confirm(`📢 [수금 확인]\n\n"${name}" 학생의 학원비 ${formattedFee}원을 수납 완료 처리하시겠습니까?`)) return;
-  
+function confirmPayment(sid) {
   togglePaymentStatus(sid, true);
 }
 
 
 
 function renderDetailedStudentList() {
-  const allStudents = getUsers().filter(u => u.role === 'student');
+  const activeStudents = getUsers().filter(u => u.role === 'student');
+  const retiredUsers = getRetiredUsers();
+  
+  // 조회월에 따라 학생 목록 구성
+  const studentsInView = [
+    ...activeStudents.map(s => ({ ...s, status: '재원' })),
+    ...retiredUsers.filter(s => {
+      if (!s.retiredAt) return false;
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      // 퇴원 전 달까지는 '재원'으로 노출, 퇴원 당월은 3월 이후만 '퇴원'으로 노출
+      if (currentPaymentMonth < retiredMonth) return true;
+      if (currentPaymentMonth === retiredMonth && currentPaymentMonth >= '2026-03') return true;
+      return false;
+    }).map(s => {
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      return { ...s, status: currentPaymentMonth === retiredMonth ? '퇴원' : '재원' };
+    })
+  ];
   
   // 기준월 필터링: 입학일이 기준월보다 늦은 학생 제외
-  const students = allStudents.filter(s => {
+  let students = studentsInView.filter(s => {
     if (!s.enteredAt) return true;
     const entryMonth = s.enteredAt.slice(0, 7); // YYYY-MM
     return entryMonth <= currentPaymentMonth;
@@ -2629,17 +2681,28 @@ function renderDetailedStudentList() {
         <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
         <td style="font-size:13px">${formatPhone(s.parentHp)}</td>
         <td style="font-size:13px">${formatPhone(s.studentHp)}</td>
+        <td style="font-size:13px">
+          <span style="padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; background:${s.status === '재원' ? 'var(--success-bg)' : '#fef2f2'}; color:${s.status === '재원' ? 'var(--success)' : '#dc2626'}; border:1px solid ${s.status === '재원' ? 'rgba(34,197,94,0.1)' : 'rgba(220,38,38,0.1)'}">
+            ${s.status}
+          </span>
+        </td>
         <td style="font-size:13px;"><div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">${subjectTags}</div></td>
         <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${getPaymentDateForMonth(s, currentPaymentMonth)}</td>
         <td>
           <input type="checkbox" ${isPaidForMonth(s, currentPaymentMonth) ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
         </td>
         <td>${grpBadge}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt || '-'}</td>
         <td style="white-space:nowrap">
-          <button class="btn-del" onclick="event.stopPropagation(); retireStudent('${s.id}','${safeName}')" style="background:#f59e0b;color:#fff;border:none">퇴원</button>
-          <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
-          <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>
+          ${s.status === '재원' ? `
+            <button class="btn-del" onclick="event.stopPropagation(); retireStudent('${s.id}','${safeName}')" style="background:#f59e0b;color:#fff;border:none">퇴원</button>
+            <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
+            <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>
+          ` : `
+            <button class="btn-del" style="background:var(--success);color:#fff;border:none" onclick="event.stopPropagation(); restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
+            <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteRetiredStudent('${s.id}','${safeName}')">삭제</button>
+          `}
         </td>
       </tr>
     `;
@@ -2665,6 +2728,9 @@ function openStudentEditModal(sid) {
   const isMonthPaid = isPaidForMonth(student, currentPaymentMonth);
   const isPaidCb = document.getElementById('edit-popup-student-ispaid');
   isPaidCb.checked = isMonthPaid;
+  const payDateInput = document.getElementById('edit-popup-student-paydate');
+  payDateInput.value = isMonthPaid && typeof student.payments[currentPaymentMonth] === 'string' ? student.payments[currentPaymentMonth] : '';
+  
   const toggleContainer = document.getElementById('edit-popup-payment-toggle-container');
   if (isMonthPaid) toggleContainer.classList.add('active');
   else toggleContainer.classList.remove('active');
@@ -2722,7 +2788,9 @@ function submitStudentEditModal() {
   student.enteredAt = document.getElementById('edit-popup-student-entered').value;
   
   if (!student.payments) student.payments = {};
-  student.payments[currentPaymentMonth] = document.getElementById('edit-popup-student-ispaid').checked;
+  const isPaid = document.getElementById('edit-popup-student-ispaid').checked;
+  const payDate = document.getElementById('edit-popup-student-paydate').value;
+  student.payments[currentPaymentMonth] = isPaid ? (payDate || formatDateLocal(new Date())) : false;
 
   const cb = document.querySelectorAll('input[name="edit-popup-subj"]:checked');
   student.subject = Array.from(cb).map(x => x.value).join(',');
@@ -2832,6 +2900,7 @@ function cancelStudentEdit() {
   });
   
   document.getElementById('payment-toggle-container').classList.remove('active');
+  document.getElementById('new-student-paydate').value = '';
   
   document.getElementById('new-student-entered').value = formatDateLocal(new Date());
   
@@ -2880,10 +2949,18 @@ function shiftStudentMonth(delta) {
 }
 
 function isPaidForMonth(student, monthStr) {
-  if (student.payments && typeof student.payments[monthStr] !== 'undefined') {
-    return student.payments[monthStr];
+  if (student.payments && student.payments[monthStr]) {
+    return true;
   }
   return false;
+}
+
+function getPaymentDateForMonth(student, monthStr) {
+  if (student.payments && student.payments[monthStr]) {
+    // 만약 데이터가 true(boolean)인 경우 날짜가 없으므로 '-'로 표기
+    return typeof student.payments[monthStr] === 'string' ? student.payments[monthStr] : '결제됨';
+  }
+  return '-';
 }
 
 function togglePaymentStatus(sid, isPaid) {
@@ -2893,10 +2970,27 @@ function togglePaymentStatus(sid, isPaid) {
     const s = users[sIdx];
     if (!s.payments) s.payments = {};
     
-    s.payments[currentPaymentMonth] = isPaid;
+    if (isPaid) {
+      const fee = parseInt(s.fee) || 0;
+      const formattedFee = fee.toLocaleString();
+      if (!confirm(`📢 [수금 확인]\n\n"${s.name}" 학생의 학원비 ${formattedFee}원을 수납 완료 처리하시겠습니까?`)) {
+        renderDetailedStudentList();
+        return;
+      }
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const pDate = prompt(`"${s.name}" 학생의 수금 연월일을 입력하세요 (YYYY-MM-DD)`, today);
+      if (pDate === null) {
+        renderDetailedStudentList();
+        return;
+      }
+      s.payments[currentPaymentMonth] = pDate || today;
+    } else {
+      s.payments[currentPaymentMonth] = false;
+    }
     
     localStorage.setItem('hwapp_users', JSON.stringify(users));
-    showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 상태가 변경되었습니다.`);
+    showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 정보가 업데이트되었습니다.`);
     
     // 현재 수정 중인 학생과 같다면 폼도 동기화 (학생 추가/수정 폼)
     if (editingStudentId === sid) {
@@ -3964,7 +4058,7 @@ function renderProgressContent() {
       }).join('');
 
       return `
-        <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
+        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
           <div class="admin-hw-info">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
               <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
