@@ -777,9 +777,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 관리</div>
       <div class="nav-item" onclick="showPanel('a','progress')" id="anav-progress"><span>📖</span> 수업 진도</div>
+      <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
-      <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
     </nav>
   <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
@@ -837,11 +837,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="panel-sub">학교/학년별 그룹을 만들고 학생을 배정하세요</div>
       <div class="admin-grid">
         <div class="card">
-          <div class="section-title">➕ 그룹 추가</div>
+          <div class="section-title" id="grp-form-title">➕ 그룹 추가</div>
           <div class="form-row"><label>그룹 이름</label>
             <input id="grp-input" type="text" placeholder="예) 경동고 1학년, 경신고 2학년" onkeydown="if(event.key==='Enter')addStudentGroup()">
           </div>
-          <button class="btn-add" onclick="addStudentGroup()">그룹 추가</button>
+          <div style="display:flex; gap:10px">
+            <button class="btn-add" id="btn-grp-submit" style="flex:1" onclick="addStudentGroup()">그룹 추가</button>
+            <button class="btn-del" id="btn-grp-cancel" style="flex:1; background:#94a3b8; display:none" onclick="cancelGroupEdit()">취소</button>
+          </div>
         </div>
         <div class="card">
           <div class="section-title">👥 그룹 목록</div>
@@ -1191,6 +1194,26 @@ function getGroupColor(groupId){
   const idx=groups.findIndex(g=>g.id===groupId);
   return GROUP_COLORS[idx<0?0:idx%GROUP_COLORS.length];
 }
+function buildGroups(hws, studentGroups) {
+  const map = {};
+  hws.forEach(h => {
+    const catId = h.categoryId || '_none';
+    if (!map[catId]) map[catId] = [];
+    map[catId].push(h);
+  });
+  const results = [];
+  studentGroups.forEach(g => {
+    if (map[g.id]) {
+      results.push({ catId: g.id, label: g.name, items: map[g.id] });
+      delete map[g.id];
+    }
+  });
+  Object.keys(map).forEach(catId => {
+    const label = catId === '_none' ? '미분류' : catId;
+    results.push({ catId: catId === '_none' ? null : catId, label, items: map[catId] });
+  });
+  return results;
+}
 
 // 로컬 날짜 문자열 생성 (YYYY-MM-DD)
 function formatDateLocal(date) {
@@ -1433,7 +1456,7 @@ function renderDashboardProgress() {
   // 1. Find the most recent date for each group
   const recentSessions = [];
   groups.forEach((group, gi) => {
-    const gc = GROUP_COLORS[gi % GROUP_COLORS.length];
+    const gc = getGroupColor(group.id);
     const groupTopics = topics.filter(t => t.groupId === group.id);
     if (!groupTopics.length) return;
 
@@ -1510,10 +1533,27 @@ function renderDashboardProgress() {
         diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
       }
 
+      // 배정된 학생 이름 + 완료 상태 목록 (이름 클릭 시 학생 상세 팝업)
+      const hwStudentRows = h.assignedTo.map(sid => {
+        const s = students.find(u => u.id === sid);
+        if (!s) return '';
+        const done = hwComps.some(c => c.homeworkId === h.id && c.studentId === sid);
+        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">`
+          + `<span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>`
+          + `<span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>`
+          + `</div>`;
+      }).join('');
+
       return `
         <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
           <div class="admin-hw-info">
-            <div class="admin-hw-title" style="font-size:13px">📄 ${h.title}</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
+              <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
+              <div style="display:flex; gap:4px">
+                <button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();editHWFromProgress('${h.id}')">수정</button>
+                <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteHW('${h.id}','${h.title.replace(/'/g,"\\'")}')">삭제</button>
+              </div>
+            </div>
             <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
               <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
@@ -1521,6 +1561,8 @@ function renderDashboardProgress() {
               </div>
               <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
             </div>
+
+            ${hwStudentRows ? `<div style="margin-top:6px">${hwStudentRows}</div>` : ''}
           </div>
         </div>
       `;
@@ -1550,12 +1592,14 @@ function renderDashboardProgress() {
             ${t.totalPages ? t.totalPages + '페이지' : ''}
             · 등록: ${t.createdAt}
           </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+            <div class="prog-topic-bar" style="margin:0"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
+            <span class="prog-topic-pct" style="color:${topicColor}; font-size:11px">${topicPct}%</span>
+            <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
+          </div>
         </div>
-        <div class="prog-topic-bar"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
-        <span class="prog-topic-pct" style="color:${topicColor}">${topicPct}%</span>
-        <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;background:var(--success);color:#fff;margin-left:4px" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px;background:var(--success);color:#fff" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:4px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
       </div>
       <div class="prog-topic-students" id="prog-students-${t.id}_dash">${studentRows}</div>`;
     }).join('');
@@ -1721,16 +1765,6 @@ function renderStatsForStudent(sid,cid,period){
 }
 
 // ── CATEGORY HELPERS ─────────────────────────────────────
-function buildGroups(hws,groups){
-  const res=[];
-  groups.forEach(c=>{
-    const items=hws.filter(h=>h.categoryId===c.id);
-    if(items.length)res.push({label:c.name,catId:c.id,items});
-  });
-  const uncatItems=hws.filter(h=>!h.categoryId||!groups.find(c=>c.id===h.categoryId));
-  if(uncatItems.length)res.push({label:'대상그룹 없음',catId:null,items:uncatItems});
-  return res;
-}
 // ── STUDENT GROUP MANAGEMENT ──────────────────────────────
 function getStudentGroupOf(sid){
   return getStudentGroups().find(g=>g.studentIds&&g.studentIds.includes(sid));
@@ -1741,7 +1775,7 @@ function renderStudentGroupPanel(){
   const el=document.getElementById('grp-list');
   if(!groups.length){el.innerHTML='<div class="empty-state"><div class="ei">👥</div><div>그룹이 없습니다</div></div>';return;}
   el.innerHTML=groups.map((g,gi)=>{
-    const gc=GROUP_COLORS[gi%GROUP_COLORS.length];
+    const gc=getGroupColor(g.id);
     const members=(g.studentIds||[]).map(sid=>{
       const s=students.find(u=>u.id===sid);
       return s?`<span class="grp-member-chip" style="background:${gc.bg};color:${gc.color};border-color:${gc.border}">${s.name}<button class="chip-del" onclick="removeFromGroup('${g.id}','${sid}')" title="그룹에서 제거">✕</button></span>`:''
@@ -1753,22 +1787,63 @@ function renderStudentGroupPanel(){
     return`<div class="grp-card" style="border-left:3px solid ${gc.color}">
       <div class="grp-card-header">
         <span class="grp-card-name" style="color:${gc.color}">🏫 ${g.name}<span class="grp-badge" style="background:${gc.bg};color:${gc.color};border-color:${gc.border}">${(g.studentIds||[]).length}명</span></span>
-        <button class="btn-del" onclick="deleteStudentGroup('${g.id}')">삭제</button>
+        <div style="display:flex; gap:6px">
+          <button class="btn-del" style="background:var(--primary);color:#fff;border:none;padding:4px 8px;font-size:11px" onclick="editStudentGroup('${g.id}')">수정</button>
+          <button class="btn-del" style="padding:4px 8px;font-size:11px" onclick="deleteStudentGroup('${g.id}')">삭제</button>
+        </div>
       </div>
       <div class="grp-member-wrap">${members||'<span style="font-size:12px;color:var(--text-muted)">소속 학생 없음</span>'}</div>
       ${addSelect}
     </div>`;
   }).join('');
 }
+
+let editingGrpId = null;
+
+function editStudentGroup(id){
+  const groups = getStudentGroups();
+  const g = groups.find(x => x.id === id);
+  if(!g) return;
+  editingGrpId = id;
+  document.getElementById('grp-input').value = g.name;
+  document.getElementById('grp-form-title').textContent = '✏️ 그룹 수정';
+  document.getElementById('btn-grp-submit').textContent = '그룹 수정';
+  document.getElementById('btn-grp-cancel').style.display = 'block';
+  document.getElementById('grp-input').focus();
+}
+
+function cancelGroupEdit(){
+  editingGrpId = null;
+  document.getElementById('grp-input').value = '';
+  document.getElementById('grp-form-title').textContent = '➕ 그룹 추가';
+  document.getElementById('btn-grp-submit').textContent = '그룹 추가';
+  document.getElementById('btn-grp-cancel').style.display = 'none';
+}
+
 function addStudentGroup(){
   const inp=document.getElementById('grp-input');
   const name=inp.value.trim();
   if(!name){showToast('그룹 이름을 입력하세요.','warn');return;}
   const groups=getStudentGroups();
-  if(groups.find(g=>g.name===name)){showToast('이미 존재하는 그룹입니다.','warn');return;}
-  groups.push({id:'grp'+Date.now(),name,studentIds:[]});
-  saveStudentGroups(groups);inp.value='';
-  renderStudentGroupPanel();showToast(`✅ "${name}" 그룹이 추가되었습니다!`);
+
+  if (editingGrpId) {
+    const gIdx = groups.findIndex(x => x.id === editingGrpId);
+    if (gIdx > -1) {
+      const oldName = groups[gIdx].name;
+      groups[gIdx].name = name;
+      saveStudentGroups(groups);
+      showToast(`✅ "${oldName}" 그룹이 "${name}"(으)로 수정되었습니다.`);
+      cancelGroupEdit();
+    }
+  } else {
+    if(groups.find(g=>g.name===name)){showToast('이미 존재하는 그룹입니다.','warn');return;}
+    groups.push({id:'grp'+Date.now(),name,studentIds:[]});
+    saveStudentGroups(groups);
+    inp.value='';
+    showToast(`✅ "${name}" 그룹이 추가되었습니다!`);
+  }
+  renderStudentGroupPanel();
+  renderAdminManage();
 }
 function deleteStudentGroup(id){
   if(!confirm('정말로 이 그룹을 삭제하시겠습니까?')) return;
@@ -1809,6 +1884,12 @@ function renderAdminManage(){
 
   renderAdminHWList();
   renderAdminStudents();
+  
+  // 최종 확인: 만약 목록이 여전히 비어있다면 강제로 메시지 출력
+  const el = document.getElementById('admin-hw-list');
+  if (el && !el.innerHTML.trim()) {
+    el.innerHTML = '<div class="empty-state">데이터를 렌더링하는 중 예상치 못한 문제가 발생했습니다. (데이터 수: ' + getHomeworks().length + ')</div>';
+  }
 }
 function renderStudentChecks(filterGroupId){
   const students=getUsers().filter(u=>u.role==='student');
@@ -1840,38 +1921,60 @@ function filterStudentChecks(groupId,btn){
   renderStudentChecks(groupId);
 }
 function renderAdminHWList(){
-  const hws=getHomeworks(),users=getUsers(),studentGroups=getStudentGroups(),el=document.getElementById('admin-hw-list');
-  if(!hws.length){el.innerHTML='<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';return;}
-  const hwGroups=buildGroups(hws,studentGroups).map(g=>({...g,items:g.items.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''))}));
+  const hws = getHomeworks();
+  const users = getUsers();
+  const studentGroups = getStudentGroups();
+  const el = document.getElementById('admin-hw-list');
+  if (!el) return;
   
-  el.innerHTML=hwGroups.map(g=>{
-    const matchedGrp=studentGroups.find(sg=>sg.id===g.catId);
-    const matchedGi=matchedGrp?studentGroups.indexOf(matchedGrp):-1;
-    const gc=matchedGrp?GROUP_COLORS[matchedGi%GROUP_COLORS.length]:null;
-    const headerStyle=gc?`style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"`:'';
-    const items=g.items.map(h=>{
-      const names=h.assignedTo.map(id=>users.find(u=>u.id===id)?.name||id).join(', ');
-      const cnt=getCompletions().filter(c=>c.homeworkId===h.id).length;
-      const safeTitle=h.title.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      const pct=h.assignedTo.length?Math.round(cnt/h.assignedTo.length*100):0;
-      const progColor=pct===100?'var(--success)':pct>0?'var(--warning)':'var(--border-strong)';
-      return`<div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')">
-        <div class="admin-hw-info">
-          <div class="admin-hw-title">📄 ${h.title}</div>
-          <div class="admin-hw-meta">대상: ${names} · 등록: ${h.createdAt} · 마감: ${h.dueDate||'미정'}</div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
-              <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+  if (!hws || hws.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';
+    return;
+  }
+
+  const hwGroups = buildGroups(hws, studentGroups);
+  
+  const html = hwGroups.map(g => {
+    const matchedGrp = studentGroups.find(sg => sg.id === g.catId);
+    const gc = matchedGrp ? getGroupColor(matchedGrp.id) : null;
+    const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
+    
+    const itemsHtml = g.items.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(h => {
+      const title = h.title || '(제목 없음)';
+      const assigned = h.assignedTo || [];
+      const names = assigned.map(id => {
+        const u = users.find(x => x.id === id);
+        return u ? u.name : id;
+      }).join(', ');
+      
+      const compCount = getCompletions().filter(c => c.homeworkId === h.id).length;
+      const pct = assigned.length ? Math.round(compCount / assigned.length * 100) : 0;
+      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+      const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      return `
+        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')">
+          <div class="admin-hw-info">
+            <div class="admin-hw-title">📄 ${title}</div>
+            <div class="admin-hw-meta">대상: ${names || '없음'} · 등록: ${h.createdAt || '-'} · 마감: ${h.dueDate || '미정'}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:${progColor}">${compCount}/${assigned.length} 완료</span>
             </div>
-            <span style="font-size:11px;font-weight:700;color:${progColor}">${cnt}/${h.assignedTo.length} 완료</span>
           </div>
-        </div>
-        <button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>
-      </div>`;
+          <button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>
+        </div>`;
     }).join('');
-    const header=`<div class="cat-group-header" ${headerStyle}>🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
-    return header+items;
+
+    return `
+      <div class="cat-group-header" ${headerStyle}>🏷️ ${g.label}<span class="cat-count">${g.items.length}개</span></div>
+      ${itemsHtml}
+    `;
   }).join('');
+
+  el.innerHTML = html || '<div class="empty-state">숙제 데이터를 불러오는 중 오류가 발생했거나 데이터가 없습니다.</div>';
 }
 function handleCategoryChange(groupId){
   if(!groupId) return;
@@ -2011,10 +2114,31 @@ function closeHWModal(e){
   if(e.target===document.getElementById('hwStudentModal'))
     document.getElementById('hwStudentModal').classList.remove('open');
 }
-function deleteHW(id,title){
-  saveHomeworks(getHomeworks().filter(h=>h.id!==id));
-  saveCompletions(getCompletions().filter(c=>c.homeworkId!==id));
-  renderAdminHWList();showToast(`🗑️ "${title}" 숙제가 삭제되었습니다.`);
+function deleteHW(id, title) {
+  if (!confirm(`🗑️ "${title}" 숙제를 삭제하시겠습니까?`)) return;
+  saveHomeworks(getHomeworks().filter(h => h.id !== id));
+  saveCompletions(getCompletions().filter(c => c.homeworkId !== id));
+  
+  // 진도 항목에서도 해당 숙제 ID 연결 해제
+  const topics = getProgressTopics();
+  const updatedTopics = topics.map(t => t.hwId === id ? { ...t, hwId: null } : t);
+  saveProgressTopics(updatedTopics);
+  
+  renderAdminHWList();
+  renderProgressContent();
+  renderDashboardProgress();
+  showToast(`🗑️ "${title}" 숙제가 삭제되었습니다.`);
+}
+
+function editHWFromProgress(hwId) {
+  const topics = getProgressTopics();
+  const topic = topics.find(t => t.hwId === hwId);
+  if (topic) {
+    editProgressTopic(topic.id);
+  } else {
+    // 진도 항목과 연결되지 않은 일반 숙제인 경우 (예외 처리)
+    showToast('해당 숙제와 연결된 진도 항목을 찾을 수 없어 수정 폼을 열 수 없습니다.', 'warn');
+  }
 }
 
 // ── ADMIN STUDENTS ────────────────────────────────────────
@@ -2042,7 +2166,7 @@ function renderAdminStudents(){
     if(prev)adminStatSel.value=prev;
   }
   document.getElementById('student-stat-body').innerHTML=students.map(s=>{
-    const hws=getStatHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
     const grpColor=grp?getGroupColor(grp.id):null;
@@ -2055,8 +2179,8 @@ function renderAdminStudents(){
       <td><span class="pct-cell">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%"></div></div></td>
       <td style="white-space:nowrap">
         <span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
-        <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>
         <button class="btn-del" style="margin-left:8px;background:#f59e0b;color:#fff;border:none" onclick="event.stopPropagation();retireStudent('${s.id}','${safeName}')">퇴원</button>
+        <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>
       </td>
     </tr>`;
   }).join('');
@@ -2172,7 +2296,7 @@ function retireStudent(id,name){
 function renderRetiredStudents(){
   const retired=getRetiredUsers();
   document.getElementById('retired-stat-body').innerHTML=retired.map(s=>{
-    const hws=getStatHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
+    const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
     const grpColor=grp?getGroupColor(grp.id):null;
@@ -2531,7 +2655,7 @@ function openStudentDetail(sid){
 function renderModalContent(sid){
   const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
   if (!student) return;
-  const hws = getStatHWs(sid);
+  const hws = getStudentHWs(sid).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   const done=hws.filter(h=>isDoneFor(h.id,sid)).length;
   const total=hws.length;
   const pct=total?Math.round(done/total*100):0;
@@ -2587,6 +2711,10 @@ function toggleAdminCompletion(hId,sid,currentlyDone){
   saveCompletions(comps);
   renderModalContent(sid);
   renderAdminStudents();
+  renderProgressContent();
+  renderDashboardProgress();
+  renderAdminHWList();
+  renderAdminStats();
   showToast(currentlyDone?'미완료로 변경되었습니다.':'✅ 완료로 변경되었습니다!');
 }
 function closeModal(e){if(e.target===document.getElementById('studentModal'))closeModalDirect();}
@@ -2637,7 +2765,7 @@ function renderAdminStats(){
   }
 }
 function renderGroupStatBlock(group,gi,members,periodKey){
-  const gc=group.id==='_none'?{bg:'#f1f5f9',color:'#64748b',border:'rgba(100,116,139,0.2)'}:GROUP_COLORS[gi%GROUP_COLORS.length];
+  const gc=group.id==='_none'?{bg:'#f1f5f9',color:'#64748b',border:'rgba(100,116,139,0.2)'}:getGroupColor(group.id);
   let gTotal=0,gDone=0;
   members.forEach(s=>{
     if(periodKey===null){
@@ -3198,8 +3326,14 @@ function filterProgress(groupId, btn) {
   currentProgressFilter = groupId;
   document.querySelectorAll('#prog-filter-tabs .sftab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+
+  // 그룹 탭 클릭 시 진도 항목 추가 폼의 그룹 select도 자동 선택
+  const progGroupSel = document.getElementById('prog-group');
+  if (progGroupSel) progGroupSel.value = groupId;
+
   renderProgressContent();
 }
+
 
 function addProgressTopic() {
   const groupId = document.getElementById('prog-group').value;
@@ -3241,28 +3375,38 @@ function addProgressTopic() {
     }
     showToast('✅ 진도 항목 및 연동 숙제가 수정되었습니다.');
   } else {
+    let hwAddedCount = 0;
     entries.forEach(entry => {
       const topicId = 'prog' + Date.now() + Math.random().toString(36).substr(2, 5);
-      const hwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
+      let topicHwId = null;
+
+      // 숙제 제목이 입력된 경우에만 숙제를 생성하고 그룹 전체 학생에게 등록
+      if (entry.hwTitle) {
+        const hwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
+        topicHwId = hwId;
+        hws.push({
+          id: hwId,
+          title: entry.hwTitle,
+          categoryId: groupId,
+          assignedTo: [...studentIds], // 해당 그룹 학생 전체
+          dueDate: hwDue,
+          createdAt: targetDate
+        });
+        hwAddedCount++;
+      }
+
       topics.push({
         id: topicId,
         groupId,
         topic: entry.topic,
         targetDate,
         createdAt: formatDateLocal(new Date()),
-        hwId: hwId
-      });
-      hws.push({
-        id: hwId,
-        title: entry.hwTitle || entry.topic,
-        categoryId: groupId,
-        assignedTo: studentIds,
-        dueDate: hwDue,
-        createdAt: targetDate
+        hwId: topicHwId
       });
     });
     saveHomeworks(hws);
-    showToast(`✅ ${entries.length}개의 진도 항목과 자동 숙제가 추가되었습니다!`);
+    const hwMsg = hwAddedCount > 0 ? ` 숙제 ${hwAddedCount}개가 그룹(${group ? group.name : ''}) 학생 ${studentIds.length}명에게 등록되었습니다.` : '';
+    showToast(`✅ ${entries.length}개의 진도 항목이 추가되었습니다.${hwMsg}`);
   }
   saveProgressTopics(topics);
   cancelProgressEdit();
@@ -3386,8 +3530,8 @@ function renderProgressContent() {
 
   // Group topics by (GroupId, TargetDate)
   const sessions = [];
-  filteredGroups.forEach((group, gi) => {
-    const gc = GROUP_COLORS[gi % GROUP_COLORS.length];
+  filteredGroups.forEach((group) => {
+    const gc = getGroupColor(group.id);
     const groupTopics = topics.filter(t => t.groupId === group.id);
     
     const datesMap = {};
@@ -3460,10 +3604,27 @@ function renderProgressContent() {
         diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
       }
 
+      // 배정된 학생 이름 + 완료 상태 목록 (이름 클릭 시 학생 상세 팝업)
+      const hwStudentRows = h.assignedTo.map(sid => {
+        const s = students.find(u => u.id === sid);
+        if (!s) return '';
+        const done = hwComps.some(c => c.homeworkId === h.id && c.studentId === sid);
+        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">`
+          + `<span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>`
+          + `<span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>`
+          + `</div>`;
+      }).join('');
+
       return `
         <div class="admin-hw-item" style="cursor:default; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
           <div class="admin-hw-info">
-            <div class="admin-hw-title" style="font-size:13px">📄 ${h.title}</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
+              <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
+              <div style="display:flex; gap:4px">
+                <button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();editHWFromProgress('${h.id}')">수정</button>
+                <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteHW('${h.id}','${h.title.replace(/'/g,"\\'")}')">삭제</button>
+              </div>
+            </div>
             <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
               <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
@@ -3471,6 +3632,8 @@ function renderProgressContent() {
               </div>
               <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
             </div>
+
+            ${hwStudentRows ? `<div style="margin-top:6px">${hwStudentRows}</div>` : ''}
           </div>
         </div>
       `;
@@ -3496,21 +3659,23 @@ function renderProgressContent() {
         <div class="prog-topic-info">
           <div class="prog-topic-title">📖 ${t.topic}</div>
           <div class="prog-topic-meta">
-            등록: ${t.createdAt}
+            ${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+            <div class="prog-topic-bar" style="margin:0"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
+            <span class="prog-topic-pct" style="color:${topicColor}; font-size:11px">${topicPct}%</span>
+            <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
           </div>
         </div>
-        <div class="prog-topic-bar"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
-        <span class="prog-topic-pct" style="color:${topicColor}">${topicPct}%</span>
-        <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;background:var(--success);color:#fff;margin-left:4px" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px;background:var(--success);color:#fff" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:4px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
       </div>
       <div class="prog-topic-students" id="prog-students-${t.id}">${studentRows}</div>`;
     }).join('');
 
     return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
-      <div class="prog-group-header" style="background:${gc.bg}; padding:10px 14px; border-radius:10px 10px 0 0">
-        <div class="prog-group-title" style="color:${gc.color}; font-size:15px">🏫 ${group.name}
+      <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-radius:12px 12px 0 0">
+        <div class="prog-group-title" style="color:${gc.color}; font-size:16px">🏫 ${group.name}
           <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${members.length}명</span>
           ${headerDateStr}
         </div>
