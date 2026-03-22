@@ -2432,7 +2432,15 @@ function restoreStudent(id,name){
 }
 
 function renderPaymentSummary() {
-  const students = getUsers().filter(u => u.role === 'student');
+  const allStudents = getUsers().filter(u => u.role === 'student');
+  
+  // 기준월 필터링: 입학일이 기준월보다 늦은 학생 제외
+  const students = allStudents.filter(s => {
+    if (!s.enteredAt) return true;
+    const entryMonth = s.enteredAt.slice(0, 7); // YYYY-MM
+    return entryMonth <= currentPaymentMonth;
+  });
+
   const total = students.length;
   const paidStudents = students.filter(s => isPaidForMonth(s, currentPaymentMonth));
   const paidCount = paidStudents.length;
@@ -2586,7 +2594,15 @@ function confirmPayment(sid, name, fee) {
 
 
 function renderDetailedStudentList() {
-  const students = getUsers().filter(u => u.role === 'student');
+  const allStudents = getUsers().filter(u => u.role === 'student');
+  
+  // 기준월 필터링: 입학일이 기준월보다 늦은 학생 제외
+  const students = allStudents.filter(s => {
+    if (!s.enteredAt) return true;
+    const entryMonth = s.enteredAt.slice(0, 7); // YYYY-MM
+    return entryMonth <= currentPaymentMonth;
+  });
+
   const groups = getStudentGroups();
   const el = document.getElementById('student-detailed-body');
   if (!el) return;
