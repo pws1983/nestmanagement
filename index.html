@@ -708,7 +708,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('s','classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
       <div class="nav-item" onclick="showPanel('s','stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
     </nav>
-  <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
+    <button class="logout-btn" style="background:var(--secondary); color:#3b82f6; border:none; margin-bottom:4px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+    <button class="logout-btn" style="background:var(--border-strong); color:#ef4444; border:none; margin-bottom:4px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
+    <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
+  </div>
   </div>
   <div class="main-content">
     <div class="panel active" id="s-panel-dashboard">
@@ -782,12 +786,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
     </nav>
-  <div class="sidebar-footer"><button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button></div>
+  <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
+    <button class="logout-btn" style="background:var(--secondary); color:#3b82f6; border:none; margin-bottom:4px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+    <button class="logout-btn" style="background:var(--border-strong); color:#ef4444; border:none; margin-bottom:4px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
+    <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
+  </div>
   </div>
   <div class="main-content">
     <!-- Dashboard -->
     <div class="panel active" id="a-panel-dashboard">
-      <div class="panel-title">대시보드</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:12px">
+        <div class="panel-title" style="margin-bottom:0">대시보드</div>
+        <div style="display:flex; gap:10px">
+          <button class="btn" style="background:var(--secondary); color:#3b82f6; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+          <button class="btn" style="background:var(--border-strong); color:#ef4444; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
+        </div>
+      </div>
       <div class="panel-sub">전체 일정과 마감 임박 숙제 현황</div>
       <div class="admin-grid">
         <div class="card">
@@ -854,7 +868,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <!-- Students -->
     <div class="panel" id="a-panel-students">
-      <div class="panel-title">학생 현황</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px">
+        <div class="panel-title" style="margin-bottom:0">학생 현황</div>
+        <div style="display:flex; gap:10px">
+          <button class="btn" style="background:var(--secondary); color:#3b82f6; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+          <button class="btn" style="background:var(--border-strong); color:#ef4444; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
+        </div>
+      </div>
       <div class="panel-sub">학생을 추가하거나 클릭하면 상세 숙제 현황을 확인할 수 있습니다</div>
       <div class="admin-grid">
         <div class="card">
@@ -1039,7 +1059,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <!-- Class Progress Management -->
     <div class="panel" id="a-panel-progress">
-      <div class="panel-title">수업 진도</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px">
+        <div class="panel-title" style="margin-bottom:0">수업 진도</div>
+        <div style="display:flex; gap:10px">
+          <button class="btn" style="background:var(--secondary); color:#3b82f6; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+          <button class="btn" style="background:var(--border-strong); color:#ef4444; padding:8px 18px; font-size:13px; border-radius:10px; font-weight:800" onclick="importData()">📂 데이터 복원</button>
+        </div>
+      </div>
       <div class="panel-sub">반(그룹)별 교재/단원 진도 현황을 관리합니다</div>
       <div class="prog-add-form" style="margin-bottom:20px">
         <div class="section-title" id="prog-form-title">➕ 진도 항목 추가</div>
@@ -1166,6 +1192,35 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+<!-- TOPIC MEMO MODAL -->
+<div class="modal-overlay" id="topicMemoModal" onclick="closeTopicMemoModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="topic-memo-title">📝 수업 메모</div>
+        <div class="modal-sub" id="topic-memo-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeTopicMemoModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="topic-memo-view">
+        <div id="topic-memo-content" style="white-space:pre-wrap; font-size:14px; color:var(--text); line-height:1.8; min-height:80px; padding:12px; background:#f8fafc; border:1px solid var(--border); border-radius:10px"></div>
+        <div style="display:flex; gap:10px; margin-top:16px">
+          <button class="btn-add" style="flex:1" onclick="switchTopicMemoEdit()">✏️ 수정</button>
+          <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeTopicMemoModalDirect()">닫기</button>
+        </div>
+      </div>
+      <div id="topic-memo-edit" style="display:none">
+        <textarea id="topic-memo-input" style="width:100%; min-height:140px; padding:12px; border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:14px; resize:vertical; outline:none; line-height:1.8" placeholder="수업 메모를 입력하세요..."></textarea>
+        <div style="display:flex; gap:10px; margin-top:16px">
+          <button class="btn-add" style="flex:2" onclick="saveTopicMemo()">💾 저장</button>
+          <button class="btn-del" style="flex:1; background:#94a3b8" onclick="cancelTopicMemoEdit()">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- STUDENT EDIT MODAL -->
 <div class="modal-overlay" id="studentEditModal" onclick="closeStudentEditModal(event)">
   <div class="modal">
@@ -1211,7 +1266,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="form-row"><label>입학 날짜</label><input id="edit-popup-student-entered" type="date"></div>
 
       <div style="display:flex; gap:10px; margin-top:20px">
-        <button class="btn-add" id="btn-edit-popup-submit" style="flex:2" onclick="submitStudentEditModal()">수정 완료</button>
+        <button class="btn-add" id="btn-edit-popup-submit" style="flex:2" onclick="submitStudentEditModal()">💾 데이터 저장</button>
         <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeStudentEditModalDirect()">취소</button>
       </div>
     </div>
@@ -1270,6 +1325,59 @@ const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stri
 const saveRetiredUsers=d=>localStorage.setItem('hwapp_retired_users',JSON.stringify(d));
 const saveClasses=d=>localStorage.setItem('hwapp_classes',JSON.stringify(d));
 
+function exportData() {
+  const keys = [
+    'hwapp_users', 'hwapp_categories', 'hwapp_homeworks', 'hwapp_completions',
+    'hwapp_student_groups', 'hwapp_retired_users', 'hwapp_classes',
+    'hwapp_saved_id', 'hwapp_saved_pw', 'hwapp_progress_topics', 'hwapp_progress_completions'
+  ];
+  const data = {};
+  keys.forEach(k => {
+    const val = localStorage.getItem(k);
+    if(val) data[k] = val;
+  });
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+  const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '').substring(0, 4);
+  a.href = url;
+  a.download = `nest_backup_${dateStr}_${timeStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (confirm('데이터를 복원하시겠습니까? 현재 데이터가 백업 파일의 내용으로 완전히 대체됩니다.')) {
+          Object.keys(data).forEach(key => {
+            if (key.startsWith('hwapp_')) {
+              localStorage.setItem(key, data[key]);
+            }
+          });
+          alert('데이터 복원이 완료되었습니다. 페이지를 새로고침합니다.');
+          location.reload();
+        }
+      } catch (err) {
+        alert('잘못된 백업 파일 형식입니다.');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
 function migrateClassTypes() {
   const classes = getClasses();
   let changed = false;
@@ -1289,6 +1397,7 @@ let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdmi
 let currentCalDate = new Date(); // 달력/일정 표시용 기준 날짜
 let currentClassView = 'daily'; // daily, weekly, monthly
 let editingClassId = null, editingStudentId = null, editingProgressId = null;
+let currentPaymentMonth = new Date().toISOString().slice(0, 7);
 
 // 그룹 색상 팔레트
 const GROUP_COLORS=[
@@ -1409,6 +1518,73 @@ function showPage(role){
 }
 
 // ── NAV ──────────────────────────────────────────────────
+function getAdminHWItemHtml(h, users, comps, options = {}) {
+  const { isDashboard = false, showActions = false, showStudentList = false, onEdit = null } = options;
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  const title = h.title || '(제목 없음)';
+  const assigned = h.assignedTo || [];
+  const names = assigned.map(id => users.find(x => x.id === id)?.name || id).join(', ');
+  const doneCount = comps.filter(c => c.homeworkId === h.id).length;
+  const pct = assigned.length ? Math.round(doneCount / assigned.length * 100) : 0;
+  const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
+  
+  let diffStr = '';
+  if (h.dueDate) {
+    const parts = h.dueDate.split('-');
+    const dDate = new Date(parts[0], parts[1]-1, parts[2]);
+    dDate.setHours(0,0,0,0);
+    const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
+    const color = diff < 0 ? 'var(--danger)' : diff <= 2 ? 'var(--danger)' : 'var(--text-muted)';
+    diffStr = `<span style="color:${color};font-weight:700">(D${diff>=0 ? '-'+diff : '+'+Math.abs(diff)})</span>`;
+  } else {
+    diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
+  }
+
+  const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  const meta = `대상: ${names || '없음'} ${h.createdAt ? `· 등록: ${h.createdAt}` : ''} · 마감: ${h.dueDate || '미정'} ${diffStr}`;
+
+  let actionsHtml = '';
+  if (showActions) {
+    const editBtn = onEdit ? `<button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();${onEdit}('${h.id}')">수정</button>` : '';
+    actionsHtml = `<div style="display:flex; gap:4px">${editBtn}<button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button></div>`;
+  } else if (!isDashboard) { 
+    actionsHtml = `<button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>`;
+  }
+
+  let studentListHtml = '';
+  if (showStudentList) {
+    studentListHtml = assigned.map(sid => {
+      const s = users.find(u => u.id === sid);
+      if (!s) return '';
+      const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
+      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">
+        <span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>
+        <span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>
+      </div>`;
+    }).join('');
+    if (studentListHtml) studentListHtml = `<div style="margin-top:6px">${studentListHtml}</div>`;
+  }
+
+  return `
+    <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer; ${isDashboard ? 'margin-bottom:8px; box-shadow:none; border:1px solid var(--border); padding:12px; border-radius:10px;' : ''}">
+      <div class="admin-hw-info">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
+          <div class="admin-hw-title" style="${isDashboard ? 'font-weight:700; font-size:14px' : ''}">📄 ${title}</div>
+          ${actionsHtml}
+        </div>
+        <div class="admin-hw-meta" style="${isDashboard ? 'font-size:12px; color:var(--text-muted); margin-top:4px' : ''}">${meta}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+            <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${assigned.length} 완료</span>
+        </div>
+        ${studentListHtml}
+      </div>
+    </div>`;
+}
+
 function showPanel(who,name){
   const pg=who==='s'?'student':'admin';
   document.querySelectorAll(`#${pg}Page .panel`).forEach(p=>p.classList.remove('active'));
@@ -1421,7 +1597,10 @@ function showPanel(who,name){
   if(who==='a'&&name==='manage') renderAdminManage();
   if(who==='s'&&name==='homework') renderStudentHomework();
   if(who==='s'&&name==='stats')renderStudentStats();
-  if(who==='a'&&name==='students'){renderAdminStudents(); renderDetailedStudentList();}
+  if(who==='a'&&name==='students'){
+    renderAdminStudents();
+    changeStudentMonth(currentPaymentMonth);
+  }
   if(who==='a'&&name==='retired')renderRetiredStudents();
   if(who==='a'&&name==='groups')renderStudentGroupPanel();
   if(who==='a'&&name==='stats')renderAdminStats();
@@ -1444,8 +1623,26 @@ function renderDashboard(who) {
   const isStudent = who === 's';
   const prefix = isStudent ? 'sd' : 'ad';
   
-  currentClassView = 'daily';
   currentCalDate = new Date();
+  const todayStr = formatDateLocal(currentCalDate);
+  const allClasses = getClasses();
+  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
+  const hasTodayClass = allClasses.some(c => {
+    const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+    return isMine && c.date === todayStr;
+  });
+
+  currentClassView = hasTodayClass ? 'daily' : 'weekly';
+
+  // Sync tab button active state
+  const tabBtns = document.querySelectorAll(`#${prefix}-class-view-content`)
+    ?.[0]?.closest('.card')?.querySelectorAll('.tab-btn') ||
+    document.querySelectorAll(`[onclick*="switchClassView('${prefix}'"]`);
+  tabBtns.forEach(btn => {
+    const view = btn.getAttribute('onclick')?.match(/'(\w+)'\)/)?.[1];
+    btn.classList.toggle('active', view === currentClassView);
+  });
+
   renderClassView(prefix, isStudent);
   if (!isStudent) {
     renderDashboardProgress();
@@ -1482,7 +1679,7 @@ function renderDashboard(who) {
   });
 
   if (filteredHws.length === 0) {
-    listEl.innerHTML = '<div class="empty-state">🎉 예정된 숙제가 없습니다.</div>';
+    listEl.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:14px">현재 진행 중인 숙제가 없습니다. ✨</div>';
     return;
   }
 
@@ -1497,11 +1694,10 @@ function renderDashboard(who) {
     const gc = matchedGrp ? GROUP_COLORS[matchedGi % GROUP_COLORS.length] : null;
     const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
 
-    const header = `<div class="cat-group-header" ${headerStyle}>📅 ${displayLabel}<span class="cat-count">${g.items.length}개</span></div>`;
+    const header = `<div class="cat-group-header" ${headerStyle}>🏷️ ${displayLabel}<span class="cat-count">${g.items.length}개</span></div>`;
     
     const items = g.items.map(h => {
       if (isStudent) {
-        // Student style (hw-item)
         const d = comps.some(c => c.homeworkId === h.id && c.studentId === currentUser.id);
         const chk = pendingChecks[h.id] !== undefined ? pendingChecks[h.id] : d;
         const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
@@ -1519,28 +1715,7 @@ function renderDashboard(who) {
           </div>
         `;
       } else {
-        // Admin style (admin-hw-item)
-        const names = h.assignedTo.map(id => users.find(u => u.id === id)?.name || id).join(', ');
-        const doneCount = comps.filter(c => c.homeworkId === h.id).length;
-        const pct = h.assignedTo.length ? Math.round(doneCount / h.assignedTo.length * 100) : 0;
-        const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
-        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
-        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-
-        return `
-          <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer">
-            <div class="admin-hw-info">
-              <div class="admin-hw-title">📄 ${h.title}</div>
-              <div class="admin-hw-meta">대상: ${names} · 마감: ${h.dueDate} <span style="color:var(--danger);font-weight:700">(D-${diff})</span></div>
-              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-                <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
-                  <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
-                </div>
-                <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${h.assignedTo.length} 완료</span>
-              </div>
-            </div>
-          </div>
-        `;
+        return getAdminHWItemHtml(h, users, comps, { isDashboard: true });
       }
     }).join('');
 
@@ -1549,212 +1724,7 @@ function renderDashboard(who) {
 }
 
 function renderDashboardProgress() {
-  const el = document.getElementById('a-dashboard-progress-list');
-  if (!el) return;
-  const topics = getProgressTopics();
-  const comps = getProgressCompletions();
-  const groups = getStudentGroups();
-  const students = getUsers().filter(u => u.role === 'student');
-  const hws = getHomeworks();
-  const hwComps = getCompletions();
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  if (!groups.length || !topics.length) {
-    el.innerHTML = '<div class="empty-state">최근 등록된 수업 진도가 없습니다.</div>';
-    return;
-  }
-
-  // 1. Find the most recent date for each group
-  const recentSessions = [];
-  groups.forEach((group, gi) => {
-    const gc = getGroupColor(group.id);
-    const groupTopics = topics.filter(t => t.groupId === group.id);
-    if (!groupTopics.length) return;
-
-    // Group by date
-    const datesMap = {};
-    groupTopics.forEach(t => {
-      const d = t.targetDate || '날짜 미지정';
-      if(!datesMap[d]) datesMap[d] = [];
-      datesMap[d].push(t);
-    });
-
-    const dates = Object.keys(datesMap).sort().reverse();
-    const mostRecentDate = dates[0];
-    const sessionTopics = datesMap[mostRecentDate];
-
-    recentSessions.push({
-      group,
-      gc,
-      date: mostRecentDate,
-      topics: sessionTopics,
-      sortDate: mostRecentDate === '날짜 미지정' ? '0000-00-00' : mostRecentDate
-    });
-  });
-
-  // Sort sessions: Most recent date first, then by group name
-  recentSessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.group.name.localeCompare(b.group.name));
-
-  if (!recentSessions.length) {
-    el.innerHTML = '<div class="empty-state">최근 등록된 수업 진도가 없습니다.</div>';
-    return;
-  }
-
-  const cardsHtml = recentSessions.map(session => {
-    const { group, gc, date, topics: sessionTopics } = session;
-    const memberIds = group.studentIds || [];
-    const members = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
-
-    let groupTotalItems = 0, groupDoneItems = 0;
-    sessionTopics.forEach(t => {
-      members.forEach(s => {
-        groupTotalItems++;
-        if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
-      });
-    });
-    const groupPct = groupTotalItems ? Math.round(groupDoneItems / groupTotalItems * 100) : 0;
-    const groupBarColor = groupPct === 100 ? 'var(--success)' : groupPct > 0 ? gc.color : 'var(--border-strong)';
-
-    let headerDateStr = '';
-    if (date !== '날짜 미지정') {
-      const dObj = new Date(date);
-      const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
-      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 ${date} ${dayName ? `(${dayName})` : ''}</span>`;
-    } else {
-      headerDateStr = `<span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8; color:var(--text-muted)">📅 날짜 미지정</span>`;
-    }
-
-    const homeworkRows = sessionTopics.map(t => {
-      if(!t.hwId) return '';
-      const h = hws.find(x => x.id === t.hwId);
-      if(!h) return '';
-      
-      const doneCount = hwComps.filter(c => c.homeworkId === h.id).length;
-      const hwTotal = h.assignedTo.length;
-      const pct = hwTotal ? Math.round(doneCount / hwTotal * 100) : 0;
-      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
-      
-      let diffStr = '';
-      if(h.dueDate) {
-        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
-        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-        const color = diff < 0 ? 'var(--danger)' : diff <= 2 ? 'var(--danger)' : 'var(--text-muted)';
-        diffStr = `<span style="color:${color};font-weight:700">(D${diff>=0 ? '-'+diff : '+'+Math.abs(diff)})</span>`;
-      } else {
-        diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
-      }
-
-      // 배정된 학생 이름 + 완료 상태 목록 (이름 클릭 시 학생 상세 팝업)
-      const hwStudentRows = h.assignedTo.map(sid => {
-        const s = students.find(u => u.id === sid);
-        if (!s) return '';
-        const done = hwComps.some(c => c.homeworkId === h.id && c.studentId === sid);
-        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">`
-          + `<span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>`
-          + `<span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>`
-          + `</div>`;
-      }).join('');
-
-      return `
-        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
-          <div class="admin-hw-info">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
-              <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
-              <div style="display:flex; gap:4px">
-                <button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();editHWFromProgress('${h.id}')">수정</button>
-                <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteHW('${h.id}','${h.title.replace(/'/g,"\\'")}')">삭제</button>
-              </div>
-            </div>
-            <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
-                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
-            </div>
-
-            ${hwStudentRows ? `<div style="margin-top:6px">${hwStudentRows}</div>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    const topicRows = sessionTopics.map(t => {
-      const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
-      const topicTotal = members.length;
-      const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
-      const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
-      
-      const studentRows = members.map(s => {
-        const done = comps.some(c => c.topicId === t.id && c.studentId === s.id);
-        return `<div class="prog-student-detail">
-          <span class="prog-student-name">${s.name}</span>
-          <span style="font-size:11px;color:${done?'var(--success)':'var(--text-muted)'};font-weight:600">${done?'✅ 완료':'⏳ 진행중'}</span>
-          <button class="prog-check-btn ${done?'done':''}" onclick="toggleProgressCompletion('${t.id}','${s.id}',${done})" title="${done?'미완료로 변경':'완료로 표시'}">${done?'✓':'○'}</button>
-        </div>`;
-      }).join('');
-
-      // Add a specialized _dash id to prevent DOM id conflicts with the main progress tab
-      return `<div class="prog-topic-item" style="margin-bottom:4px">
-        <button class="prog-expand-btn" id="prog-expand-${t.id}_dash" onclick="toggleProgressExpand('${t.id}_dash')">▶</button>
-        <div class="prog-topic-info">
-          <div class="prog-topic-title">📖 ${t.topic}</div>
-          <div class="prog-topic-meta">
-            ${t.totalPages ? t.totalPages + '페이지' : ''}
-            · 등록: ${t.createdAt}
-          </div>
-          <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
-            <div class="prog-topic-bar" style="margin:0"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
-            <span class="prog-topic-pct" style="color:${topicColor}; font-size:11px">${topicPct}%</span>
-            <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
-          </div>
-        </div>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px;background:var(--success);color:#fff" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:4px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
-      </div>
-      <div class="prog-topic-students" id="prog-students-${t.id}_dash">${studentRows}</div>`;
-    }).join('');
-
-    return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
-      <div class="prog-group-header" style="background:${gc.bg}; padding:10px 14px; border-radius:10px 10px 0 0">
-        <div class="prog-group-title" style="color:${gc.color}; font-size:15px">🏫 ${group.name}
-          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${members.length}명</span>
-          ${headerDateStr}
-        </div>
-        <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
-      </div>
-      <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:14px">${groupPct}%</div>
-          <div class="prog-summary-label" style="font-size:11px">달성률</div>
-        </div>
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="color:var(--success); font-size:14px">${groupDoneItems}</div>
-          <div class="prog-summary-label" style="font-size:11px">완료</div>
-        </div>
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="color:var(--warning); font-size:14px">${groupTotalItems - groupDoneItems}</div>
-          <div class="prog-summary-label" style="font-size:11px">미완료</div>
-        </div>
-        <div style="flex:2; margin-left:10px">
-          <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
-        </div>
-      </div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff; align-items:start">
-        <div class="prog-topic-list-col">
-          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📖 진도 항목</div>
-          ${topicRows}
-        </div>
-        <div class="prog-hw-list-col">
-          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📚 해당 수업 숙제</div>
-          ${homeworkRows || '<div style="font-size:12px; color:var(--text-muted); padding:10px">등록된 숙제가 없습니다.</div>'}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
+  renderProgressContent('a-dashboard-progress-list');
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
@@ -2052,32 +2022,7 @@ function renderAdminHWList(){
     const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
     
     const itemsHtml = g.items.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(h => {
-      const title = h.title || '(제목 없음)';
-      const assigned = h.assignedTo || [];
-      const names = assigned.map(id => {
-        const u = users.find(x => x.id === id);
-        return u ? u.name : id;
-      }).join(', ');
-      
-      const compCount = getCompletions().filter(c => c.homeworkId === h.id).length;
-      const pct = assigned.length ? Math.round(compCount / assigned.length * 100) : 0;
-      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
-      const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      
-      return `
-        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')">
-          <div class="admin-hw-info">
-            <div class="admin-hw-title">📄 ${title}</div>
-            <div class="admin-hw-meta">대상: ${names || '없음'} · 등록: ${h.createdAt || '-'} · 마감: ${h.dueDate || '미정'}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
-                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:${progColor}">${compCount}/${assigned.length} 완료</span>
-            </div>
-          </div>
-          <button class="btn-del" onclick="event.stopPropagation();deleteHW('${h.id}','${safeTitle}')">삭제</button>
-        </div>`;
+      return getAdminHWItemHtml(h, users, getCompletions());
     }).join('');
 
     return `
@@ -2927,6 +2872,7 @@ function changeStudentMonth(monthStr) {
   if (el2) el2.value = currentPaymentMonth;
   
   renderDetailedStudentList();
+  renderPaymentSummary();
 }
 
 function shiftStudentMonth(delta) {
@@ -3126,6 +3072,64 @@ function closeProgEditModalDirect() {
   document.getElementById('progEditModal').classList.remove('open');
   editingProgressId = null;
 }
+
+// ─── TOPIC MEMO MODAL ───────────────────────────────────────────
+let currentMemoTopicId = null;
+
+function openTopicMemo(topicId) {
+  const topics = getProgressTopics();
+  const t = topics.find(x => x.id === topicId);
+  if (!t) return;
+  currentMemoTopicId = topicId;
+
+  document.getElementById('topic-memo-title').textContent = '📝 ' + t.topic;
+  document.getElementById('topic-memo-sub').textContent = t.targetDate ? '📅 ' + t.targetDate : '';
+
+  const memo = t.memo || '';
+  document.getElementById('topic-memo-content').textContent = memo || '(메모 없음)';
+  document.getElementById('topic-memo-input').value = memo;
+
+  // Start in view mode
+  document.getElementById('topic-memo-view').style.display = '';
+  document.getElementById('topic-memo-edit').style.display = 'none';
+
+  document.getElementById('topicMemoModal').classList.add('open');
+}
+
+function closeTopicMemoModal(e) {
+  if (e.target === document.getElementById('topicMemoModal')) closeTopicMemoModalDirect();
+}
+
+function closeTopicMemoModalDirect() {
+  document.getElementById('topicMemoModal').classList.remove('open');
+  currentMemoTopicId = null;
+}
+
+function switchTopicMemoEdit() {
+  document.getElementById('topic-memo-view').style.display = 'none';
+  document.getElementById('topic-memo-edit').style.display = '';
+  document.getElementById('topic-memo-input').focus();
+}
+
+function cancelTopicMemoEdit() {
+  document.getElementById('topic-memo-view').style.display = '';
+  document.getElementById('topic-memo-edit').style.display = 'none';
+}
+
+function saveTopicMemo() {
+  if (!currentMemoTopicId) return;
+  const memo = document.getElementById('topic-memo-input').value.trim();
+  let topics = getProgressTopics();
+  topics = topics.map(t => t.id === currentMemoTopicId ? { ...t, memo } : t);
+  saveProgressTopics(topics);
+
+  document.getElementById('topic-memo-content').textContent = memo || '(메모 없음)';
+  document.getElementById('topic-memo-view').style.display = '';
+  document.getElementById('topic-memo-edit').style.display = 'none';
+  showToast('✅ 메모가 저장되었습니다.');
+}
+// ────────────────────────────────────────────────────────────────
+
 
 function submitProgEdit() {
   const topicId = editingProgressId;
@@ -3363,7 +3367,7 @@ function renderDailySchedule(containerId, isStudent) {
       <div class="cal-title">${currentCalDate.getFullYear()}년 ${currentCalDate.getMonth()+1}월 ${currentCalDate.getDate()}일 <span style="color:${dayColor}">(${dayName})</span></div>
       <div class="cal-nav">
         <button class="cal-btn" onclick="changeDate('${containerId}', -1, ${isStudent})">◀</button>
-        <button class="cal-btn" onclick="currentCalDate=new Date();renderDailySchedule('${containerId}', ${isStudent})">today</button>
+        <button class="cal-btn" onclick="currentCalDate=new Date();renderDailySchedule('${containerId}', ${isStudent})">오늘</button>
         <button class="cal-btn" onclick="changeDate('${containerId}', 1, ${isStudent})">▶</button>
       </div>
     </div>
@@ -3411,11 +3415,11 @@ function renderWeeklySchedule(containerId, isStudent) {
   const endDay = dayNamesFull[end.getDay()];
 
   let html = `
-    <div class="cal-header">
-      <div class="cal-title">${start.getMonth()+1}/${start.getDate()}(${startDay}) ~ ${end.getMonth()+1}/${end.getDate()}(${endDay})</div>
-      <div class="cal-nav">
+    <div class="cal-header" style="flex-direction:column; align-items:stretch; gap:8px">
+      <div class="cal-title" style="text-align:center">${start.getMonth()+1}/${start.getDate()}(${startDay}) ~ ${end.getMonth()+1}/${end.getDate()}(${endDay})</div>
+      <div class="cal-nav" style="width:100%; display:flex; justify-content:space-between">
         <button class="cal-btn" onclick="changeDate('${containerId}', -7, ${isStudent})">◀</button>
-        <button class="cal-btn" onclick="currentCalDate=new Date();renderWeeklySchedule('${containerId}', ${isStudent})">this week</button>
+        <button class="cal-btn" style="flex:1; margin:0 6px" onclick="currentCalDate=new Date();renderWeeklySchedule('${containerId}', ${isStudent})">이번주</button>
         <button class="cal-btn" onclick="changeDate('${containerId}', 7, ${isStudent})">▶</button>
       </div>
     </div>
@@ -3481,7 +3485,7 @@ function renderUniversalCalendar(containerId, isStudent) {
       <div class="cal-title">${year}년 ${month + 1}월</div>
       <div class="cal-nav">
         <button class="cal-btn" onclick="changeMonth('${containerId}', -1, ${isStudent})">◀</button>
-        <button class="cal-btn" onclick="currentCalDate=new Date();renderUniversalCalendar('${containerId}', ${isStudent})">today</button>
+        <button class="cal-btn" onclick="currentCalDate=new Date();renderUniversalCalendar('${containerId}', ${isStudent})">오늘</button>
         <button class="cal-btn" onclick="changeMonth('${containerId}', 1, ${isStudent})">▶</button>
       </div>
     </div>
@@ -3950,12 +3954,12 @@ function toggleProgressExpand(topicId) {
   }
 }
 
-function renderProgressContent() {
+function renderProgressContent(targetId) {
   const topics = getProgressTopics();
   const comps = getProgressCompletions();
   const groups = getStudentGroups();
   const students = getUsers().filter(u => u.role === 'student');
-  const el = document.getElementById('progress-content');
+  const el = document.getElementById(targetId || 'progress-content');
   const hws = getHomeworks();
   const hwComps = getCompletions();
   const today = new Date();
@@ -4030,55 +4034,7 @@ function renderProgressContent() {
       if(!t.hwId) return '';
       const h = hws.find(x => x.id === t.hwId);
       if(!h) return '';
-      
-      const doneCount = hwComps.filter(c => c.homeworkId === h.id).length;
-      const hwTotal = h.assignedTo.length;
-      const pct = hwTotal ? Math.round(doneCount / hwTotal * 100) : 0;
-      const progColor = pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--border-strong)';
-      
-      let diffStr = '';
-      if(h.dueDate) {
-        const dDate = new Date(h.dueDate); dDate.setHours(0,0,0,0);
-        const diff = Math.ceil((dDate - today) / (1000 * 60 * 60 * 24));
-        const color = diff < 0 ? 'var(--danger)' : diff <= 2 ? 'var(--danger)' : 'var(--text-muted)';
-        diffStr = `<span style="color:${color};font-weight:700">(D${diff>=0 ? '-'+diff : '+'+Math.abs(diff)})</span>`;
-      } else {
-        diffStr = `<span style="color:var(--text-muted);">(마감 미정)</span>`;
-      }
-
-      // 배정된 학생 이름 + 완료 상태 목록 (이름 클릭 시 학생 상세 팝업)
-      const hwStudentRows = h.assignedTo.map(sid => {
-        const s = students.find(u => u.id === sid);
-        if (!s) return '';
-        const done = hwComps.some(c => c.homeworkId === h.id && c.studentId === sid);
-        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">`
-          + `<span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>`
-          + `<span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>`
-          + `</div>`;
-      }).join('');
-
-      return `
-        <div class="admin-hw-item" onclick="openHWStudentModal('${h.id}')" style="cursor:pointer; padding:10px; margin-bottom:4px; box-shadow:none; border:1px solid var(--border)">
-          <div class="admin-hw-info">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
-              <div class="admin-hw-title" style="font-size:13px; flex:1">📄 ${h.title}</div>
-              <div style="display:flex; gap:4px">
-                <button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();editHWFromProgress('${h.id}')">수정</button>
-                <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteHW('${h.id}','${h.title.replace(/'/g,"\\'")}')">삭제</button>
-              </div>
-            </div>
-            <div class="admin-hw-meta" style="font-size:11px">마감: ${h.dueDate||'-'} ${diffStr}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
-                <div style="height:100%;border-radius:99px;background:${progColor};width:${pct}%;transition:width .4s"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:${progColor}">${doneCount}/${hwTotal} 완료</span>
-            </div>
-
-            ${hwStudentRows ? `<div style="margin-top:6px">${hwStudentRows}</div>` : ''}
-          </div>
-        </div>
-      `;
+      return getAdminHWItemHtml(h, students, hwComps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
     }).join('');
 
     const topicRows = sessionTopics.map(t => {
@@ -4099,7 +4055,7 @@ function renderProgressContent() {
       return `<div class="prog-topic-item" style="margin-bottom:4px">
         <button class="prog-expand-btn" id="prog-expand-${t.id}" onclick="toggleProgressExpand('${t.id}')">▶</button>
         <div class="prog-topic-info">
-          <div class="prog-topic-title">📖 ${t.topic}</div>
+          <div class="prog-topic-title" onclick="event.stopPropagation();openTopicMemo('${t.id}')" style="cursor:pointer" title="클릭하면 메모를 확인/작성할 수 있습니다">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle">📝</span>' : ''}</div>
           <div class="prog-topic-meta">
             ${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
           </div>
