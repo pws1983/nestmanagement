@@ -660,6 +660,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     font-size: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid var(--border);
   }
   .prog-no-data .prog-icon { font-size: 40px; margin-bottom: 12px; }
+  /* Class Edit Modal */
+  #classEditModal .modal { max-width: 500px; }
+  .modal-form-row { margin-bottom: 16px; }
+  .modal-form-row label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .modal-form-row input[type="text"], .modal-form-row select, .modal-form-row textarea {
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-family: inherit; font-size: 14px; outline: none;
+  }
 </style>
 </head>
 <body>
@@ -851,7 +858,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="panel" id="a-panel-groups">
       <div class="panel-title">학교 관리</div>
       <div class="panel-sub">학교를 추가하고 학생을 배정하세요</div>
-      <div class="admin-grid">
+      <div class="admin-grid" style="grid-template-columns: 1fr; gap: 20px;">
         <div class="card">
           <div class="section-title" id="grp-form-title">➕ 학교 추가</div>
           <div class="form-row"><label>학교 이름</label>
@@ -1032,6 +1039,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <div class="form-row"><label>수업 제목</label><input id="cls-title" type="text" placeholder="예) 중등 수학 A반 보강"></div>
           <div class="form-row"><label>대상 그룹 (중복 선택 가능, 미선택 시 전체 대상)</label>
             <div id="cls-group-checkboxes" class="subject-chip-group">
+              <!-- JS will populate -->
+            </div>
+          </div>
+          <div class="form-row" id="cls-student-list-wrap" style="display:none; margin-top:12px;">
+            <label>수업 대상 학생 (클릭 시 제외)</label>
+            <div id="cls-student-list" class="subject-chip-group" style="max-height:200px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px; background:#f8fafc">
               <!-- JS will populate -->
             </div>
           </div>
@@ -2001,13 +2014,37 @@ function getStudentGroupOf(sid){
   return getStudentGroups().find(g=>g.studentIds&&g.studentIds.includes(sid));
 }
 function renderStudentGroupPanel(){
-  const groups=getStudentGroups();
+  const allGroups=getStudentGroups();
   const students=getUsers().filter(u=>u.role==='student');
+  
+  // 학교(그룹) 정렬: 학교 전체 합산 인원 내림차순
+  const groups = allGroups.slice().sort((a, b) => {
+    const countA = (a.studentIds || []).length;
+    const countB = (b.studentIds || []).length;
+    return countB - countA;
+  });
+
   const el=document.getElementById('grp-list');
   if(!groups.length){el.innerHTML='<div class="empty-state"><div class="ei">👥</div><div>그룹이 없습니다</div></div>';return;}
+  
   el.innerHTML=groups.map((g,gi)=>{
     const gc=getGroupColor(g.id);
-    const members=(g.studentIds||[]).map(sid=>{
+    
+    // 그룹 내 학생 정렬: 고1 -> 고2 -> 고3 (이후 다른 학년) -> 가나다순
+    const sortedMemberIds = (g.studentIds || []).slice().sort((aId, bId) => {
+      const sA = students.find(u => u.id === aId);
+      const sB = students.find(u => u.id === bId);
+      if(!sA || !sB) return 0;
+      
+      const gradeWeights = { '고1': 1, '고2': 2, '고3': 3, '중1': 4, '중2': 5, '중3': 6 };
+      const wA = gradeWeights[sA.grade] || 99;
+      const wB = gradeWeights[sB.grade] || 99;
+      
+      if (wA !== wB) return wA - wB;
+      return sA.name.localeCompare(sB.name, 'ko');
+    });
+
+    const members=sortedMemberIds.map(sid=>{
       const s=students.find(u=>u.id===sid);
       return s?`<span class="grp-member-chip" style="background:${gc.bg};color:${gc.color};border-color:${gc.border}">${s.name}<button class="chip-del" onclick="removeFromGroup('${g.id}','${sid}')" title="그룹에서 제거">✕</button></span>`:''
     }).join('');
@@ -2210,12 +2247,23 @@ function renderStudentChecks(filterGroupId){
     const g=groups.find(g=>g.id===filterGroupId);
     filtered=g?students.filter(s=>(g.studentIds||[]).includes(s.id)):[];
   }
-  // 그룹별 -> 이름별 정렬
+  // 학교 인원수(내림차순) -> 학년 -> 이름 정렬
   filtered.sort((a,b)=>{
     const ga=getStudentGroupOf(a.id),gb=getStudentGroupOf(b.id);
+    const sizeA = ga ? (ga.studentIds || []).length : 0;
+    const sizeB = gb ? (gb.studentIds || []).length : 0;
+    if (sizeA !== sizeB) return sizeB - sizeA;
+
     const gna=ga?ga.name:'zzz',gnb=gb?gb.name:'zzz';
     const gcmp=gna.localeCompare(gnb,'ko');
-    return gcmp!==0?gcmp:a.name.localeCompare(b.name,'ko');
+    if (gcmp !== 0) return gcmp;
+
+    const gradeWeights = { '고1': 1, '고2': 2, '고3': 3, '중1': 4, '중2': 5, '중3': 6 };
+    const wA = gradeWeights[a.grade] || 99;
+    const wB = gradeWeights[b.grade] || 99;
+    if (wA !== wB) return wA - wB;
+
+    return a.name.localeCompare(b.name,'ko');
   });
   const el=document.getElementById('student-checks');
   if(!filtered.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:4px">해당 그룹에 학생이 없습니다</div>';return;}
@@ -2470,9 +2518,26 @@ function renderAdminStudents(){
   // 그룹명 가나다순 → 그룹 내 이름 가나다순으로 정렬
   const students=allStudents.slice().sort((a,b)=>{
     const ga=getStudentGroupOf(a.id),gb=getStudentGroupOf(b.id);
-    const gna=ga?ga.name:'zzz',gnb=gb?gb.name:'zzz'; // 미배정은 맨 뒤
-    const gcmp=gna.localeCompare(gnb,'ko');
-    return gcmp!==0?gcmp:a.name.localeCompare(b.name,'ko');
+    
+    // 1. 학교 전체 인원수 기준 (내림차순)
+    const sizeA = ga ? (ga.studentIds || []).length : 0;
+    const sizeB = gb ? (gb.studentIds || []).length : 0;
+    if (sizeA !== sizeB) return sizeB - sizeA;
+    
+    // 2. 인원수가 같으면 학교 이름순으로 그룹화 유지
+    const gna = ga ? ga.name : 'zzz';
+    const gnb = gb ? gb.name : 'zzz';
+    const gcmp = gna.localeCompare(gnb, 'ko');
+    if (gcmp !== 0) return gcmp;
+    
+    // 3. 같은 학교 내에서 학년순 (고1 -> 고2 -> 고3 ...)
+    const gradeWeights = { '고1': 1, '고2': 2, '고3': 3, '중1': 4, '중2': 5, '중3': 6 };
+    const wA = gradeWeights[a.grade] || 99;
+    const wB = gradeWeights[b.grade] || 99;
+    if (wA !== wB) return wA - wB;
+    
+    // 4. 이름순
+    return a.name.localeCompare(b.name, 'ko');
   });
   if(adminStatSel){
     const prev=adminStatSel.value;
@@ -3592,20 +3657,23 @@ initData();
 loadSavedCredentials();
 
 // ── CLASS MANAGEMENT ──────────────────────────────────────
+let currentClassManualExclusions = [];
+
 function renderAdminClasses() {
   const groups = getStudentGroups();
   const grpContainer = document.getElementById('cls-group-checkboxes');
   if (grpContainer) {
     grpContainer.innerHTML = groups.map(g => {
-      return `<label class="subject-chip"><input type="checkbox" name="cls-group" value="${g.id}" onchange="toggleSubjectChip(this)"> ${g.name}</label>`;
+      return `<label class="subject-chip"><input type="checkbox" name="cls-group" value="${g.id}" onchange="toggleSubjectChip(this); updateClassStudentList()"> ${g.name}</label>`;
     }).join('');
   }
 
   const subSel = document.getElementById('cls-subject');
   if (subSel) {
-    const cats = getCategories();
+    const defaultCats = ['국어', '수학', '영어'];
     subSel.innerHTML = '<option value="">— 과목 선택(전체) —</option>' +
-      cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+      defaultCats.map(name => `<option value="${name}">${name}</option>`).join('');
+    subSel.setAttribute('onchange', 'updateClassStudentList()');
   }
   
   // Setup Time Selects and Default Dates for 3 Slots
@@ -3633,6 +3701,74 @@ function renderAdminClasses() {
 
   renderClassView('a', false);
   renderAdminClassList();
+  currentClassManualExclusions = [];
+  updateClassStudentList();
+}
+
+function updateClassStudentList() {
+  const selectedSubject = document.getElementById('cls-subject').value;
+  const groupChecked = document.querySelectorAll('input[name="cls-group"]:checked');
+  const groupIds = Array.from(groupChecked).map(cb => cb.value);
+  
+  const wrap = document.getElementById('cls-student-list-wrap');
+  const container = document.getElementById('cls-student-list');
+  if (!wrap || !container) return;
+
+  if (groupIds.length === 0 && !selectedSubject) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  const allUsers = getUsers();
+  const students = allUsers.filter(u => u.role === 'student');
+  const groups = getStudentGroups();
+
+  // 1. 해당 그룹 학생 필터링 (그룹 미선택 시 전체 학생)
+  let targetStudents = students;
+  if (groupIds.length > 0) {
+    targetStudents = students.filter(s => groupIds.some(gid => {
+      const g = groups.find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(s.id);
+    }));
+  }
+
+  // 2. 과목 필터링
+  if (selectedSubject) {
+    targetStudents = targetStudents.filter(s => s.subject && s.subject.split(',').includes(selectedSubject));
+  }
+
+  if (targetStudents.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  
+  // 3. 제외 대상 반영 및 렌더링
+  container.innerHTML = targetStudents.map(s => {
+    const isExcluded = currentClassManualExclusions.includes(s.id);
+    if (isExcluded) return '';
+    
+    const grp = getStudentGroupOf(s.id);
+    const gc = grp ? getGroupColor(grp.id) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'};
+    
+    return `<span class="grp-member-chip" style="background:${gc.bg}; color:${gc.color}; border-color:${gc.border}">
+      ${s.name}
+      <button class="chip-del" onclick="removeClassFromCurrentList('${s.id}')" title="제외하기">✕</button>
+    </span>`;
+  }).join('');
+
+  // 모든 멤버가 제외된 경우의 처리
+  if (container.innerHTML.trim() === '') {
+    container.innerHTML = '<div style="font-size:12px; color:var(--text-muted)">모든 학생이 제외되었습니다.</div>';
+  }
+}
+
+function removeClassFromCurrentList(sid) {
+  if (!currentClassManualExclusions.includes(sid)) {
+    currentClassManualExclusions.push(sid);
+    updateClassStudentList();
+  }
 }
 
 function addSlot() {
@@ -3723,7 +3859,7 @@ function renderDailySchedule(containerId, isStudent) {
         : '전체 대상';
       
       return `
-        <div class="schedule-card" style="background:${gColor.bg}; border-color:${gColor.border}">
+        <div class="schedule-card" style="background:${gColor.bg}; border-color:${gColor.border}; cursor:pointer" onclick="${isStudent ? '' : `openClassEditModal('${c.id}')`}">
           <div class="schedule-time" style="color:#000">${c.startTime} ~ ${c.endTime}</div>
           <div class="schedule-info">
             <div class="schedule-title" style="color:${gColor.color}">${c.title}</div>
@@ -3780,7 +3916,7 @@ function renderWeeklySchedule(containerId, isStudent) {
     const isToday = dStr === formatDateLocal(new Date());
     
     const dayClasses = classes.filter(c => {
-      const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+      const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
       return isMine && c.date === dStr;
     }).sort((a,b) => a.startTime.localeCompare(b.startTime));
     
@@ -3799,7 +3935,7 @@ function renderWeeklySchedule(containerId, isStudent) {
               ? targetIds.map(gid => getStudentGroups().find(g => g.id === gid)?.name || gid).join(', ')
               : '전체';
             return `
-              <div class="week-class-item" style="background:${gColor.bg}; border-color:${gColor.border}; border-bottom-style:solid; padding:8px 10px; border-radius:8px; margin-bottom:4px">
+              <div class="week-class-item" style="background:${gColor.bg}; border-color:${gColor.border}; border-bottom-style:solid; padding:8px 10px; border-radius:8px; margin-bottom:4px; cursor:pointer" onclick="${isStudent ? '' : `openClassEditModal('${c.id}')`}">
                 <div class="week-class-time" style="color:#000; font-weight:700; font-size:11px; white-space:nowrap">${c.startTime} ~ ${c.endTime}</div>
                 <div class="week-class-title" style="color:${gColor.color}">${c.title}</div>
                 <div class="week-class-meta" style="color:#000; font-size:10px; font-weight:700">
@@ -3869,14 +4005,16 @@ function renderUniversalCalendar(containerId, isStudent) {
       const dateMatch = c.date === dateStr;
       if (!dateMatch) return false;
       if (isStudent) {
-        return !c.groupId || c.groupId === studentGroupId || (c.groupIds && c.groupIds.includes(studentGroupId));
+        return (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === studentGroupId || (c.groupIds && c.groupIds.includes(studentGroupId));
       }
       return true;
     }).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     const classItems = dayClasses.map(c => {
-      const gColor = getGroupColor(c.groupId);
-      return `<div class="class-mini" title="${c.title} ${c.subject ? `(${c.subject})` : ''}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
+      const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+      const firstGId = targetIds[0] || null;
+      const gColor = getGroupColor(firstGId);
+      return `<div class="class-mini" title="${c.title} ${c.subject ? `(${c.subject})` : ''}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000; cursor:pointer" onclick="event.stopPropagation(); ${isStudent ? '' : `openClassEditModal('${c.id}')`}"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
     }).join('');
 
     html += `
@@ -3911,22 +4049,28 @@ function addClass() {
   const type = document.querySelector('input[name="cls-type"]:checked').value;
   
   // 과목 기반 학생 필터링
-  let assignedTo = null;
-  if (selectedSubject) {
-    const allUsers = getUsers();
-    const studentsInGroups = allUsers.filter(u => u.role === 'student' && groupIds.some(gid => {
-      const g = getStudentGroups().find(sg => sg.id === gid);
-      return g && g.studentIds && g.studentIds.includes(u.id);
+  const allUsers = getUsers();
+  const students = allUsers.filter(u => u.role === 'student');
+  const groups = getStudentGroups();
+
+  let targetStudents = students;
+  if (groupIds.length > 0) {
+    targetStudents = students.filter(s => groupIds.some(gid => {
+      const g = groups.find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(s.id);
     }));
-    assignedTo = studentsInGroups.filter(s => s.subject && s.subject.split(',').includes(selectedSubject)).map(s => s.id);
-  } else if (groupIds.length > 0) {
-    // 과목 미선택 시 해당 그룹 전체 학생
-    const allUsers = getUsers();
-    assignedTo = allUsers.filter(u => u.role === 'student' && groupIds.some(gid => {
-      const g = getStudentGroups().find(sg => sg.id === gid);
-      return g && g.studentIds && g.studentIds.includes(u.id);
-    })).map(s => s.id);
+  } else if (!selectedSubject) {
+    // 그룹도 과목도 없으면 null (전체 대상 유지? 혹은 빈 배열?)
+    targetStudents = []; 
   }
+
+  if (selectedSubject) {
+    targetStudents = targetStudents.filter(s => s.subject && s.subject.split(',').includes(selectedSubject));
+  }
+
+  // 수동 제외 반영
+  const finalAssignedTo = targetStudents.filter(s => !currentClassManualExclusions.includes(s.id)).map(s => s.id);
+  const assignedTo = finalAssignedTo.length > 0 ? finalAssignedTo : (groupIds.length === 0 && !selectedSubject ? null : []);
   
   if(!title) {
     showToast('수업 제목을 입력하세요.', 'warn');
@@ -4020,6 +4164,7 @@ function toggleRegularNotice(show) {
 
 function cancelClassEdit() {
   editingClassId = null;
+  currentClassManualExclusions = [];
   document.getElementById('cls-subject').value = '';
   document.getElementById('cls-title').value = '';
   document.getElementById('cls-desc').value = '';
@@ -4057,6 +4202,32 @@ function editClass(id) {
   
   editingClassId = id;
   document.getElementById('cls-subject').value = c.subject || '';
+  
+  // 수동 제외 리스트 복구
+  // c.assignedTo 에 없는 매칭 학생들을 제외 리스트에 넣음
+  const allUsers = getUsers();
+  const students = allUsers.filter(u => u.role === 'student');
+  const groups = getStudentGroups();
+  const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+  
+  let baseMatchingStudents = students;
+  if (targetIds.length > 0) {
+    baseMatchingStudents = students.filter(s => targetIds.some(gid => {
+      const g = groups.find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(s.id);
+    }));
+  }
+  if (c.subject) {
+    baseMatchingStudents = baseMatchingStudents.filter(s => s.subject && s.subject.split(',').includes(c.subject));
+  }
+  
+  const assignedSet = new Set(c.assignedTo || []);
+  currentClassManualExclusions = baseMatchingStudents
+    .filter(s => !assignedSet.has(s.id))
+    .map(s => s.id);
+
+  updateClassStudentList();
+  
   document.getElementById('cls-title').value = c.title;
   
   // Only Slot 1 for editing
@@ -4073,7 +4244,7 @@ function editClass(id) {
   document.getElementById('cls-slot-3').style.display = 'none';
   document.getElementById('btn-add-slot').style.display = 'none';
 
-  const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+  // Use already declared targetIds
   document.querySelectorAll('input[name="cls-group"]').forEach(cb => {
     if (targetIds.includes(cb.value)) {
       cb.checked = true;
@@ -4120,8 +4291,10 @@ function renderAdminClassList() {
   classes.forEach(c => {
     if (c.type === 'regular') {
       const dayIdx = new Date(c.date).getDay();
-      const key = `${c.title}-${c.startTime}-${c.endTime}-${c.groupId}-${dayIdx}`;
-      if (!regMap.has(key)) regMap.set(key, {...c, dayName: dayNamesFull[dayIdx]});
+      const cGIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+      const cGIdsKey = cGIds.slice().sort().join(',');
+      const key = `${c.title}-${c.startTime}-${c.endTime}-${cGIdsKey}-${dayIdx}`;
+      if (!regMap.has(key)) regMap.set(key, {...c, dayName: dayNamesFull[dayIdx], groupIdsKey: cGIdsKey});
     } else {
       singles.push(c);
     }
@@ -4138,19 +4311,22 @@ function renderAdminClassList() {
   if (regList.length > 0) {
     html += '<div style="font-size:13px; font-weight:700; color:var(--primary); margin:10px 0 8px; border-bottom:1px solid var(--border)">🗓️ 정규수업 목록 <span style="font-weight:normal; font-size:11px; color:var(--text-muted)">(매주 고정)</span></div>';
     html += regList.map(c => {
-      const grp = groups.find(g => g.id === c.groupId);
-      const gColor = getGroupColor(c.groupId);
+      const gIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+      const matchedGroups = groups.filter(g => gIds.includes(g.id));
+      const gNames = matchedGroups.map(g => g.name).join(', ');
+      const gColor = gIds.length > 0 ? getGroupColor(gIds[0]) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'};
+      
       return `
         <div class="admin-hw-item" style="cursor:pointer; background:${gColor.bg}; border-color:${gColor.border}" onclick="editClass('${c.id}')">
           <div class="admin-hw-info">
             <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal"> - (매주 ${c.dayName}요일)</span></div>
             <div class="admin-hw-meta" style="color:#000">
               ${c.dayName}요일 (${c.startTime} ~ ${c.endTime}) 
-              · 대상: <span style="font-weight:700">${c.subject ? `[${c.subject}] ` : ''}${grp ? grp.name : '전체'}</span>
+              · 대상: <span style="font-weight:700">${c.subject ? `[${c.subject}] ` : ''}${gNames || '전체'}</span>
               ${c.assignedTo ? `<span style="color:var(--primary); font-weight:800"> (${c.assignedTo.length}명)</span>` : ''}
             </div>
           </div>
-          <button class="btn-del" style="white-space:nowrap" onclick="event.stopPropagation(); deleteRegularClassSeries('${c.title}', '${c.startTime}', '${c.endTime}', '${c.groupId}', '${c.dayName}')">전체삭제</button>
+          <button class="btn-del" style="white-space:nowrap" onclick="event.stopPropagation(); deleteRegularClassSeries('${c.title.replace(/'/g, "\\'")}', '${c.startTime}', '${c.endTime}', '${c.groupIdsKey}', '${c.dayName}')">전체삭제</button>
         </div>
       `;
     }).join('');
@@ -4181,14 +4357,17 @@ function renderAdminClassList() {
   el.innerHTML = html;
 }
 
-function deleteRegularClassSeries(title, start, end, groupId, dayName) {
+function deleteRegularClassSeries(title, start, end, groupIdsKey, dayName) {
   if (!confirm(`'매주 ${dayName}요일 ${title}' 수업의 모든 일정을 삭제하시겠습니까?`)) return;
   const dayNamesFull = ['일','월','화','수','목','금','토'];
   let classes = getClasses();
   classes = classes.filter(c => {
     if (c.type !== 'regular') return true;
     const dIdx = new Date(c.date).getDay();
-    const match = c.title === title && c.startTime === start && c.endTime === end && c.groupId === groupId && dayNamesFull[dIdx] === dayName;
+    const cGIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+    const cGIdsKey = cGIds.slice().sort().join(',');
+    
+    const match = c.title === title && c.startTime === start && c.endTime === end && cGIdsKey === groupIdsKey && dayNamesFull[dIdx] === dayName;
     return !match;
   });
   saveClasses(classes);
@@ -4598,6 +4777,99 @@ function renderProgressContent(targetId) {
   el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
 }
 
+// ── CLASS EDIT MODAL LOGIC ────────────────────────────────
+let currentModalClassId = null;
+
+function initModalTimeSelects() {
+  const sh = document.getElementById('modal-cls-start-h');
+  const sm = document.getElementById('modal-cls-start-m');
+  const eh = document.getElementById('modal-cls-end-h');
+  const em = document.getElementById('modal-cls-end-m');
+  if (!sh) return;
+  
+  let hHtml = '', mHtml = '';
+  for(let i=0; i<24; i++) hHtml += `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`;
+  for(let i=0; i<60; i+=5) mHtml += `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`;
+  
+  sh.innerHTML = hHtml; eh.innerHTML = hHtml;
+  sm.innerHTML = mHtml; em.innerHTML = mHtml;
+}
+
+function openClassEditModal(id) {
+  const c = getClasses().find(x => x.id === id);
+  if (!c) return;
+  
+  currentModalClassId = id;
+  initModalTimeSelects();
+  
+  document.getElementById('modal-cls-title').value = c.title || '';
+  document.getElementById('modal-cls-date').value = c.date || '';
+  document.getElementById('modal-cls-subject').value = c.subject || '';
+  document.getElementById('modal-cls-desc').value = c.description || '';
+  
+  if (c.startTime) {
+    const [h, m] = c.startTime.split(':');
+    document.getElementById('modal-cls-start-h').value = h;
+    document.getElementById('modal-cls-start-m').value = m;
+  }
+  if (c.endTime) {
+    const [h, m] = c.endTime.split(':');
+    document.getElementById('modal-cls-end-h').value = h;
+    document.getElementById('modal-cls-end-m').value = m;
+  }
+  
+  document.getElementById('classEditModal').classList.add('open');
+}
+
+function saveModalClass() {
+  if (!currentModalClassId) return;
+  
+  const title = document.getElementById('modal-cls-title').value.trim();
+  const date = document.getElementById('modal-cls-date').value;
+  const sh = document.getElementById('modal-cls-start-h').value;
+  const sm = document.getElementById('modal-cls-start-m').value;
+  const eh = document.getElementById('modal-cls-end-h').value;
+  const em = document.getElementById('modal-cls-end-m').value;
+  const subject = document.getElementById('modal-cls-subject').value;
+  const desc = document.getElementById('modal-cls-desc').value.trim();
+  
+  if (!title || !date) {
+    showToast('제목과 날짜를 입력해주세요.', 'warn');
+    return;
+  }
+  
+  let classes = getClasses();
+  classes = classes.map(c => {
+    if (c.id === currentModalClassId) {
+      return { 
+        ...c, 
+        title, date, 
+        startTime: `${sh}:${sm}`, 
+        endTime: `${eh}:${em}`, 
+        subject, 
+        description: desc 
+      };
+    }
+    return c;
+  });
+  
+  saveClasses(classes);
+  document.getElementById('classEditModal').classList.remove('open');
+  renderAdminClasses();
+  showToast('✅ 일정이 수정되었습니다.');
+}
+
+function deleteModalClass() {
+  if (!currentModalClassId) return;
+  if (!confirm('이 수업 일정을 삭제하시겠습니까?\n(정규 수업의 경우 이 날짜의 수업만 삭제됩니다)')) return;
+  
+  const classes = getClasses().filter(c => c.id !== currentModalClassId);
+  saveClasses(classes);
+  document.getElementById('classEditModal').classList.remove('open');
+  renderAdminClasses();
+  showToast('🗑️ 일정이 삭제되었습니다.');
+}
+
 // 초기 UI 세팅
 document.addEventListener('DOMContentLoaded', () => {
   initData();
@@ -4617,5 +4889,52 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+  <!-- Class Edit Modal -->
+  <div class="modal-overlay" id="classEditModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">✏️ 수업 일정 수정</div>
+          <div class="modal-sub">해당 날짜의 수업 정보를 수정하거나 삭제합니다.</div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('classEditModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-row">
+          <label>수업 제목</label>
+          <input type="text" id="modal-cls-title" placeholder="수업 제목 입력">
+        </div>
+        <div class="modal-form-row">
+          <label>날짜 및 시간</label>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+            <input type="date" id="modal-cls-date" style="flex:1">
+            <div style="display:flex; align-items:center; gap:4px">
+              <select id="modal-cls-start-h" style="width:60px; padding:6px; font-size:12px"></select>:<select id="modal-cls-start-m" style="width:60px; padding:6px; font-size:12px"></select>
+              <span>~</span>
+              <select id="modal-cls-end-h" style="width:60px; padding:6px; font-size:12px"></select>:<select id="modal-cls-end-m" style="width:60px; padding:6px; font-size:12px"></select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-form-row">
+          <label>과목</label>
+          <select id="modal-cls-subject">
+            <option value="">— 과목 선택 —</option>
+            <option value="국어">국어</option>
+            <option value="수학">수학</option>
+            <option value="영어">영어</option>
+          </select>
+        </div>
+        <div class="modal-form-row">
+          <label>메모</label>
+          <textarea id="modal-cls-desc" rows="2" placeholder="수업 관련 메모"></textarea>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:20px">
+          <button class="btn-del" onclick="deleteModalClass()" style="flex:1">삭제</button>
+          <button class="btn-add" onclick="saveModalClass()" style="flex:2">저장하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
