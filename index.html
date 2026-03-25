@@ -243,6 +243,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .cat-group-header .cat-count{font-size:11px;font-weight:400;color:var(--text-muted);margin-left:auto;}
 .cat-tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
   background:var(--primary-bg);color:var(--primary);margin-right:6px;}
+.cat-tag.math{background:#fee2e2;color:#ef4444;}
 .cat-manage-item{
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;border-radius:8px;background:#f8fafc;
@@ -538,6 +539,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .subject-chip input { display: none; }
   .subject-chip:hover { border-color: var(--primary-light); background: #fdfaff; }
   .subject-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 10px rgba(124,58,237,0.2); }
+  .subject-chip.math.active { background: #fee2e2; color: #ef4444; border-color: #fecaca; box-shadow: 0 4px 10px rgba(239,68,68,0.1); }
 
   /* Payment Toggle Row */
   .payment-toggle-row {
@@ -781,7 +783,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 관리</div>
       <div class="nav-item" onclick="showPanel('a','progress')" id="anav-progress"><span>📖</span> 수업 진도</div>
-      <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학생 그룹</div>
+      <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학교 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
@@ -847,21 +849,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <!-- Student Groups -->
     <div class="panel" id="a-panel-groups">
-      <div class="panel-title">학생 그룹 관리</div>
-      <div class="panel-sub">학교/학년별 그룹을 만들고 학생을 배정하세요</div>
+      <div class="panel-title">학교 관리</div>
+      <div class="panel-sub">학교를 추가하고 학생을 배정하세요</div>
       <div class="admin-grid">
         <div class="card">
-          <div class="section-title" id="grp-form-title">➕ 그룹 추가</div>
-          <div class="form-row"><label>그룹 이름</label>
-            <input id="grp-input" type="text" placeholder="예) 경동고 1학년, 경신고 2학년" onkeydown="if(event.key==='Enter')addStudentGroup()">
+          <div class="section-title" id="grp-form-title">➕ 학교 추가</div>
+          <div class="form-row"><label>학교 이름</label>
+            <input id="grp-input" type="text" placeholder="예) 경동고, 경신고" onkeydown="if(event.key==='Enter')addStudentGroup()">
+          </div>
+          <div class="form-row" id="grp-student-selection-wrap" style="display:none; margin-top:12px;">
+            <label>소속 학생 선택</label>
+            <div id="grp-student-selection" class="subject-chip-group" style="max-height:200px; overflow-y:auto; padding:10px; border:1px solid var(--border); border-radius:10px; background:#f8fafc"></div>
           </div>
           <div style="display:flex; gap:10px">
-            <button class="btn-add" id="btn-grp-submit" style="flex:1" onclick="addStudentGroup()">그룹 추가</button>
+            <button class="btn-add" id="btn-grp-submit" style="flex:1" onclick="addStudentGroup()">학교 추가</button>
             <button class="btn-del" id="btn-grp-cancel" style="flex:1; background:#94a3b8; display:none" onclick="cancelGroupEdit()">취소</button>
           </div>
         </div>
         <div class="card">
-          <div class="section-title">👥 그룹 목록</div>
+          <div class="section-title">👥 학교 목록</div>
           <div id="grp-list"></div>
         </div>
       </div>
@@ -883,14 +889,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <div class="form-row"><label>접속 아이디</label><input id="new-student-id" type="text" placeholder="예) hong123"></div>
           <div class="form-row"><label>비밀번호</label><input id="new-student-pw" type="password" placeholder="비밀번호 입력"></div>
           <div class="form-row"><label>비밀번호 확인</label><input id="new-student-pw2" type="password" placeholder="비밀번호 재입력"></div>
-          <div class="form-row"><label>학부모 HP</label><input id="new-student-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
           <div class="form-row"><label>학생 HP</label><input id="new-student-student-hp" type="text" placeholder="예) 010-9876-5432"></div>
+          <div class="form-row"><label>학부모 HP</label><input id="new-student-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
           <div class="form-row"><label>과목 (복수 선택 가능)</label>
             <div id="new-student-subject-wrap" class="subject-chip-group">
-              <label class="subject-chip"><input type="checkbox" name="subj" value="국어" onchange="toggleSubjectChip(this)"> 국어</label>
-              <label class="subject-chip"><input type="checkbox" name="subj" value="영어" onchange="toggleSubjectChip(this)"> 영어</label>
-              <label class="subject-chip"><input type="checkbox" name="subj" value="수학" onchange="toggleSubjectChip(this)"> 수학</label>
+              <!-- JS will populate -->
             </div>
+          </div>
+          <div class="form-row"><label>학교</label>
+            <input id="new-student-school" type="text" placeholder="예) 경동고, 경신고" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
+          </div>
+          <div class="form-row"><label>학년</label>
+            <select id="new-student-grade">
+              <option value="">— 학년 선택 —</option>
+              <option value="중1">중1</option><option value="중2">중2</option><option value="중3">중3</option>
+              <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
+            </select>
           </div>
           <div class="form-row"><label>학원비 (원)</label><input id="new-student-fee" type="number" placeholder="예) 300000"></div>
           
@@ -905,11 +919,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
             </div>
           </div>
 
-          <div class="form-row"><label>소속 그룹 (선택)</label>
-            <select id="new-student-group" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
-              <option value="">— 그룹 없음 —</option>
-            </select>
-          </div>
           <div class="form-row"><label>입학 날짜</label><input id="new-student-entered" type="date"></div>
           <div style="display:flex; gap:10px; margin-top:20px">
             <button class="btn-add" id="btn-student-submit" style="flex:1" onclick="addStudent()">학생 추가</button>
@@ -958,7 +967,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
                 <th style="width:120px">학원비</th>
                 <th style="width:100px">수금일</th>
                 <th style="width:60px">수금</th>
-                <th style="width:130px">소속 그룹</th>
+                <th style="width:130px">학교</th>
                 <th style="width:110px">입학일</th>
                 <th>관리</th>
               </tr>
@@ -1015,27 +1024,91 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
               ⚠️ 정규수업 선택 시, 해당 요일의 올해 말까지 모든 일정이 자동 등록됩니다.
             </div>
           </div>
+          <div class="form-row"><label>대상 과목 (선택 시 해당 과목 학생만 배정)</label>
+            <select id="cls-subject">
+              <option value="">— 과목 선택(전체) —</option>
+            </select>
+          </div>
           <div class="form-row"><label>수업 제목</label><input id="cls-title" type="text" placeholder="예) 중등 수학 A반 보강"></div>
-          <div class="form-row"><label>대상 그룹</label>
-            <select id="cls-group"><option value="">— 전체 또는 그룹 선택 —</option></select>
-          </div>
-          <div class="form-row"><label>날짜</label><input id="cls-date" type="date"></div>
-          <div class="form-row" style="display:flex;gap:10px">
-            <div style="flex:1">
-              <label>시작 시간</label>
-              <div style="display:flex;gap:4px">
-                <select id="cls-start-h" style="flex:1"></select>
-                <select id="cls-start-m" style="flex:1"></select>
-              </div>
-            </div>
-            <div style="flex:1">
-              <label>종료 시간</label>
-              <div style="display:flex;gap:4px">
-                <select id="cls-end-h" style="flex:1"></select>
-                <select id="cls-end-m" style="flex:1"></select>
-              </div>
+          <div class="form-row"><label>대상 그룹 (중복 선택 가능, 미선택 시 전체 대상)</label>
+            <div id="cls-group-checkboxes" class="subject-chip-group">
+              <!-- JS will populate -->
             </div>
           </div>
+          <div id="cls-slots-container">
+            <!-- Slot 1 (Always Visible) -->
+            <div class="cls-slot-row" id="cls-slot-1">
+              <div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:4px">일정 1</div>
+              <div class="form-row"><label>날짜</label><input id="cls-date-1" type="date"></div>
+              <div class="form-row" style="display:flex;gap:10px">
+                <div style="flex:1">
+                  <label>시작 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-start-h-1" style="flex:1"></select>
+                    <select id="cls-start-m-1" style="flex:1"></select>
+                  </div>
+                </div>
+                <div style="flex:1">
+                  <label>종료 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-end-h-1" style="flex:1"></select>
+                    <select id="cls-end-m-1" style="flex:1"></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slot 2 (Hidden) -->
+            <div class="cls-slot-row" id="cls-slot-2" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border)">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                <div style="font-size:11px; font-weight:800; color:var(--text-muted)">일정 2</div>
+                <button type="button" class="btn-del" style="padding:2px 8px; font-size:10px" onclick="removeSlot(2)">✕ 삭제</button>
+              </div>
+              <div class="form-row"><label>날짜</label><input id="cls-date-2" type="date"></div>
+              <div class="form-row" style="display:flex;gap:10px">
+                <div style="flex:1">
+                  <label>시작 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-start-h-2" style="flex:1"></select>
+                    <select id="cls-start-m-2" style="flex:1"></select>
+                  </div>
+                </div>
+                <div style="flex:1">
+                  <label>종료 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-end-h-2" style="flex:1"></select>
+                    <select id="cls-end-m-2" style="flex:1"></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slot 3 (Hidden) -->
+            <div class="cls-slot-row" id="cls-slot-3" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border)">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                <div style="font-size:11px; font-weight:800; color:var(--text-muted)">일정 3</div>
+                <button type="button" class="btn-del" style="padding:2px 8px; font-size:10px" onclick="removeSlot(3)">✕ 삭제</button>
+              </div>
+              <div class="form-row"><label>날짜</label><input id="cls-date-3" type="date"></div>
+              <div class="form-row" style="display:flex;gap:10px">
+                <div style="flex:1">
+                  <label>시작 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-start-h-3" style="flex:1"></select>
+                    <select id="cls-start-m-3" style="flex:1"></select>
+                  </div>
+                </div>
+                <div style="flex:1">
+                  <label>종료 시간</label>
+                  <div style="display:flex;gap:4px">
+                    <select id="cls-end-h-3" style="flex:1"></select>
+                    <select id="cls-end-m-3" style="flex:1"></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="btn-add-slot" class="btn-del" style="width:100%; margin:8px 0 16px; background:#f1f5f9; color:var(--primary); font-weight:700" onclick="addSlot()">+ 다른 요일/시간 추가 (최대 3개)</button>
           <div class="form-row"><label>비고/설명</label><textarea id="cls-desc" placeholder="내용 입력"></textarea></div>
           <div style="display:flex;gap:10px">
             <button class="btn-add" id="btn-cls-submit" onclick="addClass()" style="flex:2">수업 등록</button>
@@ -1071,9 +1144,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="section-title" id="prog-form-title">➕ 진도 항목 추가</div>
         <div class="admin-grid" style="gap:12px">
           <div>
-            <div class="form-row"><label>대상 반(그룹)</label>
+            <div class="form-row"><label>대상 과목 (선택 시 해당 학생만 배정)</label>
+              <select id="prog-subject">
+                <option value="">— 과목 선택 —</option>
+              </select>
+            </div>
+            <div class="form-row"><label>대상 학년</label>
+              <select id="prog-grade" style="flex:1">
+                <option value="">— 학년 선택(전체) —</option>
+                <option value="중1">중1</option><option value="중2">중2</option><option value="중3">중3</option>
+                <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
+              </select>
+            </div>
+            <div class="form-row"><label>대상 학교</label>
               <select id="prog-group">
-                <option value="">— 그룹 선택 —</option>
+                <option value="">— 학교 선택 —</option>
               </select>
             </div>
             <div class="form-row"><label>수업 일자 (숙제 등록일)</label>
@@ -1170,7 +1255,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <button class="modal-close" onclick="closeProgEditModalDirect()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-row"><label>대상 반(그룹)</label>
+      <div class="form-row"><label>대상 과목</label>
+        <select id="edit-prog-subject">
+          <option value="">— 과목 선택 —</option>
+        </select>
+      </div>
+      <div class="form-row"><label>대상 학년</label>
+        <select id="edit-prog-grade" style="flex:1">
+          <option value="">— 학년 선택 없음 —</option>
+          <option value="중1">중1</option><option value="중2">중2</option><option value="중3">중3</option>
+          <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
+        </select>
+      </div>
+      <div class="form-row"><label>대상 학교</label>
         <select id="edit-prog-group" disabled style="background:#f1f5f9; cursor:not-allowed"></select>
       </div>
       <div class="form-row"><label>수업 일자</label><input id="edit-prog-target-date" type="date"></div>
@@ -1238,12 +1335,22 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div class="form-row"><label>비밀번호 (변경 시에만 입력)</label><input id="edit-popup-student-pw" type="password" placeholder="새 비밀번호 입력"></div>
       <div class="form-row"><label>비밀번호 확인</label><input id="edit-popup-student-pw2" type="password" placeholder="새 비밀번호 재입력"></div>
-      <div class="form-row"><label>학부모 HP</label><input id="edit-popup-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
       <div class="form-row"><label>학생 HP</label><input id="edit-popup-student-hp" type="text" placeholder="예) 010-9876-5432"></div>
+      <div class="form-row"><label>학부모 HP</label><input id="edit-popup-parent-hp" type="text" placeholder="예) 010-1234-5678"></div>
       <div class="form-row"><label>과목 (복수 선택 가능)</label>
         <div id="edit-popup-subject-wrap" class="subject-chip-group">
           <!-- JS will populate -->
         </div>
+      </div>
+      <div class="form-row"><label>학교</label>
+        <input id="edit-popup-student-school" type="text" placeholder="예) 경동고, 경신고" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
+      </div>
+      <div class="form-row"><label>학년</label>
+        <select id="edit-popup-student-grade">
+          <option value="">— 학년 선택 —</option>
+          <option value="중1">중1</option><option value="중2">중2</option><option value="중3">중3</option>
+          <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
+        </select>
       </div>
       <div class="form-row"><label>학원비 (원)</label><input id="edit-popup-student-fee" type="number" placeholder="예) 300000"></div>
       
@@ -1256,12 +1363,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 연월일:</label>
           <input type="date" id="edit-popup-student-paydate" style="padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; outline:none; font-size:12px">
         </div>
-      </div>
-
-      <div class="form-row"><label>소속 그룹 (선택)</label>
-        <select id="edit-popup-student-group" style="width:100%;padding:10px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:14px;outline:none;">
-          <option value="">— 그룹 없음 —</option>
-        </select>
       </div>
       <div class="form-row"><label>입학 날짜</label><input id="edit-popup-student-entered" type="date"></div>
 
@@ -1283,12 +1384,50 @@ const DEFAULT_USERS=[
   {id:'student2',name:'이서연',password:'1234',role:'student'},
   {id:'student3',name:'박지호',password:'1234',role:'student'},
 ];
+
+function migrateToNewSubjects() {
+  let cats = getCategories();
+  let changed = false;
+  if (cats.length > 0) {
+    if (cats[0].name === '문학' || (cats[0].name === '국어' && cats.length === 3)) {
+      cats = [
+        {id:'cat1',name:'국어'},
+        {id:'cat2_1',name:'수학(중1)'},
+        {id:'cat2_2',name:'수학(중2)'},
+        {id:'cat2_3',name:'수학(중3)'},
+        {id:'cat2_4',name:'수학(고1)'},
+        {id:'cat2_5',name:'수학(고2)'},
+        {id:'cat2_6',name:'수학(고3)'},
+        {id:'cat3',name:'영어'}
+      ];
+      changed = true;
+    }
+  }
+  if (changed) saveCategories(cats);
+
+  // Migration for Legacy Category Names in Homeworks
+  let hws = getHomeworks();
+  const groups = getStudentGroups();
+  let hwChanged = false;
+  hws.forEach(h => {
+    if (h.categoryId && !groups.find(g => g.id === h.categoryId)) {
+      const matched = groups.find(g => g.name === h.categoryId);
+      if (matched) {
+        h.categoryId = matched.id;
+        hwChanged = true;
+      }
+    }
+  });
+  if (hwChanged) saveHomeworks(hws);
+}
+
 function initData(){
+  migrateToNewSubjects();
   if(!localStorage.getItem('hwapp_users')){
-    localStorage.setItem('hwapp_users',JSON.stringify(DEFAULT_USERS));
+    saveUsers(DEFAULT_USERS);
     const today=new Date().toISOString().slice(0,10);
     const cats=[
-      {id:'cat1',name:'문학'},{id:'cat2',name:'독서'},{id:'cat3',name:'문법'}
+      {id:'cat1',name:'국어'},{id:'cat2',name:'수학'},{id:'cat3',name:'영어'}
     ];
     localStorage.setItem('hwapp_categories',JSON.stringify(cats));
     const hws=[
@@ -1324,6 +1463,7 @@ const saveCategories=d=>localStorage.setItem('hwapp_categories',JSON.stringify(d
 const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stringify(d));
 const saveRetiredUsers=d=>localStorage.setItem('hwapp_retired_users',JSON.stringify(d));
 const saveClasses=d=>localStorage.setItem('hwapp_classes',JSON.stringify(d));
+const saveUsers=d=>localStorage.setItem('hwapp_users',JSON.stringify(d));
 
 function exportData() {
   const keys = [
@@ -1429,6 +1569,15 @@ function buildGroups(hws, studentGroups) {
       delete map[g.id];
     }
   });
+  // The fix for legacy name-based categoryId
+  Object.keys(map).forEach(catId => {
+    const matched = studentGroups.find(sg => sg.id === catId || sg.name === catId);
+    if (matched) {
+      results.push({ catId: matched.id, label: matched.name, items: map[catId] });
+      delete map[catId];
+    }
+  });
+  // Leftovers (Subjects like cat1, or true orphans)
   Object.keys(map).forEach(catId => {
     const label = catId === '_none' ? '미분류' : catId;
     results.push({ catId: catId === '_none' ? null : catId, label, items: map[catId] });
@@ -1559,7 +1708,7 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
       if (!s) return '';
       const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
       return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">
-        <span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="openStudentDetail('${sid}')">${s.name}</span>
+        <span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>
         <span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>
       </div>`;
     }).join('');
@@ -1623,12 +1772,12 @@ function renderDashboard(who) {
   const isStudent = who === 's';
   const prefix = isStudent ? 'sd' : 'ad';
   
-  currentCalDate = new Date();
-  const todayStr = formatDateLocal(currentCalDate);
+  if (!currentCalDate) currentCalDate = new Date();
+  const todayStr = formatDateLocal(new Date()); // Always use real today for comparison
   const allClasses = getClasses();
   const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
   const hasTodayClass = allClasses.some(c => {
-    const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+    const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
     return isMine && c.date === todayStr;
   });
 
@@ -1715,7 +1864,7 @@ function renderDashboard(who) {
           </div>
         `;
       } else {
-        return getAdminHWItemHtml(h, users, comps, { isDashboard: true });
+        return getAdminHWItemHtml(h, users, comps, { isDashboard: true, showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
       }
     }).join('');
 
@@ -1882,55 +2031,103 @@ function renderStudentGroupPanel(){
 
 let editingGrpId = null;
 
+function renderStudentSelection(groupId) {
+  const students = getUsers().filter(u => u.role === 'student');
+  const allGroups = getStudentGroups();
+  const currentGroup = allGroups.find(g => g.id === groupId);
+  const currentGrpIds = currentGroup ? (currentGroup.studentIds || []) : [];
+  
+  const wrap = document.getElementById('grp-student-selection-wrap');
+  const container = document.getElementById('grp-student-selection');
+  
+  if (!students.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  
+  wrap.style.display = 'block';
+  // Sort students by name
+  students.sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+  
+  container.innerHTML = students.map(s => {
+    const isMember = currentGrpIds.includes(s.id);
+    const otherGrp = getStudentGroupOf(s.id);
+    const otherGrpBadge = (otherGrp && otherGrp.id !== groupId) 
+      ? `<span style="font-size:10px; color:var(--text-muted); margin-left:4px">(${otherGrp.name})</span>` 
+      : '';
+    
+    return `<label class="subject-chip ${isMember ? 'active' : ''}">
+      <input type="checkbox" name="grp-student" value="${s.id}" ${isMember ? 'checked' : ''} onchange="this.parentElement.classList.toggle('active', this.checked)">
+      ${s.name}${otherGrpBadge}
+    </label>`;
+  }).join('');
+}
+
 function editStudentGroup(id){
   const groups = getStudentGroups();
   const g = groups.find(x => x.id === id);
   if(!g) return;
   editingGrpId = id;
   document.getElementById('grp-input').value = g.name;
-  document.getElementById('grp-form-title').textContent = '✏️ 그룹 수정';
-  document.getElementById('btn-grp-submit').textContent = '그룹 수정';
+  document.getElementById('grp-form-title').textContent = '✏️ 학교 수정';
+  document.getElementById('btn-grp-submit').textContent = '학교 수정';
   document.getElementById('btn-grp-cancel').style.display = 'block';
   document.getElementById('grp-input').focus();
+  renderStudentSelection(id);
 }
 
 function cancelGroupEdit(){
   editingGrpId = null;
   document.getElementById('grp-input').value = '';
-  document.getElementById('grp-form-title').textContent = '➕ 그룹 추가';
-  document.getElementById('btn-grp-submit').textContent = '그룹 추가';
+  document.getElementById('grp-form-title').textContent = '➕ 학교 추가';
+  document.getElementById('btn-grp-submit').textContent = '학교 추가';
   document.getElementById('btn-grp-cancel').style.display = 'none';
+  document.getElementById('grp-student-selection-wrap').style.display = 'none';
+  document.getElementById('grp-student-selection').innerHTML = '';
 }
 
 function addStudentGroup(){
   const inp=document.getElementById('grp-input');
   const name=inp.value.trim();
-  if(!name){showToast('그룹 이름을 입력하세요.','warn');return;}
+  if(!name){showToast('학교 이름을 입력하세요.','warn');return;}
   const groups=getStudentGroups();
+  const selectedStudentIds = Array.from(document.querySelectorAll('input[name="grp-student"]:checked')).map(el => el.value);
 
   if (editingGrpId) {
     const gIdx = groups.findIndex(x => x.id === editingGrpId);
     if (gIdx > -1) {
       const oldName = groups[gIdx].name;
+      // Remove these students from OTHER groups
+      groups.forEach(g => {
+        if (g.id !== editingGrpId) {
+          g.studentIds = (g.studentIds || []).filter(sid => !selectedStudentIds.includes(sid));
+        }
+      });
       groups[gIdx].name = name;
+      groups[gIdx].studentIds = selectedStudentIds;
       saveStudentGroups(groups);
-      showToast(`✅ "${oldName}" 그룹이 "${name}"(으)로 수정되었습니다.`);
+      showToast(`✅ "${oldName}" 학교가 "${name}"(으)로 수정되었습니다.`);
       cancelGroupEdit();
     }
   } else {
-    if(groups.find(g=>g.name===name)){showToast('이미 존재하는 그룹입니다.','warn');return;}
-    groups.push({id:'grp'+Date.now(),name,studentIds:[]});
+    if(groups.find(g=>g.name===name)){showToast('이미 존재하는 학교입니다.','warn');return;}
+    // Remove these students from OTHER groups
+    groups.forEach(g => {
+      g.studentIds = (g.studentIds || []).filter(sid => !selectedStudentIds.includes(sid));
+    });
+    groups.push({id:'grp'+Date.now(),name,studentIds:selectedStudentIds});
     saveStudentGroups(groups);
     inp.value='';
-    showToast(`✅ "${name}" 그룹이 추가되었습니다!`);
+    showToast(`✅ "${name}" 학교가 추가되었습니다!`);
+    cancelGroupEdit();
   }
   renderStudentGroupPanel();
   renderAdminManage();
 }
 function deleteStudentGroup(id){
-  if(!confirm('정말로 이 그룹을 삭제하시겠습니까?')) return;
+  if(!confirm('정말로 이 학교를 삭제하시겠습니까?')) return;
   saveStudentGroups(getStudentGroups().filter(g=>g.id!==id));
-  renderStudentGroupPanel();renderAdminManage();showToast('그룹이 삭제되었습니다.');
+  renderStudentGroupPanel();renderAdminManage();showToast('학교가 삭제되었습니다.');
 }
 function addToGroup(gId,sId){
   if(!sId)return;
@@ -1949,6 +2146,37 @@ function removeFromGroup(gId,sId){
   saveStudentGroups(groups);
   renderStudentGroupPanel();renderAdminManage();
 }
+
+/**
+ * 학교명과 학년명을 바탕으로 그룹을 찾거나 생성하고 학생을 해당 그룹에만 소속시킵니다.
+ */
+function syncStudentGroup(studentId, schoolName, gradeName) {
+  let groupId = '';
+  if (!schoolName) return '';
+
+  const autoGroupName = gradeName ? `${schoolName} ${gradeName}` : schoolName;
+  let groups = getStudentGroups();
+  
+  // 먼저 모든 그룹에서 해당 학생 제거 (한 학생은 한 그룹에만 소속)
+  groups.forEach(g => {
+    if (g.studentIds) g.studentIds = g.studentIds.filter(id => id !== studentId);
+  });
+
+  let targetGroup = groups.find(g => g.name === autoGroupName);
+  if (!targetGroup) {
+    targetGroup = { id: 'grp' + Date.now(), name: autoGroupName, studentIds: [] };
+    groups.push(targetGroup);
+    renderStudentGroupPanel();
+  }
+  
+  if (!targetGroup.studentIds) targetGroup.studentIds = [];
+  if (!targetGroup.studentIds.includes(studentId)) {
+    targetGroup.studentIds.push(studentId);
+  }
+  
+  saveStudentGroups(groups);
+  return targetGroup.id;
+}
 function renderAdminManage(){
   const groups=getStudentGroups();
   const tabEl=document.getElementById('student-group-tabs');
@@ -1966,6 +2194,7 @@ function renderAdminManage(){
 
   renderAdminHWList();
   renderAdminStudents();
+  renderStudentSelection();
   
   // 최종 확인: 만약 목록이 여전히 비어있다면 강제로 메시지 출력
   const el = document.getElementById('admin-hw-list');
@@ -2021,8 +2250,9 @@ function renderAdminHWList(){
     const gc = matchedGrp ? getGroupColor(matchedGrp.id) : null;
     const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
     
+    const comps = getCompletions();
     const itemsHtml = g.items.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(h => {
-      return getAdminHWItemHtml(h, users, getCompletions());
+      return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
     }).join('');
 
     return `
@@ -2058,7 +2288,35 @@ function handleCategoryChange(groupId){
     showToast(`✨ 해당 그룹 학생 ${count}명을 자동으로 선택했습니다.`);
   }
 }
-// addHomework function removed because it is merged into addProgressTopic
+function deleteHW(id, title) {
+  if (!confirm(`"${title}" 숙제를 삭제하시겠습니까?\n이 숙제가 연결된 진도 항목의 숙제 정보도 함께 해제됩니다.`)) return;
+  
+  // 1. 진도 항목에서 이 숙제 ID 연동 해제
+  let topics = getProgressTopics();
+  let changed = false;
+  topics = topics.map(t => {
+    if (t.hwId === id) {
+      changed = true;
+      return { ...t, hwId: null };
+    }
+    return t;
+  });
+  if (changed) saveProgressTopics(topics);
+
+  // 2. 숙제 데이터 삭제
+  let hws = getHomeworks().filter(h => h.id !== id);
+  saveHomeworks(hws);
+
+  // 3. 숙제 완료 기록 삭제
+  let comps = getCompletions().filter(c => c.homeworkId !== id);
+  saveCompletions(comps);
+
+  // 4. UI 갱신
+  renderAdminHWList();
+  renderProgressContent();
+  renderDashboard('a');
+  showToast('숙제가 삭제되었습니다.');
+}
 // ── HW STUDENT MODAL ─────────────────────────────────────
 function openHWStudentModal(hwId){
   const hw=getHomeworks().find(h=>h.id===hwId);
@@ -2200,12 +2458,11 @@ function editHWFromProgress(hwId) {
 
 // ── ADMIN STUDENTS ────────────────────────────────────────
 function renderAdminStudents(){
-  // 그룹 select 갱신
-  const grpSel=document.getElementById('new-student-group');
-  if(grpSel){
-    const groups=getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-    grpSel.innerHTML='<option value="">— 그룹 없음 —</option>'+groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
-  }
+  // 학교 input 초기화 (더 이상 select가 아님)
+  // 별도 초기화 필요 없음
+  const subWrap = document.getElementById('new-student-subject-wrap');
+  if (subWrap) renderSubjectCheckboxes('new-student-subject-wrap', 'subj', [], true);
+
   // 통계 select 갱신
   const adminStatSel=document.getElementById('admin-stat-student');
   const allStudents=getUsers().filter(u=>u.role==='student');
@@ -2222,7 +2479,11 @@ function renderAdminStudents(){
     adminStatSel.innerHTML='<option value="all">전체 학생 평균</option>'+students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
     if(prev)adminStatSel.value=prev;
   }
-  document.getElementById('student-stat-body').innerHTML=students.map(s=>{
+  
+  const bodyEl = document.getElementById('student-stat-body');
+  if(!bodyEl) return;
+
+  bodyEl.innerHTML=students.map(s=>{
     const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
@@ -2247,7 +2508,7 @@ function addStudent(){
   const loginId=document.getElementById('new-student-id').value.trim();
   const pw=document.getElementById('new-student-pw').value.trim();
   const pw2=document.getElementById('new-student-pw2').value.trim();
-  const groupId=document.getElementById('new-student-group').value;
+  const schoolName=document.getElementById('new-student-school').value.trim();
   const entered=document.getElementById('new-student-entered').value;
   const parentHp=document.getElementById('new-student-parent-hp').value.trim();
   const studentHp=document.getElementById('new-student-student-hp').value.trim();
@@ -2259,6 +2520,7 @@ function addStudent(){
   const fee = document.getElementById('new-student-fee').value.trim();
   const isPaid = document.getElementById('new-student-ispaid').checked;
   const payDate = document.getElementById('new-student-paydate').value;
+  const grade = document.getElementById('new-student-grade').value;
 
   if(!name){
     showToast('학생 이름을 입력하세요.', 'warn');
@@ -2271,7 +2533,7 @@ function addStudent(){
     const sIdx = users.findIndex(u => u.id === editingStudentId);
     if (sIdx > -1) {
       users[sIdx].name = name;
-      if (loginId) users[sIdx].loginId = loginId; // Allow ID change if needed? Wait, ID is usually constant but if it was missing it might be added.
+      if (loginId) users[sIdx].loginId = loginId;
       if (pw) users[sIdx].password = pw;
       users[sIdx].parentHp = parentHp;
       users[sIdx].studentHp = studentHp;
@@ -2280,41 +2542,27 @@ function addStudent(){
       if (!users[sIdx].payments) users[sIdx].payments = {};
       users[sIdx].payments[currentPaymentMonth] = isPaid ? (payDate || formatDateLocal(new Date())) : false;
       users[sIdx].enteredAt = entered;
-      localStorage.setItem('hwapp_users', JSON.stringify(users));
+      users[sIdx].grade = grade;
+      saveUsers(users);
 
       // 그룹 업데이트
-      const groups = getStudentGroups();
-      groups.forEach(g => {
-        g.studentIds = (g.studentIds || []).filter(sid => sid !== editingStudentId);
-      });
-      if (groupId) {
-        const g = groups.find(g => g.id === groupId);
-        if (g) {
-          g.studentIds = g.studentIds || [];
-          g.studentIds.push(editingStudentId);
-        }
-      }
-      saveStudentGroups(groups);
+      syncStudentGroup(editingStudentId, schoolName, grade);
       showToast(`✅ "${name}" 학생 정보가 수정되었습니다.`);
     }
   } else {
     const newId='student'+Date.now();
-    const finalId = loginId || newId; // Fallback to auto-gen ID if loginId missing
-    const finalPw = pw || '1234'; // Default password if missing
+    const finalId = loginId || name;
+    const finalPw = pw || '1111';
     
     const initialPayments = {};
     if (isPaid) {
       initialPayments[currentPaymentMonth] = payDate || formatDateLocal(new Date());
     }
     
-    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, payments: initialPayments});
-    localStorage.setItem('hwapp_users',JSON.stringify(users));
+    users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, payments: initialPayments, grade});
+    saveUsers(users);
 
-    if(groupId){
-      const groups=getStudentGroups();
-      const g=groups.find(x=>x.id===groupId);
-      if(g){ g.studentIds=g.studentIds||[]; g.studentIds.push(newId); saveStudentGroups(groups); }
-    }
+    syncStudentGroup(newId, schoolName, grade);
     showToast(`✅ "${name}" 학생이 추가되었습니다!`);
   }
 
@@ -2324,7 +2572,7 @@ function addStudent(){
 function deleteStudent(sid,name){
   if(!confirm(`"${name}" 학생을 삭제하시겠습니까?\n해당 학생의 모든 숙제 완료 기록도 삭제됩니다.`))return;
   let users=getUsers().filter(u=>u.id!==sid);
-  localStorage.setItem('hwapp_users',JSON.stringify(users));
+  saveUsers(users);
   cleanupStudentData(sid);
   renderAdminStudents();renderAdminHWList();renderAdminStats();renderDetailedStudentList();renderPaymentSummary();
   showToast(`"${name}" 학생이 삭제되었습니다.`);
@@ -2343,6 +2591,7 @@ function cleanupStudentData(sid){
   saveHomeworks(hws);
   const groups=getStudentGroups().map(g=>({...g,studentIds:(g.studentIds||[]).filter(id=>id!==sid)}));
   saveStudentGroups(groups);
+  saveProgressCompletions(getProgressCompletions().filter(c => c.studentId !== sid));
 }
 function retireStudent(id,name){
   if(!confirm(`⚠️ "${name}" 학생을 정말 퇴원 처리하시겠습니까?\n퇴원 처리 시 학생 목록에서 숨겨지고 퇴원 현황으로 이동합니다.`))return;
@@ -2352,7 +2601,7 @@ function retireStudent(id,name){
   if(studentIdx>-1){
     const st=users.splice(studentIdx,1)[0];
     retired.push({...st, retiredAt:formatDateLocal(new Date())});
-    localStorage.setItem('hwapp_users',JSON.stringify(users));
+    saveUsers(users);
     saveRetiredUsers(retired);
     renderAdminStudents();renderDetailedStudentList();
     showToast(`😢 "${name}" 학생이 퇴원 처리되었습니다.`);
@@ -2390,7 +2639,7 @@ function restoreStudent(id,name){
     const st=retired.splice(rIdx,1)[0];
     delete st.retiredAt; // 퇴원일 정보 제거
     users.push(st);
-    localStorage.setItem('hwapp_users',JSON.stringify(users));
+    saveUsers(users);
     saveRetiredUsers(retired);
     renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();
     showToast(`🎉 "${name}" 학생이 복원되었습니다.`);
@@ -2488,7 +2737,7 @@ function renderPaymentSummary() {
         <div class="pay-pending-list">
           ${pendingStudents.length ? pendingStudents.map(s => {
             const grp = getStudentGroupOf(s.id);
-            const subjects = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="padding:1px 5px; font-size:9px; margin:0">${sub}</span>`).join(' ');
+            const subjects = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="padding:1px 5px; font-size:9px; margin:0">${sub}</span>`).join(' ');
             let badge = '';
             if (grp) {
               const gc = getGroupColor(grp.id);
@@ -2614,7 +2863,7 @@ function renderDetailedStudentList() {
     const feeDisplay = s.fee ? parseInt(s.fee).toLocaleString() + '원' : '-';
     
     // 과목 복수 태그 처리
-    const subjectTags = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="margin:0">${sub}</span>`).join('') || '-';
+    const subjectTags = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join('') || '-';
     
     const initials = s.name.slice(0, 1);
     const safeName = s.name.replace(/'/g, '\u2019');
@@ -2669,6 +2918,7 @@ function openStudentEditModal(sid) {
   document.getElementById('edit-popup-student-hp').value = student.studentHp || '';
   document.getElementById('edit-popup-student-fee').value = student.fee || '';
   document.getElementById('edit-popup-student-entered').value = student.enteredAt || '';
+  document.getElementById('edit-popup-student-grade').value = student.grade || '';
 
   const isMonthPaid = isPaidForMonth(student, currentPaymentMonth);
   const isPaidCb = document.getElementById('edit-popup-student-ispaid');
@@ -2680,21 +2930,25 @@ function openStudentEditModal(sid) {
   if (isMonthPaid) toggleContainer.classList.add('active');
   else toggleContainer.classList.remove('active');
 
-  // Subjects
-  const cats = getCategories();
-  const subjWrap = document.getElementById('edit-popup-subject-wrap');
-  const subjs = (student.subject || '').split(',');
-  subjWrap.innerHTML = cats.map(c => {
-    const isChecked = subjs.includes(c.name);
-    return `<label class="subject-chip ${isChecked ? 'active' : ''}"><input type="checkbox" name="edit-popup-subj" value="${c.name}" ${isChecked ? 'checked' : ''} onchange="this.parentElement.classList.toggle('active', this.checked)"> ${c.name}</label>`;
-  }).join('');
+  // Subjects - Use forceBasic=true as requested
+  renderSubjectCheckboxes('edit-popup-subject-wrap', 'edit-popup-subj', (student.subject || '').split(','), true);
 
-  // Groups
-  const groups = getStudentGroups();
-  const grpSel = document.getElementById('edit-popup-student-group');
-  grpSel.innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-  const currentGroup = groups.find(g => g.studentIds && g.studentIds.includes(sid));
-  grpSel.value = currentGroup ? currentGroup.id : '';
+  // 학교 input에 현재 그룹에서 학교명 추출
+  const currentGrp = getStudentGroupOf(sid);
+  const schoolInput = document.getElementById('edit-popup-student-school');
+  if (currentGrp) {
+    const gradeValues = ['중1','중2','중3','고1','고2','고3'];
+    let extractedSchool = currentGrp.name;
+    for (const gv of gradeValues) {
+      if (extractedSchool.endsWith(' ' + gv)) {
+        extractedSchool = extractedSchool.slice(0, -(gv.length + 1));
+        break;
+      }
+    }
+    schoolInput.value = extractedSchool;
+  } else {
+    schoolInput.value = '';
+  }
 
   document.getElementById('studentEditModal').classList.add('open');
 }
@@ -2709,67 +2963,58 @@ function closeStudentEditModalDirect() {
 }
 
 function submitStudentEditModal() {
-  if (!editingStudentId) return;
-  const users = getUsers();
-  const idx = users.findIndex(u => u.id === editingStudentId);
-  if (idx === -1) return;
-  
-  const student = users[idx];
-  const pw = document.getElementById('edit-popup-student-pw').value;
-  const pw2 = document.getElementById('edit-popup-student-pw2').value;
-  
-  if (pw || pw2) {
-    if (pw !== pw2) {
-      showToast('비밀번호가 일치하지 않습니다.', 'error');
-      return;
+  try {
+    if (!editingStudentId) return;
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === editingStudentId);
+    if (idx === -1) return;
+    
+    const student = users[idx];
+    const pw = document.getElementById('edit-popup-student-pw').value;
+    const pw2 = document.getElementById('edit-popup-student-pw2').value;
+    
+    if (pw || pw2) {
+      if (pw !== pw2) {
+        showToast('비밀번호가 일치하지 않습니다.', 'error');
+        return;
+      }
+      student.password = pw;
     }
-    student.password = pw;
+    
+    student.name = document.getElementById('edit-popup-student-name').value.trim() || student.name;
+    student.parentHp = document.getElementById('edit-popup-parent-hp').value.trim();
+    student.studentHp = document.getElementById('edit-popup-student-hp').value.trim();
+    student.fee = document.getElementById('edit-popup-student-fee').value || 0;
+    student.grade = document.getElementById('edit-popup-student-grade').value || '';
+    student.enteredAt = document.getElementById('edit-popup-student-entered').value;
+    
+    if (!student.payments) student.payments = {};
+    const isPaid = document.getElementById('edit-popup-student-ispaid').checked;
+    const payDate = document.getElementById('edit-popup-student-paydate').value;
+    student.payments[currentPaymentMonth] = isPaid ? (payDate || formatDateLocal(new Date())) : false;
+
+    const cb = document.querySelectorAll('input[name="edit-popup-subj"]:checked');
+    student.subject = Array.from(cb).map(x => x.value).join(',');
+    
+    const schoolName = document.getElementById('edit-popup-student-school').value.trim();
+    syncStudentGroup(editingStudentId, schoolName, student.grade);
+
+    users[idx] = student;
+    saveUsers(users);
+    
+    closeStudentEditModalDirect();
+    
+    renderDetailedStudentList();
+    renderStudentGroupPanel();
+    renderProgressContent();
+    renderAdminStats();
+    renderDashboardProgress();
+    
+    showToast('✅ 학생 정보가 수정되었습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('❌ 오류 발생: ' + err.message, 'error');
   }
-  
-  student.name = document.getElementById('edit-popup-student-name').value.trim() || student.name;
-  student.parentHp = document.getElementById('edit-popup-parent-hp').value.trim();
-  student.studentHp = document.getElementById('edit-popup-student-hp').value.trim();
-  student.fee = document.getElementById('edit-popup-student-fee').value || 0;
-  student.enteredAt = document.getElementById('edit-popup-student-entered').value;
-  
-  if (!student.payments) student.payments = {};
-  const isPaid = document.getElementById('edit-popup-student-ispaid').checked;
-  const payDate = document.getElementById('edit-popup-student-paydate').value;
-  student.payments[currentPaymentMonth] = isPaid ? (payDate || formatDateLocal(new Date())) : false;
-
-  const cb = document.querySelectorAll('input[name="edit-popup-subj"]:checked');
-  student.subject = Array.from(cb).map(x => x.value).join(',');
-  
-  const newGroupId = document.getElementById('edit-popup-student-group').value;
-  const groups = getStudentGroups();
-  
-  groups.forEach(g => {
-    if (g.studentIds && g.studentIds.includes(editingStudentId)) {
-      g.studentIds = g.studentIds.filter(id => id !== editingStudentId);
-    }
-  });
-
-  if (newGroupId) {
-    const targetGroup = groups.find(g => g.id === newGroupId);
-    if (targetGroup) {
-      if (!targetGroup.studentIds) targetGroup.studentIds = [];
-      targetGroup.studentIds.push(editingStudentId);
-    }
-  }
-
-  users[idx] = student;
-  saveUsers(users);
-  saveStudentGroups(groups);
-  
-  closeStudentEditModalDirect();
-  
-  renderDetailedStudentList();
-  renderStudentGroupPanel();
-  renderProgressContent();
-  renderAdminStats();
-  renderDashboardProgress();
-  
-  showToast('✅ 학생 정보가 수정되었습니다.');
 }
 
 // ── STUDENT EDIT LOGIC ────────────────────────────────────
@@ -2804,11 +3049,7 @@ function editStudent(sid) {
   document.getElementById('new-student-student-hp').value = student.studentHp || '';
   
   // 과목 복수 체크박스 처리
-  const subjs = (student.subject || '').split(',');
-  document.querySelectorAll('input[name="subj"]').forEach(cb => {
-    cb.checked = subjs.includes(cb.value);
-    cb.parentElement.classList.toggle('active', cb.checked);
-  });
+  renderSubjectCheckboxes('new-student-subject-wrap', 'subj', (student.subject || '').split(','), true);
   
   document.getElementById('new-student-fee').value = student.fee || '';
   const isPaid = student.isPaid || false;
@@ -2816,11 +3057,25 @@ function editStudent(sid) {
   document.getElementById('payment-toggle-container').classList.toggle('active', isPaid);
   document.getElementById('new-student-entered').value = student.enteredAt || '';
 
-  const groups = getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  const grpSel = document.getElementById('new-student-group');
+  // 학교 input에 현재 그룹에서 학교명 추출
   const currentGrp = getStudentGroupOf(sid);
-  grpSel.innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-  grpSel.value = currentGrp ? currentGrp.id : '';
+  const schoolInput = document.getElementById('new-student-school');
+  if (currentGrp) {
+    // 그룹명에서 학년 부분 제거해서 학교명 추출 (예: '경동고 고1' -> '경동고')
+    const gradeValues = ['중1','중2','중3','고1','고2','고3'];
+    let extractedSchool = currentGrp.name;
+    for (const gv of gradeValues) {
+      if (extractedSchool.endsWith(' ' + gv)) {
+        extractedSchool = extractedSchool.slice(0, -(gv.length + 1));
+        break;
+      }
+    }
+    schoolInput.value = extractedSchool;
+  } else {
+    schoolInput.value = '';
+  }
+  // 학년 설정
+  document.getElementById('new-student-grade').value = student.grade || '';
 
   // 스크롤 이동
   document.getElementById('a-panel-students').scrollTo({ top: 0, behavior: 'smooth' });
@@ -2849,8 +3104,8 @@ function cancelStudentEdit() {
   
   document.getElementById('new-student-entered').value = formatDateLocal(new Date());
   
-  const groups=getStudentGroups().slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  document.getElementById('new-student-group').innerHTML = '<option value="">— 그룹 없음 —</option>' + groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  document.getElementById('new-student-school').value = '';
+  document.getElementById('new-student-grade').value = '';
 
   const titleEl = document.getElementById('student-form-title');
   titleEl.innerText = '➕ 학생 추가';
@@ -2935,7 +3190,7 @@ function togglePaymentStatus(sid, isPaid) {
       s.payments[currentPaymentMonth] = false;
     }
     
-    localStorage.setItem('hwapp_users', JSON.stringify(users));
+    saveUsers(users);
     showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 정보가 업데이트되었습니다.`);
     
     // 현재 수정 중인 학생과 같다면 폼도 동기화 (학생 추가/수정 폼)
@@ -2962,6 +3217,25 @@ function toggleSubjectChip(el) {
   el.parentElement.classList.toggle('active', el.checked);
 }
 
+function renderSubjectCheckboxes(containerId, nameAttr, selectedSubjects = [], forceBasic = false) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  let cats = getCategories();
+  if (forceBasic || !cats.length) {
+    cats = [
+      {id:'cat1',name:'국어'},
+      {id:'cat2',name:'수학'},
+      {id:'cat3',name:'영어'}
+    ];
+  }
+  
+  container.innerHTML = cats.map(c => {
+    const isChecked = selectedSubjects.includes(c.name);
+    return `<label class="subject-chip ${isChecked ? 'active' : ''}${c.name.startsWith('수학')?' math':''}"><input type="checkbox" name="${nameAttr}" value="${c.name}" ${isChecked ? 'checked' : ''} onchange="toggleSubjectChip(this)"> ${c.name}</label>`;
+  }).join('');
+}
+
 // ── STUDENT DETAIL MODAL ──────────────────────────────────
 function openStudentDetail(sid){
   currentModalStudent=sid;
@@ -2980,7 +3254,7 @@ function renderModalContent(sid){
   const pct=total?Math.round(done/total*100):0;
 
   // 과목 복수 태그 처리
-  const subjectTags = (student.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag" style="margin:0">${sub}</span>`).join(' ') || '-';
+  const subjectTags = (student.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join(' ') || '-';
 
   document.getElementById('modal-summary').innerHTML=`
     <div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid var(--border);">
@@ -3048,10 +3322,23 @@ function openProgEditModal(topicId) {
   editingProgressId = topicId;
   const groups = getStudentGroups();
   
-  // Fill group select in modal
+  // Fill group & subject select in modal
   const sel = document.getElementById('edit-prog-group');
   sel.innerHTML = groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
   sel.value = t.groupId;
+
+  const subSel = document.getElementById('edit-prog-subject');
+  if (subSel) {
+    const cats = getCategories();
+    subSel.innerHTML = '<option value="">— 과목 선택 없음 —</option>' +
+      cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    subSel.value = t.subject || '';
+  }
+
+  const gradeSel = document.getElementById('edit-prog-grade');
+  if (gradeSel) {
+    gradeSel.value = t.grade || '';
+  }
 
   document.getElementById('edit-prog-target-date').value = t.targetDate;
   document.getElementById('edit-prog-topic').value = t.topic;
@@ -3151,9 +3438,13 @@ function submitProgEdit() {
   if (tIdx === -1) return;
 
   const topic = topics[tIdx];
+  const subject = document.getElementById('edit-prog-subject').value;
+  const grade = document.getElementById('edit-prog-grade').value;
   // Update topic
   topic.topic = topicTitle;
   topic.targetDate = targetDate;
+  topic.subject = subject;
+  topic.grade = grade;
 
   // Handle Homework
   if (topic.hwId) {
@@ -3303,25 +3594,71 @@ loadSavedCredentials();
 // ── CLASS MANAGEMENT ──────────────────────────────────────
 function renderAdminClasses() {
   const groups = getStudentGroups();
-  const sel = document.getElementById('cls-group');
-  sel.innerHTML = '<option value="">— 전체 또는 그룹 선택 —</option>' + 
-    groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-  
-  // Setup Time Selects
-  const sh=document.getElementById('cls-start-h'), sm=document.getElementById('cls-start-m');
-  const eh=document.getElementById('cls-end-h'), em=document.getElementById('cls-end-m');
-  let hOpt='', mOpt='';
-  for(let i=0;i<24;i++) hOpt+=`<option value="${String(i).padStart(2,'0')}">${i}시</option>`;
-  for(let i=0;i<60;i++) mOpt+=`<option value="${String(i).padStart(2,'0')}">${i}분</option>`;
-  sh.innerHTML=eh.innerHTML=hOpt; 
-  sm.innerHTML=em.innerHTML=mOpt;
-  
-  // Default values: 13:00 (1 PM)
-  sh.value=eh.value='13'; sm.value=em.value='00';
+  const grpContainer = document.getElementById('cls-group-checkboxes');
+  if (grpContainer) {
+    grpContainer.innerHTML = groups.map(g => {
+      return `<label class="subject-chip"><input type="checkbox" name="cls-group" value="${g.id}" onchange="toggleSubjectChip(this)"> ${g.name}</label>`;
+    }).join('');
+  }
 
-  document.getElementById('cls-date').value = formatDateLocal(new Date());
+  const subSel = document.getElementById('cls-subject');
+  if (subSel) {
+    const cats = getCategories();
+    subSel.innerHTML = '<option value="">— 과목 선택(전체) —</option>' +
+      cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
+  
+  // Setup Time Selects and Default Dates for 3 Slots
+  for (let i = 1; i <= 3; i++) {
+    const sh = document.getElementById(`cls-start-h-${i}`);
+    const sm = document.getElementById(`cls-start-m-${i}`);
+    const eh = document.getElementById(`cls-end-h-${i}`);
+    const em = document.getElementById(`cls-end-m-${i}`);
+    
+    if (sh && sm && eh && em) {
+      let hOpt = '', mOpt = '';
+      for (let h = 0; h < 24; h++) hOpt += `<option value="${String(h).padStart(2, '0')}">${h}시</option>`;
+      for (let m = 0; m < 60; m++) mOpt += `<option value="${String(m).padStart(2, '0')}">${m}분</option>`;
+      
+      sh.innerHTML = eh.innerHTML = hOpt; 
+      sm.innerHTML = em.innerHTML = mOpt;
+      
+      sh.value = eh.value = '13'; 
+      sm.value = em.value = '00';
+    }
+    
+    const dateInput = document.getElementById(`cls-date-${i}`);
+    if (dateInput) dateInput.value = formatDateLocal(new Date());
+  }
+
   renderClassView('a', false);
   renderAdminClassList();
+}
+
+function addSlot() {
+  const slot2 = document.getElementById('cls-slot-2');
+  const slot3 = document.getElementById('cls-slot-3');
+  const btn = document.getElementById('btn-add-slot');
+  
+  if (slot2.style.display === 'none') {
+    slot2.style.display = 'block';
+  } else if (slot3.style.display === 'none') {
+    slot3.style.display = 'block';
+    btn.style.display = 'none'; // Max 3 reached
+  }
+}
+
+function removeSlot(n) {
+  const slot = document.getElementById(`cls-slot-${n}`);
+  if (slot) {
+    slot.style.display = 'none';
+    document.getElementById(`cls-date-${n}`).value = formatDateLocal(new Date());
+    document.getElementById(`cls-start-h-${n}`).value = '13';
+    document.getElementById(`cls-start-m-${n}`).value = '00';
+    document.getElementById(`cls-end-h-${n}`).value = '13';
+    document.getElementById(`cls-end-m-${n}`).value = '00';
+    document.getElementById('btn-add-slot').style.display = 'block';
+  }
 }
 
 function renderStudentClasses() {
@@ -3353,7 +3690,7 @@ function renderDailySchedule(containerId, isStudent) {
   const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
   
   const dayClasses = classes.filter(c => {
-    const isMine = !isStudent || (!c.groupId || c.groupId === myGrpId);
+    const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
     return isMine && c.date === dateStr;
   }).sort((a,b) => a.startTime.localeCompare(b.startTime));
   
@@ -3378,13 +3715,22 @@ function renderDailySchedule(containerId, isStudent) {
     html += '<div class="empty-state">해당 날짜에 예정된 수업이 없습니다.</div>';
   } else {
     html += dayClasses.map(c => {
-      const gColor = getGroupColor(c.groupId);
+      const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+      const firstGId = targetIds[0] || null;
+      const gColor = getGroupColor(firstGId);
+      const gNames = targetIds.length > 0 
+        ? targetIds.map(gid => getStudentGroups().find(g => g.id === gid)?.name || gid).join(', ')
+        : '전체 대상';
+      
       return `
         <div class="schedule-card" style="background:${gColor.bg}; border-color:${gColor.border}">
           <div class="schedule-time" style="color:#000">${c.startTime} ~ ${c.endTime}</div>
           <div class="schedule-info">
             <div class="schedule-title" style="color:${gColor.color}">${c.title}</div>
-            <div class="schedule-meta" style="color:#000">${c.groupId ? getStudentGroups().find(g=>g.id===c.groupId)?.name : '전체 대상'}</div>
+            <div class="schedule-meta" style="color:#000">
+              ${c.subject ? `<span class="subj-badge" style="background:${gColor.color}; color:#fff; padding:1px 6px; border-radius:6px; font-size:10px; margin-right:6px">${c.subject}</span>` : ''}
+              ${gNames} ${c.assignedTo ? `<span style="font-weight:700; color:var(--primary)">(${c.assignedTo.length}명)</span>` : ''}
+            </div>
             ${c.description ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${c.description}</div>` : ''}
           </div>
         </div>
@@ -3446,12 +3792,19 @@ function renderWeeklySchedule(containerId, isStudent) {
         </div>
         <div class="week-day-content">
           ${dayClasses.length ? dayClasses.map(c => {
-            const gColor = getGroupColor(c.groupId);
+            const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+            const firstGId = targetIds[0] || null;
+            const gColor = getGroupColor(firstGId);
+            const gNames = targetIds.length > 0 
+              ? targetIds.map(gid => getStudentGroups().find(g => g.id === gid)?.name || gid).join(', ')
+              : '전체';
             return `
               <div class="week-class-item" style="background:${gColor.bg}; border-color:${gColor.border}; border-bottom-style:solid; padding:8px 10px; border-radius:8px; margin-bottom:4px">
                 <div class="week-class-time" style="color:#000; font-weight:700; font-size:11px; white-space:nowrap">${c.startTime} ~ ${c.endTime}</div>
                 <div class="week-class-title" style="color:${gColor.color}">${c.title}</div>
-                <div class="week-class-meta" style="color:#000; font-size:10px; font-weight:700">${c.groupId ? getStudentGroups().find(g=>g.id===c.groupId)?.name : '전체'}</div>
+                <div class="week-class-meta" style="color:#000; font-size:10px; font-weight:700">
+                  ${c.subject ? `[${c.subject}] ` : ''}${gNames} ${c.assignedTo ? `(${c.assignedTo.length}명)` : ''}
+                </div>
               </div>
             `;
           }).join('') : '<div class="week-empty">수업 없음</div>'}
@@ -3516,14 +3869,14 @@ function renderUniversalCalendar(containerId, isStudent) {
       const dateMatch = c.date === dateStr;
       if (!dateMatch) return false;
       if (isStudent) {
-        return !c.groupId || c.groupId === studentGroupId;
+        return !c.groupId || c.groupId === studentGroupId || (c.groupIds && c.groupIds.includes(studentGroupId));
       }
       return true;
     }).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     const classItems = dayClasses.map(c => {
       const gColor = getGroupColor(c.groupId);
-      return `<div class="class-mini" title="${c.title}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
+      return `<div class="class-mini" title="${c.title} ${c.subject ? `(${c.subject})` : ''}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
     }).join('');
 
     html += `
@@ -3551,58 +3904,111 @@ function changeMonth(containerId, delta, isStudent) {
 
 function addClass() {
   const title = document.getElementById('cls-title').value.trim();
-  const date = document.getElementById('cls-date').value;
-  const sh = document.getElementById('cls-start-h').value;
-  const sm = document.getElementById('cls-start-m').value;
-  const eh = document.getElementById('cls-end-h').value;
-  const em = document.getElementById('cls-end-m').value;
-  const groupId = document.getElementById('cls-group').value;
+  const groupChecked = document.querySelectorAll('input[name="cls-group"]:checked');
+  const groupIds = Array.from(groupChecked).map(cb => cb.value);
+  const selectedSubject = document.getElementById('cls-subject').value;
   const desc = document.getElementById('cls-desc').value.trim();
   const type = document.querySelector('input[name="cls-type"]:checked').value;
   
-  const start = `${sh}:${sm}`;
-  const end = `${eh}:${em}`;
-
-  if(!title || !date) {
-    showToast('수업 제목과 날짜를 입력하세요.', 'warn');
+  // 과목 기반 학생 필터링
+  let assignedTo = null;
+  if (selectedSubject) {
+    const allUsers = getUsers();
+    const studentsInGroups = allUsers.filter(u => u.role === 'student' && groupIds.some(gid => {
+      const g = getStudentGroups().find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(u.id);
+    }));
+    assignedTo = studentsInGroups.filter(s => s.subject && s.subject.split(',').includes(selectedSubject)).map(s => s.id);
+  } else if (groupIds.length > 0) {
+    // 과목 미선택 시 해당 그룹 전체 학생
+    const allUsers = getUsers();
+    assignedTo = allUsers.filter(u => u.role === 'student' && groupIds.some(gid => {
+      const g = getStudentGroups().find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(u.id);
+    })).map(s => s.id);
+  }
+  
+  if(!title) {
+    showToast('수업 제목을 입력하세요.', 'warn');
     return;
   }
   
   let classes = getClasses();
+  let addedCount = 0;
+
   if (editingClassId) {
+    // Edit mode: only process Slot 1
+    const date = document.getElementById('cls-date-1').value;
+    const sh = document.getElementById('cls-start-h-1').value;
+    const sm = document.getElementById('cls-start-m-1').value;
+    const eh = document.getElementById('cls-end-h-1').value;
+    const em = document.getElementById('cls-end-m-1').value;
+
+    if(!date) {
+      showToast('날짜를 선택하세요.', 'warn');
+      return;
+    }
+
     classes = classes.map(c => c.id === editingClassId ? {
-      ...c, title, date, startTime: start, endTime: end, groupId, description: desc
+      ...c, title, date, startTime: `${sh}:${sm}`, endTime: `${eh}:${em}`, groupIds, description: desc,
+      subject: selectedSubject, assignedTo
     } : c);
+    addedCount = 1;
     showToast('✅ 수업 일정이 수정되었습니다.');
   } else {
-    if (type === 'regular') {
-      const selectedDate = new Date(date);
-      const targetDay = selectedDate.getDay();
-      const currentYear = selectedDate.getFullYear();
-      
-      let iter = new Date(selectedDate);
-      while (iter.getFullYear() === currentYear) {
-        if (iter.getDay() === targetDay) {
-          classes.push({
-            id: 'cls' + Date.now() + Math.random().toString(36).substr(2, 5),
-            type: 'regular',
-            title, 
-            date: formatDateLocal(iter), 
-            startTime: start, endTime: end, groupId, description: desc
-          });
+    // Add mode: process up to 3 slots
+    for (let i = 1; i <= 3; i++) {
+      const slotRow = document.getElementById(`cls-slot-${i}`);
+      if (slotRow.style.display === 'none' && i > 1) continue;
+
+      const date = document.getElementById(`cls-date-${i}`).value;
+      const sh = document.getElementById(`cls-start-h-${i}`).value;
+      const sm = document.getElementById(`cls-start-m-${i}`).value;
+      const eh = document.getElementById(`cls-end-h-${i}`).value;
+      const em = document.getElementById(`cls-end-m-${i}`).value;
+
+      if (!date) continue; // Skip empty slots
+
+      const start = `${sh}:${sm}`;
+      const end = `${eh}:${em}`;
+
+      if (type === 'regular') {
+        const selectedDate = new Date(date);
+        const targetDay = selectedDate.getDay();
+        const currentYear = selectedDate.getFullYear();
+        let iter = new Date(selectedDate);
+        while (iter.getFullYear() === currentYear) {
+          if (iter.getDay() === targetDay) {
+            classes.push({
+              id: 'cls' + Date.now() + Math.random().toString(36).substr(2, 5),
+              type: 'regular',
+              title, 
+              date: formatDateLocal(iter), 
+              startTime: start, endTime: end, groupIds, description: desc,
+              subject: selectedSubject, assignedTo
+            });
+          }
+          iter.setDate(iter.getDate() + 1);
         }
-        iter.setDate(iter.getDate() + 1);
+        addedCount++;
+      } else {
+        classes.push({
+          id: 'cls' + Date.now() + Math.random().toString(36).substr(2, 5),
+          type: 'single',
+          title, date, startTime: start, endTime: end, groupIds, description: desc,
+          subject: selectedSubject, assignedTo
+        });
+        addedCount++;
       }
-      showToast('✅ 정규수업 일정이 한해 말까지 모두 등록되었습니다.');
-    } else {
-      classes.push({
-        id: 'cls' + Date.now(),
-        type: 'single',
-        title, date, startTime: start, endTime: end, groupId, description: desc
-      });
-      showToast('✅ 보충수업 일정이 등록되었습니다.');
     }
+
+    if (addedCount === 0) {
+      showToast('하나 이상의 일정을 입력하세요.', 'warn');
+      return;
+    }
+    showToast(`✅ ${addedCount}개의 일정이 등록되었습니다.`);
   }
+
   saveClasses(classes);
   cancelClassEdit();
   renderAdminClasses();
@@ -3614,14 +4020,27 @@ function toggleRegularNotice(show) {
 
 function cancelClassEdit() {
   editingClassId = null;
+  document.getElementById('cls-subject').value = '';
   document.getElementById('cls-title').value = '';
   document.getElementById('cls-desc').value = '';
-  document.getElementById('cls-date').value = formatDateLocal(new Date());
-  document.getElementById('cls-start-h').value = '13';
-  document.getElementById('cls-start-m').value = '00';
-  document.getElementById('cls-end-h').value = '13';
-  document.getElementById('cls-end-m').value = '00';
-  document.getElementById('cls-group').value = '';
+  
+  // Reset and hide slots
+  for (let i = 1; i <= 3; i++) {
+    const slot = document.getElementById(`cls-slot-${i}`);
+    if (i > 1) slot.style.display = 'none';
+    
+    document.getElementById(`cls-date-${i}`).value = formatDateLocal(new Date());
+    document.getElementById(`cls-start-h-${i}`).value = '13';
+    document.getElementById(`cls-start-m-${i}`).value = '00';
+    document.getElementById(`cls-end-h-${i}`).value = '13';
+    document.getElementById(`cls-end-m-${i}`).value = '00';
+  }
+  document.getElementById('btn-add-slot').style.display = 'block';
+
+  document.querySelectorAll('input[name="cls-group"]').forEach(cb => {
+    cb.checked = false;
+    cb.parentElement.classList.remove('active');
+  });
   
   const titleEl = document.getElementById('cls-form-title');
   titleEl.innerText = '➕ 수업 일정 추가';
@@ -3637,17 +4056,34 @@ function editClass(id) {
   if (!c) return;
   
   editingClassId = id;
+  document.getElementById('cls-subject').value = c.subject || '';
   document.getElementById('cls-title').value = c.title;
-  document.getElementById('cls-date').value = c.date;
   
+  // Only Slot 1 for editing
+  document.getElementById('cls-date-1').value = c.date;
   const [sh, sm] = c.startTime.split(':');
   const [eh, em] = c.endTime.split(':');
-  document.getElementById('cls-start-h').value = sh;
-  document.getElementById('cls-start-m').value = sm;
-  document.getElementById('cls-end-h').value = eh;
-  document.getElementById('cls-end-m').value = em;
+  document.getElementById('cls-start-h-1').value = sh;
+  document.getElementById('cls-start-m-1').value = sm;
+  document.getElementById('cls-end-h-1').value = eh;
+  document.getElementById('cls-end-m-1').value = em;
   
-  document.getElementById('cls-group').value = c.groupId || '';
+  // Hide other slots and add button
+  document.getElementById('cls-slot-2').style.display = 'none';
+  document.getElementById('cls-slot-3').style.display = 'none';
+  document.getElementById('btn-add-slot').style.display = 'none';
+
+  const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+  document.querySelectorAll('input[name="cls-group"]').forEach(cb => {
+    if (targetIds.includes(cb.value)) {
+      cb.checked = true;
+      cb.parentElement.classList.add('active');
+    } else {
+      cb.checked = false;
+      cb.parentElement.classList.remove('active');
+    }
+  });
+  
   document.getElementById('cls-desc').value = c.description || '';
   
   const titleEl = document.getElementById('cls-form-title');
@@ -3662,7 +4098,7 @@ function editClass(id) {
 }
 
 function quickAddClass(date) {
-  document.getElementById('cls-date').value = date;
+  document.getElementById('cls-date-1').value = date;
   document.getElementById('cls-title').focus();
 }
 
@@ -3710,7 +4146,8 @@ function renderAdminClassList() {
             <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal"> - (매주 ${c.dayName}요일)</span></div>
             <div class="admin-hw-meta" style="color:#000">
               ${c.dayName}요일 (${c.startTime} ~ ${c.endTime}) 
-              ${grp ? `· 대상: <span style="font-weight:700">${grp.name}</span>` : '· 대상: 전체'}
+              · 대상: <span style="font-weight:700">${c.subject ? `[${c.subject}] ` : ''}${grp ? grp.name : '전체'}</span>
+              ${c.assignedTo ? `<span style="color:var(--primary); font-weight:800"> (${c.assignedTo.length}명)</span>` : ''}
             </div>
           </div>
           <button class="btn-del" style="white-space:nowrap" onclick="event.stopPropagation(); deleteRegularClassSeries('${c.title}', '${c.startTime}', '${c.endTime}', '${c.groupId}', '${c.dayName}')">전체삭제</button>
@@ -3729,8 +4166,10 @@ function renderAdminClassList() {
           <div class="admin-hw-info">
             <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title}</div>
             <div class="admin-hw-meta" style="color:#000">
-              날짜: ${c.date} (${c.startTime} ~ ${c.endTime}) 
-              ${grp ? `· 대상: <span style="font-weight:700">${grp.name}</span>` : '· 대상: 전체'}
+              ${c.date ? `날짜: ${c.date} ` : (c.dayName ? `${c.dayName}요일 ` : '')}
+              (${c.startTime} ~ ${c.endTime}) 
+              · 대상: <span style="font-weight:700">${c.subject ? `[${c.subject}] ` : ''}${grp ? grp.name : '전체'}</span>
+              ${c.assignedTo ? `<span style="color:var(--primary); font-weight:800"> (${c.assignedTo.length}명)</span>` : ''}
             </div>
           </div>
           <button class="btn-del" onclick="event.stopPropagation(); deleteClass('${c.id}')">삭제</button>
@@ -3785,16 +4224,27 @@ function autoSetProgressDue() {
 function renderProgressPanel() {
   const groups = getStudentGroups();
   const sel = document.getElementById('prog-group');
-  sel.innerHTML = '<option value="">— 그룹 선택 —</option>' +
-    groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  if (sel) {
+    sel.innerHTML = '<option value="">— 그룹 선택 —</option>' +
+      groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  }
+  
+  const subSel = document.getElementById('prog-subject');
+  if (subSel) {
+    const cats = getCategories();
+    subSel.innerHTML = '<option value="">— 과목 선택(전체) —</option>' +
+      cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
   
   const targetDate = new Date();
   document.getElementById('prog-target-date').value = formatDateLocal(targetDate);
   autoSetProgressDue();
 
   const tabEl = document.getElementById('prog-filter-tabs');
-  tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
-    groups.map(g => `<button class="sftab ${currentProgressFilter===g.id?'active':''}" onclick="filterProgress('${g.id}',this)">${g.name}</button>`).join('');
+  if (tabEl) {
+    tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
+      groups.map(g => `<button class="sftab ${currentProgressFilter===g.id?'active':''}" onclick="filterProgress('${g.id}',this)">${g.name}</button>`).join('');
+  }
 
   renderProgressContent();
 }
@@ -3836,11 +4286,24 @@ function addProgressTopic() {
   let hws = getHomeworks();
   const groups = getStudentGroups();
   const group = groups.find(g => g.id === groupId);
-  const studentIds = group ? (group.studentIds || []) : [];
+  const selectedSubject = document.getElementById('prog-subject').value;
+  const selectedGrade = document.getElementById('prog-grade').value;
+  let studentIds = group ? (group.studentIds || []) : [];
+
+  if (selectedSubject || selectedGrade) {
+    const allUsers = getUsers();
+    studentIds = studentIds.filter(sid => {
+      const s = allUsers.find(u => u.id === sid);
+      if (!s) return false;
+      const matchSub = !selectedSubject || (s.subject && s.subject.split(',').includes(selectedSubject));
+      const matchGrade = !selectedGrade || s.grade === selectedGrade;
+      return matchSub && matchGrade;
+    });
+  }
 
   if (editingProgressId) {
     topics = topics.map(t => t.id === editingProgressId ? {
-      ...t, groupId, topic: entries[0].topic, targetDate
+      ...t, groupId, topic: entries[0].topic, targetDate, subject: selectedSubject, grade: selectedGrade
     } : t);
     
     const oldTopic = getProgressTopics().find(t => t.id === editingProgressId);
@@ -3875,6 +4338,8 @@ function addProgressTopic() {
       topics.push({
         id: topicId,
         groupId,
+        subject: selectedSubject,
+        grade: selectedGrade,
         topic: entry.topic,
         targetDate,
         createdAt: formatDateLocal(new Date()),
@@ -3919,6 +4384,7 @@ function deleteProgressTopic(id) {
   const topics = getProgressTopics();
   const topic = topics.find(t => t.id === id);
   if (!topic) return;
+  
   if (!confirm(`"${topic.topic}" 진도 항목을 삭제하시겠습니까?\n해당 항목의 모든 진행 및 자동으로 생성된 숙제 기록도 함께 삭제됩니다.`)) return;
   
   if (topic.hwId) {
@@ -3928,8 +4394,10 @@ function deleteProgressTopic(id) {
 
   saveProgressTopics(topics.filter(t => t.id !== id));
   saveProgressCompletions(getProgressCompletions().filter(c => c.topicId !== id));
+  
   renderProgressContent();
   renderAdminHWList();
+  renderDashboard('a');
   showToast('진도 항목 및 자동 생성된 숙제가 삭제되었습니다.');
 }
 
@@ -4008,12 +4476,22 @@ function renderProgressContent(targetId) {
 
   const cardsHtml = sessions.map(session => {
     const { group, gc, date, topics: sessionTopics } = session;
+    const sessionSubjects = [...new Set(sessionTopics.map(t => t.subject).filter(Boolean))];
+    const subjectBadge = sessionSubjects.length ? `<span style="font-size:13px; font-weight:700; color:${gc.color}; margin-left:6px">[${sessionSubjects.join(', ')}]</span>` : '';
     const memberIds = group.studentIds || [];
-    const members = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
+    const studentsInGroup = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
 
     let groupTotalItems = 0, groupDoneItems = 0;
     sessionTopics.forEach(t => {
-      members.forEach(s => {
+      let membersForTopic = studentsInGroup;
+      if (t.subject) {
+        membersForTopic = membersForTopic.filter(s => s.subject && s.subject.split(',').includes(t.subject));
+      }
+      if (t.grade) {
+        membersForTopic = membersForTopic.filter(s => s.grade === t.grade);
+      }
+
+      membersForTopic.forEach(s => {
         groupTotalItems++;
         if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
       });
@@ -4038,12 +4516,20 @@ function renderProgressContent(targetId) {
     }).join('');
 
     const topicRows = sessionTopics.map(t => {
-      const topicDone = members.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
-      const topicTotal = members.length;
+      let membersForTopic = studentsInGroup;
+      if (t.subject) {
+        membersForTopic = membersForTopic.filter(s => s.subject && s.subject.split(',').includes(t.subject));
+      }
+      if (t.grade) {
+        membersForTopic = membersForTopic.filter(s => s.grade === t.grade);
+      }
+
+      const topicDone = membersForTopic.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
+      const topicTotal = membersForTopic.length;
       const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
       const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
       
-      const studentRows = members.map(s => {
+      const studentRows = membersForTopic.map(s => {
         const done = comps.some(c => c.topicId === t.id && c.studentId === s.id);
         return `<div class="prog-student-detail">
           <span class="prog-student-name">${s.name}</span>
@@ -4055,7 +4541,7 @@ function renderProgressContent(targetId) {
       return `<div class="prog-topic-item" style="margin-bottom:4px">
         <button class="prog-expand-btn" id="prog-expand-${t.id}" onclick="toggleProgressExpand('${t.id}')">▶</button>
         <div class="prog-topic-info">
-          <div class="prog-topic-title" onclick="event.stopPropagation();openTopicMemo('${t.id}')" style="cursor:pointer" title="클릭하면 메모를 확인/작성할 수 있습니다">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle">📝</span>' : ''}</div>
+          <div class="prog-topic-title" onclick="event.stopPropagation();openTopicMemo('${t.id}')" style="cursor:pointer" title="클릭하면 메모를 확인/작성할 수 있습니다">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle">📝 수업메모</span>' : ''}</div>
           <div class="prog-topic-meta">
             ${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
           </div>
@@ -4073,8 +4559,8 @@ function renderProgressContent(targetId) {
 
     return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
       <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-radius:12px 12px 0 0">
-        <div class="prog-group-title" style="color:${gc.color}; font-size:16px">🏫 ${group.name}
-          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${members.length}명</span>
+        <div class="prog-group-title" style="color:${gc.color}; font-size:16px">🏫 ${group.name}${subjectBadge}
+          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${studentsInGroup.length}명</span>
           ${headerDateStr}
         </div>
         <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
@@ -4114,11 +4600,21 @@ function renderProgressContent(targetId) {
 
 // 초기 UI 세팅
 document.addEventListener('DOMContentLoaded', () => {
+  initData();
+  loadSavedCredentials();
+  
   const mFiltered1 = document.getElementById('student-month-filter');
   if (mFiltered1) mFiltered1.value = currentPaymentMonth;
   
   const mFiltered2 = document.getElementById('summary-month-filter');
   if (mFiltered2) mFiltered2.value = currentPaymentMonth;
+
+  // 만약 자동 로그인 정보가 있다면 로그인 시도
+  const savedId = localStorage.getItem('hwapp_saved_id');
+  const savedPw = localStorage.getItem('hwapp_saved_pw');
+  if (savedId && savedPw) {
+    doLogin();
+  }
 });
 </script>
 </body>
