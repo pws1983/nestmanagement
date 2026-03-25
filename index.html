@@ -1721,7 +1721,8 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
       const s = users.find(u => u.id === sid);
       if (!s) return;
       const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
-      const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:var(--text); text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>`;
+      const nameColor = done ? 'var(--success)' : 'var(--text)';
+      const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>`;
       if (done) doneList.push(nameHtml);
       else notDoneList.push(nameHtml);
     });
