@@ -1716,15 +1716,31 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
 
   let studentListHtml = '';
   if (showStudentList) {
-    studentListHtml = assigned.map(sid => {
+    const doneList = [], notDoneList = [];
+    assigned.forEach(sid => {
       const s = users.find(u => u.id === sid);
-      if (!s) return '';
+      if (!s) return;
       const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
-      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border)">
-        <span style="flex:1;font-size:12px;font-weight:600;cursor:pointer;color:var(--primary);text-decoration:underline dotted" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>
-        <span style="font-size:11px;font-weight:700;color:${done?'var(--success)':'var(--text-muted)'}">${done?'✅ 완료':'⏳ 미완료'}</span>
-      </div>`;
-    }).join('');
+      const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:var(--text); text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>`;
+      if (done) doneList.push(nameHtml);
+      else notDoneList.push(nameHtml);
+    });
+
+    studentListHtml = '';
+    if (doneList.length > 0) {
+      studentListHtml += `
+        <div style="display:flex; align-items:flex-start; gap:6px; padding:4px 0; border-top:1px dashed var(--border)">
+          <span style="font-size:11px; font-weight:700; color:var(--success); white-space:nowrap; margin-top:1px">✅ 완료:</span>
+          <div style="display:flex; flex-wrap:wrap; gap:2px">${doneList.join('')}</div>
+        </div>`;
+    }
+    if (notDoneList.length > 0) {
+      studentListHtml += `
+        <div style="display:flex; align-items:flex-start; gap:6px; padding:4px 0; border-top:1px dashed var(--border)">
+          <span style="font-size:11px; font-weight:700; color:var(--text-muted); white-space:nowrap; margin-top:1px">⏳ 미완료:</span>
+          <div style="display:flex; flex-wrap:wrap; gap:2px">${notDoneList.join('')}</div>
+        </div>`;
+    }
     if (studentListHtml) studentListHtml = `<div style="margin-top:6px">${studentListHtml}</div>`;
   }
 
