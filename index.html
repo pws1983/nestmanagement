@@ -47,7 +47,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 }
 .login-logo{text-align:center;margin-bottom:32px;}
 .login-logo .icon{font-size:48px;margin-bottom:12px;}
-.login-logo h1{font-size:22px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-logo h1{font-size:22px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .login-logo p{color:var(--text-muted);font-size:13px;margin-top:6px;}
 .form-group{margin-bottom:16px;}
 .form-group label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:8px;font-weight:500;}
@@ -83,7 +83,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   box-shadow:2px 0 8px rgba(0,0,0,0.04);
 }
 .sidebar-header{padding:24px 20px;border-bottom:1px solid var(--border);}
-.sidebar-header .app-name{font-size:15px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.sidebar-header .app-name{font-size:15px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .sidebar-header .user-name{font-size:13px;color:var(--text-muted);margin-top:4px;}
 .role-badge{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .role-admin{background:var(--primary-bg);color:var(--primary);}
@@ -122,7 +122,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;}
 .stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
 .stat-label{font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:500;}
-.stat-pct{font-size:32px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-pct{font-size:32px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .stat-detail{font-size:11px;color:var(--text-muted);margin-top:4px;}
 .progress-bar-wrap{height:6px;background:#e2e8f0;border-radius:99px;margin-top:10px;overflow:hidden;}
 .progress-bar{height:100%;border-radius:99px;background:var(--grad);transition:width .6s ease;}
@@ -313,7 +313,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .monthly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
 .month-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow);}
 .month-label{font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:500;}
-.month-pct{font-size:24px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.month-pct{font-size:24px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .empty-state{text-align:center;padding:40px;color:var(--text-muted);}
 .empty-state .ei{font-size:40px;margin-bottom:12px;}
 
@@ -384,7 +384,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   border-radius:12px;padding:14px;text-align:center;
 }
 .msummary-label{font-size:11px;color:var(--text-muted);margin-bottom:6px;}
-.msummary-val{font-size:22px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.msummary-val{font-size:22px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 
 /* TOAST */
 .toast{
@@ -646,36 +646,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   }
   .prog-topic-item:hover { border-color: var(--primary-light); background: #fdfaff; }
   .prog-topic-info { flex: 1; }
-  .prog-topic-title { font-size: 13px; font-weight: 600; }
+  .prog-topic-title { font-size: 14px; font-weight: 500; }
   .prog-topic-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .prog-topic-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
   .prog-topic-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
   .prog-topic-pct { font-size: 12px; font-weight: 700; min-width: 36px; text-align: right; }
-  .prog-student-detail {
-    padding: 8px 14px 8px 28px; display: flex; align-items: center; gap: 8px;
-    border-radius: 8px; transition: background .15s;
-  }
-  .prog-student-detail:hover { background: #f8f9ff; }
-  .prog-student-name { font-size: 12px; font-weight: 500; flex: 1; }
-  .prog-check-btn {
-    width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--border-strong);
-    background: transparent; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 12px; transition: all .2s; flex-shrink: 0;
-  }
-  .prog-check-btn.done { background: var(--success); border-color: var(--success); color: #fff; }
-  .prog-check-btn:hover { transform: scale(1.1); }
-  .prog-add-form {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 24px; box-shadow: var(--shadow);
-  }
-  .prog-filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-  .prog-expand-btn {
-    background: none; border: none; cursor: pointer; font-size: 16px;
-    transition: transform .2s; color: var(--text-muted); padding: 4px;
-  }
-  .prog-expand-btn.open { transform: rotate(90deg); }
-  .prog-topic-students { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
-  .prog-topic-students.expanded { max-height: 1000px; }
   .prog-no-data {
     text-align: center; padding: 40px; color: var(--text-muted);
     font-size: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid var(--border);
@@ -1177,7 +1152,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
       <div class="panel-sub">반(그룹)별 교재/단원 진도 현황을 관리합니다</div>
-      <div class="prog-add-form" style="margin-bottom:20px">
+      <div class="card prog-add-form" style="margin-bottom:20px">
         <div class="section-title" id="prog-form-title">➕ 진도 항목 추가</div>
         <div class="admin-grid" style="gap:12px">
           <div>
@@ -1193,9 +1168,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
                 <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
               </select>
             </div>
-            <div class="form-row"><label>대상 학교</label>
+            <div class="form-row"><label>대상 수업</label>
               <select id="prog-group">
-                <option value="">— 학교 선택 —</option>
+                <option value="">— 수업 선택 —</option>
               </select>
             </div>
             <div class="form-row"><label>수업 일자 (숙제 등록일)</label>
@@ -1238,7 +1213,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
       <div class="prog-filter-row">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">📋 반별 보기:</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">📋 수업별 보기:</span>
         <div id="prog-filter-tabs"></div>
       </div>
       <div id="progress-content"></div>
@@ -1277,6 +1252,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="modal-summary" id="hw-modal-summary"></div>
       <div class="hw-modal-prog"><div class="hw-modal-prog-bar" id="hw-modal-prog-bar"></div></div>
       <div id="hw-modal-student-list"></div>
+      <div class="submit-row" style="margin-top:20px;display:flex;justify-content:space-between;gap:8px">
+        <button class="btn-submit" id="btn-sync-hw-students" style="background:#6366f1;flex:1;font-size:12px;padding:10px">🔄 수업 멤버와 동기화</button>
+        <button class="btn-submit" style="flex:1; margin:0" onclick="document.getElementById('hwStudentModal').classList.remove('open')">닫기</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1304,7 +1283,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
         </select>
       </div>
-      <div class="form-row"><label>대상 학교</label>
+      <div class="form-row"><label>대상 수업</label>
         <select id="edit-prog-group" disabled style="background:#f1f5f9; cursor:not-allowed"></select>
       </div>
       <div class="form-row"><label>수업 일자</label><input id="edit-prog-target-date" type="date"></div>
@@ -1321,6 +1300,27 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div style="display:flex; gap:10px; margin-top:20px">
         <button class="btn-add" id="btn-prog-edit-submit" style="flex:2" onclick="submitProgEdit()">수정 완료</button>
         <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeProgEditModalDirect()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS STUDENT MODAL (Completion Management) -->
+<div class="modal-overlay" id="progStudentModal" onclick="closeProgStudentModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="prog-modal-title"></div>
+        <div class="modal-sub" id="prog-modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('progStudentModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="prog-modal-summary"></div>
+      <div class="hw-modal-prog"><div class="hw-modal-prog-bar" id="prog-modal-prog-bar"></div></div>
+      <div id="prog-modal-student-list"></div>
+      <div class="submit-row" style="margin-top:20px; display:flex; justify-content:center">
+        <button class="btn-submit" style="width:100%; margin:0" onclick="document.getElementById('progStudentModal').classList.remove('open')">닫기</button>
       </div>
     </div>
   </div>
@@ -1351,6 +1351,23 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <button class="btn-del" style="flex:1; background:#94a3b8" onclick="cancelTopicMemoEdit()">취소</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS STUDENT DETAIL MODAL -->
+<div class="modal-overlay" id="progStudentDetailModal" onclick="closeProgStudentDetailModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="prog-detail-student-name"></div>
+        <div class="modal-sub">진도 달성 현황 · 학생이 참여한 수업 목록을 확인합니다.</div>
+      </div>
+      <button class="modal-close" onclick="closeProgStudentDetailModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="prog-detail-summary"></div>
+      <div id="prog-detail-topic-list"></div>
     </div>
   </div>
 </div>
@@ -1501,6 +1518,66 @@ const saveStudentGroups=d=>localStorage.setItem('hwapp_student_groups',JSON.stri
 const saveRetiredUsers=d=>localStorage.setItem('hwapp_retired_users',JSON.stringify(d));
 const saveClasses=d=>localStorage.setItem('hwapp_classes',JSON.stringify(d));
 const saveUsers=d=>localStorage.setItem('hwapp_users',JSON.stringify(d));
+
+function getAllClassSeries() {
+  const classes = getClasses();
+  const groups = getStudentGroups();
+  const dayNames = ['일','월','화','수','목','금','토'];
+  const seriesMap = {};
+
+  classes.forEach(c => {
+    const gIdsKey = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
+    const dayIdx = new Date(c.date).getDay();
+    // Key excludes dayIdx to group multi-day classes together
+    const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIdsKey}|${c.subject || ''}`;
+    
+    if (!seriesMap[key]) {
+      seriesMap[key] = {
+        id: key,
+        title: c.title,
+        startTime: c.startTime,
+        endTime: c.endTime,
+        type: c.type,
+        groupIds: c.groupIds || (c.groupId ? [c.groupId] : []),
+        subject: c.subject,
+        days: new Set(),
+        assignedTo: c.assignedTo || [],
+        dateSample: c.date // fallback date
+      };
+    }
+    seriesMap[key].days.add(dayIdx);
+  });
+
+  return Object.values(seriesMap).map(s => {
+    const matchedGroups = s.groupIds
+      .map(gid => groups.find(g => g.id === gid))
+      .filter(Boolean);
+    const gNames = matchedGroups.map(g => g.name).join(', ');
+    
+    // Sort days: Mon(1) to Sat(6), then Sun(0)
+    const sortedDays = Array.from(s.days).sort((a, b) => {
+      const aVal = a === 0 ? 7 : a;
+      const bVal = b === 0 ? 7 : b;
+      return aVal - bVal;
+    });
+    
+    const dayLabels = sortedDays.map(d => dayNames[d]).join('/');
+    
+    let label = `[${s.subject || '전체'}] ${s.title}`;
+    if (s.type === 'regular') {
+      label += ` (${dayLabels} ${s.startTime})`;
+    } else {
+      label += ` (특강/보강 ${s.startTime})`;
+    }
+    if (gNames) label += ` - ${gNames}`;
+
+    return {
+      ...s,
+      label: label,
+      groups: matchedGroups
+    };
+  });
+}
 
 function exportData() {
   const keys = [
@@ -2026,7 +2103,43 @@ function switchTab(btn,t){
 function renderStudentStats(){renderStatsForStudent(currentUser.id,'stats-content',currentStudentTab);}
 
 function getStudentHWs(sid){return getHomeworks().filter(h=>h.assignedTo.includes(sid));}
+function getStudentProgressTopics(sid){
+  const allTopics = getProgressTopics();
+  const allSeries = getAllClassSeries();
+  const groups = getStudentGroups();
+  const students = getUsers().filter(u => u.role === 'student');
+  const s = students.find(u => u.id === sid);
+  if (!s) return [];
+
+  return allTopics.filter(t => {
+    let eid = t.groupId;
+    let cs = allSeries.find(c => c.id === eid);
+    if (!cs && eid.startsWith('reg-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 5) {
+        const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+        cs = allSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+      }
+    }
+    if (!cs && eid.startsWith('single-')) {
+       const parts = eid.split('-');
+       if (parts.length >= 3) {
+         const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+         cs = allSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+       }
+    }
+
+    const grp = groups.find(g => g.id === eid);
+    const assignedIds = cs ? cs.assignedTo : (grp ? (grp.studentIds || []) : []);
+    
+    if (!assignedIds.includes(sid)) return false;
+    if (t.subject && (!s.subject || !s.subject.split(',').includes(t.subject))) return false;
+    if (t.grade && s.grade !== t.grade) return false;
+    return true;
+  });
+}
 function isDoneFor(hId,sid){return getCompletions().some(c=>c.homeworkId===hId&&c.studentId===sid);}
+function isProgressDoneFor(topicId,sid){return getProgressCompletions().some(c=>c.topicId===topicId&&c.studentId===sid);}
 
 const getStatCutoffDate = () => {
   const d = new Date();
@@ -2404,8 +2517,66 @@ function openHWStudentModal(hwId){
     <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none;font-size:22px;font-weight:900">${total-done}</div></div>
     <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--text);background:none;font-size:22px;font-weight:900">${total}</div></div>`;
   document.getElementById('hw-modal-prog-bar').style.width=pct+'%';
+  
+  const syncBtn = document.getElementById('btn-sync-hw-students');
+  if (syncBtn) syncBtn.onclick = () => syncHWStudentsFromTopic(hwId);
+  
   renderHWStudentList(hwId);
   document.getElementById('hwStudentModal').classList.add('open');
+}
+
+function syncHWStudentsFromTopic(hwId) {
+  const topics = getProgressTopics();
+  const t = topics.find(topic => topic.hwId === hwId);
+  if (!t) {
+    showToast('이 숙제와 연결된 수업 진도 항목을 찾을 수 없습니다.', 'warn');
+    return;
+  }
+
+  const classes = getClasses();
+  const groups = getStudentGroups();
+  const allUsers = getUsers();
+  
+  const sampleClass = classes.find(c => {
+    const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
+    const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
+    return key === t.groupId;
+  });
+
+  if (!sampleClass) {
+    showToast('연결된 수업 정보를 찾을 수 없습니다.', 'warn');
+    return;
+  }
+
+  let studentIds = sampleClass.assignedTo || [];
+  if (studentIds.length === 0 && sampleClass.groupIds && sampleClass.groupIds.length > 0) {
+    const allStudents = allUsers.filter(u => u.role === 'student');
+    studentIds = allStudents.filter(s => sampleClass.groupIds.some(gid => {
+      const g = groups.find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(s.id);
+    })).map(s => s.id);
+    
+    if (sampleClass.subject) {
+      studentIds = studentIds.filter(sid => {
+        const s = allStudents.find(u => u.id === sid);
+        return s && s.subject && s.subject.split(',').includes(sampleClass.subject);
+      });
+    }
+  }
+
+  if (studentIds.length === 0) {
+    showToast('동기화할 대상 학생이 없습니다.', 'warn');
+    return;
+  }
+
+  if (!confirm(`${studentIds.length}명의 학생으로 숙제 대상 목록을 동기화하시겠습니까?`)) return;
+
+  let hws = getHomeworks();
+  hws = hws.map(h => h.id === hwId ? { ...h, assignedTo: studentIds } : h);
+  saveHomeworks(hws);
+  
+  renderHWStudentList(hwId);
+  showToast('✅ 학생 목록이 수업과 동기화되었습니다.');
 }
 function renderHWStudentList(hwId){
   const hw=getHomeworks().find(h=>h.id===hwId);
@@ -3520,6 +3691,91 @@ function saveTopicMemo() {
   document.getElementById('topic-memo-edit').style.display = 'none';
   showToast('✅ 메모가 저장되었습니다.');
 }
+
+// ── PROGRESS STUDENT DETAIL MODAL ──────────────────────────
+function openProgStudentDetail(sid, currentTopicId) {
+  const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
+  if (!student) return;
+  document.getElementById('prog-detail-student-name').textContent = `${student.name} 학생 (진도 현황)`;
+  renderProgStudentDetailContent(sid, currentTopicId);
+  document.getElementById('progStudentDetailModal').classList.add('open');
+}
+
+function renderProgStudentDetailContent(sid, currentTopicId) {
+  const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
+  if (!student) return;
+  
+  const topics = getStudentProgressTopics(sid).sort((a,b) => (b.targetDate || '').localeCompare(a.targetDate || ''));
+  const done = topics.filter(t => isProgressDoneFor(t.id, sid)).length;
+  const total = topics.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  const subjectTags = (student.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join(' ') || '-';
+  const grp = getStudentGroupOf(sid);
+  let schoolDisplay = student.school || (grp ? grp.name : '-');
+
+  document.getElementById('prog-detail-summary').innerHTML = `
+    <div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid var(--border);">
+      <div style="font-size:12px; color:var(--text-muted);">🏫 <span style="font-weight:700">학교:</span> ${schoolDisplay}</div>
+      <div style="font-size:12px; color:var(--text-muted);">🎓 <span style="font-weight:700">학년:</span> ${student.grade || '-'}</div>
+      <div style="font-size:12px; color:var(--text-muted); display:flex; gap:4px; align-items:center">📚 <span style="font-weight:700">과목:</span> ${subjectTags}</div>
+    </div>
+    <div class="modal-summary" style="margin-bottom:0">
+      <div class="msummary-card"><div class="msummary-label">진도 달성률</div><div class="msummary-val">${pct}%</div>
+        <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div></div>
+      <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none">${done}</div></div>
+      <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div></div>
+      <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div></div>
+    </div>`;
+
+  if (!topics.length) {
+    document.getElementById('prog-detail-topic-list').innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>진도 데이터가 없습니다</div></div>';
+    return;
+  }
+
+  document.getElementById('prog-detail-topic-list').innerHTML = topics.map(t => {
+    const d = isProgressDoneFor(t.id, sid);
+    const isCurrent = t.id === currentTopicId;
+    const highlightAttr = isCurrent ? 'style="border:2px solid var(--primary-light); background:var(--primary-bg);"' : '';
+    
+    return `<div class="detail-hw-item" ${highlightAttr}>
+      <div class="detail-hw-info">
+        <div class="detail-hw-title">📖 ${t.topic}${isCurrent ? ' <span style="font-size:10px; color:var(--primary); font-weight:700">(현재 항목)</span>' : ''}</div>
+        <div class="detail-hw-meta">수업일: ${t.targetDate || '미정'} · 등록: ${t.createdAt}</div>
+      </div>
+      <div class="detail-pct-wrap">
+        <span class="detail-status hw-badge ${d?'badge-done':'badge-pending'}">${d?'완료':'미완료'}</span>
+        <button class="pct-toggle ${d?'done':'pending'}" title="${d?'미완료로 변경':'완료로 변경'}"
+          onclick="toggleProgStudentHistoryCompletion('${t.id}','${sid}',${d}, '${currentTopicId}')">
+          ${d?'✓':'○'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleProgStudentHistoryCompletion(topicId, sid, currentlyDone, currentViewTopicId) {
+  let comps = getProgressCompletions();
+  if (currentlyDone) {
+    const idx = comps.findIndex(c => c.topicId === topicId && c.studentId === sid);
+    if (idx > -1) comps.splice(idx, 1);
+  } else {
+    comps.push({ topicId, studentId: sid, completedAt: new Date().toISOString().slice(0, 10) });
+  }
+  saveProgressCompletions(comps);
+  renderProgStudentDetailContent(sid, currentViewTopicId);
+  renderProgressContent();
+  renderAdminStats();
+  renderDashboard('a');
+  showToast(currentlyDone ? '미완료로 변경되었습니다.' : '✅ 완료로 변경되었습니다!');
+}
+
+function closeProgStudentDetailModal(e) {
+  if (e.target === document.getElementById('progStudentDetailModal')) closeProgStudentDetailModalDirect();
+}
+function closeProgStudentDetailModalDirect() {
+  document.getElementById('progStudentDetailModal').classList.remove('open');
+}
 // ────────────────────────────────────────────────────────────────
 
 
@@ -4467,31 +4723,73 @@ function autoSetProgressDue() {
 }
 
 function renderProgressPanel() {
-  const groups = getStudentGroups();
-  const sel = document.getElementById('prog-group');
-  if (sel) {
-    sel.innerHTML = '<option value="">— 그룹 선택 —</option>' +
-      groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-  }
-  
   const subSel = document.getElementById('prog-subject');
   if (subSel) {
     const subjects = ['국어', '수학', '영어'];
     subSel.innerHTML = '<option value="">— 과목 선택(전체) —</option>' +
       subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    subSel.setAttribute('onchange', 'updateProgressClassList()');
   }
   
+  const gradeSel = document.getElementById('prog-grade');
+  if (gradeSel) {
+    gradeSel.setAttribute('onchange', 'updateProgressClassList()');
+  }
+
+  updateProgressClassList(); // Initial population
+
   const targetDate = new Date();
   document.getElementById('prog-target-date').value = formatDateLocal(targetDate);
   autoSetProgressDue();
 
   const tabEl = document.getElementById('prog-filter-tabs');
   if (tabEl) {
+    const classSeries = getAllClassSeries();
     tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
-      groups.map(g => `<button class="sftab ${currentProgressFilter===g.id?'active':''}" onclick="filterProgress('${g.id}',this)">${g.name}</button>`).join('');
+      classSeries.map(cs => `<button class="sftab ${currentProgressFilter===cs.id?'active':''}" onclick="filterProgress('${cs.id}',this)">${cs.label}</button>`).join('');
   }
 
   renderProgressContent();
+}
+
+function updateProgressClassList() {
+  const selectedSubject = document.getElementById('prog-subject').value;
+  const selectedGrade = document.getElementById('prog-grade').value;
+  const allSeries = getAllClassSeries();
+  const allStudents = getUsers().filter(u => u.role === 'student');
+  const groups = getStudentGroups();
+
+  let filteredSeries = allSeries;
+
+  // 1. 과목 필터링
+  if (selectedSubject) {
+    filteredSeries = filteredSeries.filter(cs => cs.subject === selectedSubject);
+  }
+
+  // 2. 학년 필터링 (해당 반에 해당 학년 학생이 한 명이라도 있으면 노출)
+  if (selectedGrade) {
+    filteredSeries = filteredSeries.filter(cs => {
+      const gIds = cs.groupIds;
+      if (!gIds || gIds.length === 0) {
+        return allStudents.some(s => s.grade === selectedGrade);
+      }
+      return allStudents.some(s => s.grade === selectedGrade && gIds.some(gid => {
+        const g = groups.find(sg => sg.id === gid);
+        return g && g.studentIds && g.studentIds.includes(s.id);
+      }));
+    });
+  }
+
+  const sel = document.getElementById('prog-group');
+  if (sel) {
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">— 수업 선택 —</option>' +
+      filteredSeries.map(cs => `<option value="${cs.id}">${cs.label}</option>`).join('');
+    // 기존 선택값이 필터링 후에도 존재하면 유지
+    if (filteredSeries.some(cs => cs.id === currentVal)) {
+      sel.value = currentVal;
+    }
+  }
 }
 
 function filterProgress(groupId, btn) {
@@ -4508,11 +4806,11 @@ function filterProgress(groupId, btn) {
 
 
 function addProgressTopic() {
-  const groupId = document.getElementById('prog-group').value;
+  const groupId = document.getElementById('prog-group').value; // class series key
   const targetDate = document.getElementById('prog-target-date').value;
   const hwDue = document.getElementById('prog-hw-due').value;
   
-  if (!groupId) { showToast('대상 그룹을 선택하세요.', 'warn'); return; }
+  if (!groupId) { showToast('대상 수업을 선택하세요.', 'warn'); return; }
   
   const entries = [];
   for (let i = 1; i <= 5; i++) {
@@ -4529,12 +4827,39 @@ function addProgressTopic() {
   
   let topics = getProgressTopics();
   let hws = getHomeworks();
+  const classes = getClasses();
   const groups = getStudentGroups();
-  const group = groups.find(g => g.id === groupId);
+  
+  // Find matching class to get students
+  const sampleClass = classes.find(c => {
+    const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
+    const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
+    return key === groupId;
+  });
+
   const selectedSubject = document.getElementById('prog-subject').value;
   const selectedGrade = document.getElementById('prog-grade').value;
-  let studentIds = group ? (group.studentIds || []) : [];
+  
+  let studentIds = sampleClass ? (sampleClass.assignedTo || []) : [];
 
+  // Robust fallback: if class was created without students (or is empty), try to resolve from groups
+  if (sampleClass && studentIds.length === 0 && sampleClass.groupIds && sampleClass.groupIds.length > 0) {
+    const allStudents = getUsers().filter(u => u.role === 'student');
+    studentIds = allStudents.filter(s => sampleClass.groupIds.some(gid => {
+      const g = groups.find(sg => sg.id === gid);
+      return g && g.studentIds && g.studentIds.includes(s.id);
+    })).map(s => s.id);
+    
+    // Also apply class-level subject filter if it exists
+    if (sampleClass.subject) {
+      studentIds = studentIds.filter(sid => {
+        const s = allStudents.find(u => u.id === sid);
+        return s && s.subject && s.subject.split(',').includes(sampleClass.subject);
+      });
+    }
+  }
+
+  // Filter by further dropdown selections in the progress form (subject/grade)
   if (selectedSubject || selectedGrade) {
     const allUsers = getUsers();
     studentIds = studentIds.filter(sid => {
@@ -4545,6 +4870,11 @@ function addProgressTopic() {
       return matchSub && matchGrade;
     });
   }
+
+  // categoryId for HW: use the first group ID if available, otherwise 'cat_other'
+  const hwCategoryId = (sampleClass && sampleClass.groupIds && sampleClass.groupIds.length > 0) 
+    ? sampleClass.groupIds[0] 
+    : (sampleClass && sampleClass.groupId ? sampleClass.groupId : 'cat_other');
 
   if (editingProgressId) {
     const oldTopicIndex = topics.findIndex(t => t.id === editingProgressId);
@@ -4557,14 +4887,14 @@ function addProgressTopic() {
       if (topicHwId) {
         // 기존 숙제 업데이트
         hws = hws.map(h => h.id === topicHwId ? {
-          ...h, title: entries[0].hwTitle, categoryId: groupId, subject: selectedSubject, dueDate: hwDue, createdAt: targetDate, assignedTo: [...studentIds]
+          ...h, title: entries[0].hwTitle, categoryId: hwCategoryId, subject: selectedSubject, dueDate: hwDue, createdAt: targetDate, assignedTo: [...studentIds]
         } : h);
       } else {
         // 새로 숙제 생성
         const newHwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
         topicHwId = newHwId;
         hws.push({
-          id: newHwId, title: entries[0].hwTitle, categoryId: groupId, subject: selectedSubject, assignedTo: [...studentIds], dueDate: hwDue, createdAt: targetDate
+          id: newHwId, title: entries[0].hwTitle, categoryId: hwCategoryId, subject: selectedSubject, assignedTo: [...studentIds], dueDate: hwDue, createdAt: targetDate
         });
       }
       saveHomeworks(hws);
@@ -4594,7 +4924,7 @@ function addProgressTopic() {
         hws.push({
           id: hwId,
           title: entry.hwTitle,
-          categoryId: groupId,
+          categoryId: hwCategoryId,
           subject: selectedSubject, // 과목 정보 추가
           assignedTo: [...studentIds], // 해당 그룹 학생 전체
           dueDate: hwDue,
@@ -4613,9 +4943,18 @@ function addProgressTopic() {
         createdAt: formatDateLocal(new Date()),
         hwId: topicHwId
       });
+
+      // Auto-mark all students as done
+      const initialComps = getProgressCompletions();
+      studentIds.forEach(sid => {
+        if (!initialComps.some(c => c.topicId === topicId && c.studentId === sid)) {
+          initialComps.push({ topicId, studentId: sid, completedAt: targetDate });
+        }
+      });
+      saveProgressCompletions(initialComps);
     });
     saveHomeworks(hws);
-    const hwMsg = hwAddedCount > 0 ? ` 숙제 ${hwAddedCount}개가 그룹(${group ? group.name : ''}) 학생 ${studentIds.length}명에게 등록되었습니다.` : '';
+    const hwMsg = hwAddedCount > 0 ? ` 숙제 ${hwAddedCount}개가 수업 학생 ${studentIds.length}명에게 등록되었습니다.` : '';
     showToast(`✅ ${entries.length}개의 진도 항목이 추가되었습니다.${hwMsg}`);
   }
   saveProgressTopics(topics);
@@ -4624,12 +4963,73 @@ function addProgressTopic() {
   renderAdminHWList();
 }
 
+function openProgEditModal(id) {
+  const topics = getProgressTopics();
+  const t = topics.find(x => x.id === id);
+  if (!t) return;
+  editingProgressId = id;
+
+  const allClassSeries = getAllClassSeries();
+  const groups = getStudentGroups();
+  
+  let cs = allClassSeries.find(c => c.id === t.groupId);
+  if (!cs && t.groupId.startsWith('reg-')) {
+    const parts = t.groupId.split('-');
+    if (parts.length >= 5) {
+      const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+      cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+    }
+  }
+  if (!cs && t.groupId.startsWith('single-')) {
+    const parts = t.groupId.split('-');
+    if (parts.length >= 3) {
+      const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+      cs = allClassSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+    }
+  }
+  
+  const grp = groups.find(g => g.id === t.groupId);
+  const displayLabel = cs ? cs.label : (grp ? grp.name : t.groupId);
+
+  const sel = document.getElementById('edit-prog-group');
+  if (sel) {
+    sel.innerHTML = `<option value="${t.groupId}">${displayLabel}</option>`;
+  }
+
+  const subSel = document.getElementById('edit-prog-subject');
+  if (subSel) {
+    const subjects = ['국어', '수학', '영어'];
+    subSel.innerHTML = '<option value="">— 과목 선택 없음 —</option>' +
+      subjects.map(s => `<option value="${s}" ${t.subject === s ? 'selected' : ''}>${s}</option>`).join('');
+  }
+  
+  const gradeSel = document.getElementById('edit-prog-grade');
+  if (gradeSel) {
+    const grades = ['중1','중2','중3','고1','고2','고3'];
+    gradeSel.innerHTML = '<option value="">— 학년 선택 없음 —</option>' +
+      grades.map(g => `<option value="${g}" ${t.grade === g ? 'selected' : ''}>${g}</option>`).join('');
+  }
+
+  document.getElementById('edit-prog-target-date').value = t.targetDate || '';
+  document.getElementById('edit-prog-topic').value = t.topic || '';
+  
+  const hwItem = getHomeworks().find(h => h.id === t.hwId);
+  document.getElementById('edit-prog-hw-title').value = hwItem ? hwItem.title : '';
+  document.getElementById('edit-prog-hw-due').value = hwItem ? hwItem.dueDate : (t.targetDate || '');
+
+  document.getElementById('progEditModal').classList.add('open');
+}
+
 function editProgressTopic(id) {
   openProgEditModal(id);
 }
 
 function cancelProgressEdit() {
   editingProgressId = null;
+  document.getElementById('prog-subject').value = '';
+  document.getElementById('prog-grade').value = '';
+  updateProgressClassList();
+  
   document.getElementById('prog-group').value = '';
   for (let i = 1; i <= 5; i++) {
     document.getElementById('prog-topic-' + i).value = '';
@@ -4683,12 +5083,171 @@ function toggleProgressCompletion(topicId, studentId, isDone) {
   showToast(isDone ? '미완료로 변경되었습니다.' : '✅ 완료로 표시했습니다!');
 }
 
-function toggleProgressExpand(topicId) {
-  const el = document.getElementById('prog-students-' + topicId);
-  const btn = document.getElementById('prog-expand-' + topicId);
-  if (el) {
-    el.classList.toggle('expanded');
-    btn.classList.toggle('open');
+function openProgStudentModal(topicId) {
+  const topics = getProgressTopics();
+  const t = topics.find(x => x.id === topicId);
+  if (!t) return;
+
+  const modal = document.getElementById('progStudentModal');
+  const title = document.getElementById('prog-modal-title');
+  const sub = document.getElementById('prog-modal-sub');
+  
+  title.innerText = `📖 ${t.topic}`;
+  sub.innerText = `📅 수업일: ${t.targetDate || '미정'} | 학습 완료 현황 관리`;
+
+  renderProgStudentList(topicId);
+  modal.classList.add('open');
+}
+
+function renderProgStudentList(topicId) {
+  const topics = getProgressTopics();
+  const t = topics.find(x => x.id === topicId);
+  if (!t) return;
+
+  const comps = getProgressCompletions();
+  const allUsers = getUsers();
+  const students = allUsers.filter(u => u.role === 'student');
+  const allClassSeries = getAllClassSeries();
+  const groups = getStudentGroups();
+
+  let cs = allClassSeries.find(c => c.id === t.groupId);
+  if (!cs && t.groupId.startsWith('reg-')) {
+    const parts = t.groupId.split('-');
+    if (parts.length >= 5) {
+      const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+      cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+    }
+  }
+  if (!cs && t.groupId.startsWith('single-')) {
+    const parts = t.groupId.split('-');
+    if (parts.length >= 3) {
+      const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+      cs = allClassSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+    }
+  }
+
+  const grp = groups.find(g => g.id === t.groupId);
+  let targetStudents = cs 
+    ? cs.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean)
+    : (grp ? (grp.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean) : []);
+
+  if (t.subject) {
+    targetStudents = targetStudents.filter(s => s.subject && s.subject.split(',').includes(t.subject));
+  }
+  if (t.grade) {
+    targetStudents = targetStudents.filter(s => s.grade === t.grade);
+  }
+
+  const doneCount = targetStudents.filter(s => comps.some(c => c.topicId === topicId && c.studentId === s.id)).length;
+  const totalCount = targetStudents.length;
+  const pct = totalCount ? Math.round(doneCount / totalCount * 100) : 0;
+  
+  document.getElementById('prog-modal-summary').innerHTML = `
+    <div class="msummary-card"><div class="msummary-label">달성률</div><div class="msummary-val">${pct}%</div></div>
+    <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none;font-size:22px;font-weight:900">${doneCount}</div></div>
+    <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none;font-size:22px;font-weight:900">${totalCount - doneCount}</div></div>
+    <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--text);background:none;font-size:22px;font-weight:900">${totalCount}</div></div>
+  `;
+  document.getElementById('prog-modal-prog-bar').style.width = pct + '%';
+
+  const listEl = document.getElementById('prog-modal-student-list');
+  listEl.innerHTML = targetStudents.map(s => {
+    const isDone = comps.some(c => c.topicId === topicId && c.studentId === s.id);
+    const initial = s.name.slice(0, 1);
+    return `
+      <div class="hw-student-row">
+        <div class="hw-student-avatar">${initial}</div>
+        <div class="hw-student-name">${s.name}</div>
+        <span style="font-size:12px;color:${isDone ? 'var(--success)' : 'var(--warning)'};font-weight:600;margin-right:8px">${isDone ? '✅ 완료' : '⏳ 미완료'}</span>
+        <button class="hw-toggle ${isDone ? 'done' : 'pending'}" onclick="toggleProgStudentDone('${topicId}', '${s.id}', ${!isDone})" title="${isDone ? '완료 취소' : '완료로 표시'}">${isDone ? '✓' : '○'}</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleProgStudentDone(topicId, studentId, isDone) {
+  let comps = getProgressCompletions();
+  if (isDone) {
+    if (!comps.some(c => c.topicId === topicId && c.studentId === studentId)) {
+      comps.push({ topicId, studentId, completedAt: formatDateLocal(new Date()) });
+    }
+  } else {
+    comps = comps.filter(c => !(c.topicId === topicId && c.studentId === studentId));
+  }
+  saveProgressCompletions(comps);
+  if (document.getElementById('progStudentModal').classList.contains('open')) {
+    renderProgStudentList(topicId);
+  }
+  if (document.getElementById('progStudentDetailModal').classList.contains('open')) {
+    renderProgStudentDetailContent(studentId);
+  }
+  renderProgressContent();
+  renderDashboard('a');
+  renderAdminStats();
+  showToast(isDone ? '✅ 완료로 표시했습니다!' : '미완료로 변경되었습니다.');
+}
+
+function openProgStudentDetail(sid, currentTopicId) {
+  const users = getUsers();
+  const student = users.find(u => u.id === sid);
+  if (!student) return;
+
+  document.getElementById('prog-detail-student-name').innerText = `👤 ${student.name} 학생 진도 현황`;
+  renderProgStudentDetailContent(sid, currentTopicId);
+  document.getElementById('progStudentDetailModal').classList.add('open');
+}
+
+function renderProgStudentDetailContent(sid, highlightTopicId) {
+  const topics = getStudentProgressTopics(sid).sort((a, b) => {
+    const da = a.targetDate || '0000-00-00', db = b.targetDate || '0000-00-00';
+    return db.localeCompare(da) || b.createdAt.localeCompare(a.createdAt);
+  });
+  
+  const doneCount = topics.filter(t => isProgressDoneFor(t.id, sid)).length;
+  const totalCount = topics.length;
+  const pct = totalCount ? Math.round(doneCount / totalCount * 100) : 0;
+
+  document.getElementById('prog-detail-summary').innerHTML = `
+    <div class="msummary-card"><div class="msummary-label">전체 진도 달성률</div><div class="msummary-val">${pct}%</div></div>
+    <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="color:var(--success)">${doneCount}</div></div>
+    <div class="msummary-card"><div class="msummary-label">전체 수업</div><div class="msummary-val">${totalCount}</div></div>
+  `;
+
+  const listEl = document.getElementById('prog-detail-topic-list');
+  if (!topics.length) {
+    listEl.innerHTML = '<div class="empty-state">해당 학생의 진도 기록이 없습니다.</div>';
+    return;
+  }
+
+  listEl.innerHTML = topics.map(t => {
+    const isDone = isProgressDoneFor(t.id, sid);
+    const isCurrent = t.id === highlightTopicId;
+    return `
+      <div class="detail-hw-item" style="${isCurrent ? 'border:2px solid var(--primary); background:var(--primary-bg)' : ''}">
+        <div class="detail-hw-info">
+          <div class="detail-hw-title">${t.topic} ${isCurrent ? '<span class="cat-tag">현재 수업</span>' : ''}</div>
+          <div class="detail-hw-meta">📅 수업일: ${t.targetDate || '미정'} | ${t.subject || '전체'} | ${t.grade || ''}</div>
+        </div>
+        <button class="pct-toggle ${isDone ? 'done' : 'pending'}" onclick="toggleProgStudentDone('${t.id}', '${sid}', ${!isDone})">
+          ${isDone ? '✓' : ''}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function closeProgStudentDetailModal(e) {
+  if (e.target === document.getElementById('progStudentDetailModal')) {
+    closeProgStudentDetailModalDirect();
+  }
+}
+function closeProgStudentDetailModalDirect() {
+  document.getElementById('progStudentDetailModal').classList.remove('open');
+}
+
+function closeProgStudentModal(e) {
+  if (e.target === document.getElementById('progStudentModal')) {
+    document.getElementById('progStudentModal').classList.remove('open');
   }
 }
 
@@ -4702,24 +5261,57 @@ function renderProgressContent(targetId) {
   const hwComps = getCompletions();
   const today = new Date();
   today.setHours(0,0,0,0);
+  
+  const allClassSeries = getAllClassSeries();
 
-  const filteredGroups = currentProgressFilter
-    ? groups.filter(g => g.id === currentProgressFilter)
-    : groups;
+  // 1. Resolve effective entity IDs for all topics (merging old keys to new series)
+  const resolvedTopics = topics.map(t => {
+    let eid = t.groupId;
+    let cs = allClassSeries.find(c => c.id === eid);
+    if (!cs && eid.startsWith('reg-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 5) {
+        const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+        cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+      }
+    }
+    if (!cs && eid.startsWith('single-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 3) {
+        const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+        cs = allClassSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.sort().join(',') === gids);
+      }
+    }
+    return { ...t, effectiveEntityId: cs ? cs.id : eid };
+  });
 
-  if (!filteredGroups.length) {
-    el.innerHTML = '<div class="prog-no-data"><div class="prog-icon">📋</div><div>등록된 그룹이 없습니다.<br>먼저 학생 그룹을 만들어주세요.</div></div>';
-    return;
-  }
-
-  // Group topics by (GroupId, TargetDate)
+  const topicEntities = [...new Set(resolvedTopics.map(t => t.effectiveEntityId))];
+  
   const sessions = [];
-  filteredGroups.forEach((group) => {
-    const gc = getGroupColor(group.id);
-    const groupTopics = topics.filter(t => t.groupId === group.id);
+  
+  topicEntities.forEach(entityId => {
+    const entityTopics = resolvedTopics.filter(t => t.effectiveEntityId === entityId);
     
+    const classSeries = allClassSeries.find(cs => cs.id === entityId);
+    const group = groups.find(g => g.id === entityId);
+    
+    // Filter handling
+    if (currentProgressFilter) {
+      if (entityId !== currentProgressFilter) return;
+    }
+
+    const label = classSeries ? classSeries.label : (group ? `🏫 ${group.name}` : `🏷️ ${entityId}`);
+    const gc = classSeries 
+      ? (classSeries.groups.length > 0 ? getGroupColor(classSeries.groups[0].id) : GROUP_COLORS[0])
+      : (group ? getGroupColor(group.id) : GROUP_COLORS[0]);
+    
+    const studentsInEntity = classSeries 
+      ? classSeries.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean)
+      : (group ? (group.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean) : []);
+
+    // Group by date within this entity
     const datesMap = {};
-    groupTopics.forEach(t => {
+    entityTopics.forEach(t => {
       const d = t.targetDate || '날짜 미지정';
       if(!datesMap[d]) datesMap[d] = [];
       datesMap[d].push(t);
@@ -4727,24 +5319,27 @@ function renderProgressContent(targetId) {
 
     Object.keys(datesMap).forEach(date => {
       sessions.push({
-        group,
+        entityId,
+        label,
         gc,
         date,
         topics: datesMap[date],
-        sortDate: date === '날짜 미지정' ? '0000-00-00' : date
+        studentsInEntity,
+        sortDate: date === '날짜 미지정' ? '0000-00-00' : date,
+        isClass: !!classSeries
       });
     });
   });
 
-  // Sort sessions: Most recent date first, then by group name
-  sessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.group.name.localeCompare(b.group.name));
+  // Sort sessions: Most recent date first, then by label
+  sessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.label.localeCompare(b.label));
 
   let finalSessions = sessions;
   if (targetId === 'a-dashboard-progress-list') {
-    const seenGroups = new Set();
+    const seenEntities = new Set();
     finalSessions = sessions.filter(s => {
-      if (seenGroups.has(s.group.id)) return false;
-      seenGroups.add(s.group.id);
+      if (seenEntities.has(s.entityId)) return false;
+      seenEntities.add(s.entityId);
       return true;
     });
   }
@@ -4755,15 +5350,13 @@ function renderProgressContent(targetId) {
   }
 
   const cardsHtml = finalSessions.map(session => {
-    const { group, gc, date, topics: sessionTopics } = session;
+    const { label, gc, date, topics: sessionTopics, studentsInEntity } = session;
     const sessionSubjects = [...new Set(sessionTopics.map(t => t.subject).filter(Boolean))];
     const subjectBadge = sessionSubjects.length ? `<span style="font-size:13px; font-weight:700; color:${gc.color}; margin-left:6px">[${sessionSubjects.join(', ')}]</span>` : '';
-    const memberIds = group.studentIds || [];
-    const studentsInGroup = memberIds.map(sid => students.find(s => s.id === sid)).filter(Boolean);
 
     let groupTotalItems = 0, groupDoneItems = 0;
     sessionTopics.forEach(t => {
-      let membersForTopic = studentsInGroup;
+      let membersForTopic = studentsInEntity;
       if (t.subject) {
         membersForTopic = membersForTopic.filter(s => s.subject && s.subject.split(',').includes(t.subject));
       }
@@ -4796,7 +5389,7 @@ function renderProgressContent(targetId) {
     }).join('');
 
     const topicRows = sessionTopics.map(t => {
-      let membersForTopic = studentsInGroup;
+      let membersForTopic = studentsInEntity;
       if (t.subject) {
         membersForTopic = membersForTopic.filter(s => s.subject && s.subject.split(',').includes(t.subject));
       }
@@ -4809,38 +5402,59 @@ function renderProgressContent(targetId) {
       const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
       const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
       
-      const studentRows = membersForTopic.map(s => {
-        const done = comps.some(c => c.topicId === t.id && c.studentId === s.id);
-        return `<div class="prog-student-detail">
-          <span class="prog-student-name">${s.name}</span>
-          <span style="font-size:11px;color:${done?'var(--success)':'var(--text-muted)'};font-weight:600">${done?'✅ 완료':'⏳ 진행중'}</span>
-          <button class="prog-check-btn ${done?'done':''}" onclick="toggleProgressCompletion('${t.id}','${s.id}',${done})" title="${done?'미완료로 변경':'완료로 표시'}">${done?'✓':'○'}</button>
-        </div>`;
-      }).join('');
+      const doneList = [], notDoneList = [];
+      membersForTopic.forEach(s => {
+        const done = isProgressDoneFor(t.id, s.id);
+        const nameColor = done ? 'var(--success)' : 'var(--text)';
+        const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openProgStudentDetail('${s.id}', '${t.id}')">${s.name}</span>`;
+        if (done) doneList.push(nameHtml);
+        else notDoneList.push(nameHtml);
+      });
 
-      return `<div class="prog-topic-item" style="margin-bottom:4px">
-        <button class="prog-expand-btn" id="prog-expand-${t.id}" onclick="toggleProgressExpand('${t.id}')">▶</button>
-        <div class="prog-topic-info">
-          <div class="prog-topic-title" onclick="event.stopPropagation();openTopicMemo('${t.id}')" style="cursor:pointer" title="클릭하면 메모를 확인/작성할 수 있습니다">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle">📝 수업메모</span>' : ''}</div>
+      let topicStudentListHtml = '';
+      if (doneList.length > 0) {
+        topicStudentListHtml += `
+          <div style="display:flex; align-items:flex-start; gap:6px; padding:4px 0; border-top:1px dashed var(--border)">
+            <span style="font-size:11px; font-weight:700; color:var(--success); white-space:nowrap; margin-top:1px">✅ 완료:</span>
+            <div style="display:flex; flex-wrap:wrap; gap:2px">${doneList.join('')}</div>
+          </div>`;
+      }
+      if (notDoneList.length > 0) {
+        topicStudentListHtml += `
+          <div style="display:flex; align-items:flex-start; gap:6px; padding:4px 0; border-top:1px dashed var(--border)">
+            <span style="font-size:11px; font-weight:700; color:var(--text-muted); white-space:nowrap; margin-top:1px">⏳ 미완료:</span>
+            <div style="display:flex; flex-wrap:wrap; gap:2px">${notDoneList.join('')}</div>
+          </div>`;
+      }
+      if (topicStudentListHtml) topicStudentListHtml = `<div style="margin-top:6px">${topicStudentListHtml}</div>`;
+
+      return `<div class="admin-hw-item" onclick="openProgStudentModal('${t.id}')" style="margin-bottom:8px; align-items:flex-start; cursor:pointer" title="클릭하면 학습 현황을 관리할 수 있습니다">
+        <div class="admin-hw-info">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
+            <div class="prog-topic-title">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle;cursor:pointer" onclick="event.stopPropagation();openTopicMemo(\''+t.id+'\')">📝 수업메모</span>' : ''}</div>
+            <div style="display:flex; gap:4px">
+              <button class="btn-del" style="font-size:11px;padding:3px 6px;background:var(--success);color:#fff" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
+              <button class="btn-del" style="font-size:11px;padding:3px 6px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
+            </div>
+          </div>
           <div class="prog-topic-meta">
             ${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
           </div>
-          <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
-            <div class="prog-topic-bar" style="margin:0"><div class="prog-topic-bar-fill" style="width:${topicPct}%;background:${topicColor}"></div></div>
-            <span class="prog-topic-pct" style="color:${topicColor}; font-size:11px">${topicPct}%</span>
-            <span style="font-size:11px;color:var(--text-muted);min-width:42px;text-align:right">${topicDone}/${topicTotal}</span>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px">
+            <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
+              <div style="height:100%;border-radius:99px;background:${topicColor};width:${topicPct}%;transition:width .4s"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:${topicColor}">${topicDone}/${topicTotal} 완료</span>
           </div>
+          ${topicStudentListHtml}
         </div>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:8px;background:var(--success);color:#fff" onclick="event.stopPropagation();editProgressTopic('${t.id}')">수정</button>
-        <button class="btn-del" style="font-size:11px;padding:4px 8px;margin-left:4px" onclick="event.stopPropagation();deleteProgressTopic('${t.id}')">삭제</button>
-      </div>
-      <div class="prog-topic-students" id="prog-students-${t.id}">${studentRows}</div>`;
+      </div>`;
     }).join('');
 
     return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
       <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-radius:12px 12px 0 0">
-        <div class="prog-group-title" style="color:${gc.color}; font-size:16px">🏫 ${group.name}${subjectBadge}
-          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${studentsInGroup.length}명</span>
+        <div class="prog-group-title" style="color:${gc.color}; font-size:16px">${label}${subjectBadge}
+          <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${studentsInEntity.length}명</span>
           ${headerDateStr}
         </div>
         <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
