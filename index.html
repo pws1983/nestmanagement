@@ -785,6 +785,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="nav-item" onclick="showPanel('a','dashboard')" id="anav-dashboard"><span>🏠</span> 대시보드</div>
       <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 관리</div>
+      <div class="nav-item" onclick="showPanel('a','learning')" id="anav-learning"><span>📖</span> 학습 관리</div>
       <div class="nav-item" onclick="showPanel('a','progress')" id="anav-progress"><span>📖</span> 수업 진도</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학교 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
@@ -1142,6 +1143,20 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div id="admin-cls-list"></div>
       </div>
     </div>
+    <!-- Learning Management Panel -->
+    <div class="panel" id="a-panel-learning">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:12px">
+        <div class="panel-title" style="margin-bottom:0">학습 관리</div>
+        <div style="display:flex; gap:10px">
+          <button class="btn" style="background:var(--secondary); color:#3b82f6; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
+          <button class="btn" style="background:var(--border-strong); color:#ef4444; padding:8px 16px; font-size:13px; border-radius:10px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
+        </div>
+      </div>
+      <div class="panel-sub">전체 학생의 정보를 확인합니다. 목록을 클릭 시 추후 상세 학습 현황으로 연결할 수 있습니다.</div>
+      <div class="card" style="overflow-x:auto;">
+        <div id="learning-management-content"></div>
+      </div>
+    </div>
     <!-- Class Progress Management -->
     <div class="panel" id="a-panel-progress">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px">
@@ -1300,6 +1315,66 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div style="display:flex; gap:10px; margin-top:20px">
         <button class="btn-add" id="btn-prog-edit-submit" style="flex:2" onclick="submitProgEdit()">수정 완료</button>
         <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeProgEditModalDirect()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS GROUP EDIT MODAL (Bulk Edit) -->
+<div class="modal-overlay" id="progGroupEditModal" onclick="closeProgGroupEditModal(event)">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" style="margin-bottom:4px">✏️ 진도 개체 세션 수정</div>
+        <div class="modal-sub">같은 날짜와 수업에 등록된 항목들을 일괄적으로 세밀하게 수정하거나 추가/삭제할 수 있습니다.</div>
+      </div>
+      <button class="modal-close" onclick="closeProgGroupEditModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="admin-grid" style="gap:12px; margin-bottom:12px">
+        <div>
+          <div class="form-row"><label>대상 수업</label>
+            <input id="edit-session-group-name" type="text" disabled style="background:#f1f5f9; cursor:not-allowed; border:1px solid var(--border)">
+          </div>
+          <div class="form-row"><label>수업 일자 (공통 적용)</label>
+            <input id="edit-session-date" type="date" onchange="autoSetSessionDue()">
+          </div>
+          <div class="form-row"><label>숙제 마감일 (공통 적용)</label>
+            <input id="edit-session-hw-due" type="date">
+          </div>
+          <p style="font-size:12px; color:var(--text-muted); margin-top:4px">※ 일자를 변경하면 그룹 내 모든 항목의 연동 날짜가 변경됩니다.</p>
+        </div>
+        <div>
+          <div class="form-row"><label>진도 항목 및 해당 숙제 내용 (최대 5개)</label>
+            <div style="display:flex; flex-direction:column; gap:4px">
+              <div style="display:flex; gap:4px">
+                <input id="edit-session-topic-1" type="text" style="flex:1" placeholder="진도: 예) 수학의 정석 1단원">
+                <input id="edit-session-hw-1" type="text" style="flex:1" placeholder="숙제(선택)">
+              </div>
+              <div style="display:flex; gap:4px">
+                <input id="edit-session-topic-2" type="text" style="flex:1" placeholder="진도 추가 2">
+                <input id="edit-session-hw-2" type="text" style="flex:1" placeholder="숙제 2">
+              </div>
+              <div style="display:flex; gap:4px">
+                <input id="edit-session-topic-3" type="text" style="flex:1" placeholder="진도 추가 3">
+                <input id="edit-session-hw-3" type="text" style="flex:1" placeholder="숙제 3">
+              </div>
+              <div style="display:flex; gap:4px">
+                <input id="edit-session-topic-4" type="text" style="flex:1" placeholder="진도 추가 4">
+                <input id="edit-session-hw-4" type="text" style="flex:1" placeholder="숙제 4">
+              </div>
+              <div style="display:flex; gap:4px">
+                <input id="edit-session-topic-5" type="text" style="flex:1" placeholder="진도 추가 5">
+                <input id="edit-session-hw-5" type="text" style="flex:1" placeholder="숙제 5">
+              </div>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-top:4px">※ 빈칸으로 저장하면 해당 항목은 삭제됩니다. 새 내용을 쓰면 생성됩니다.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px">
+        <button class="btn-add" style="flex:2" onclick="submitProgGroupEdit()">세션 일괄 수정 완료</button>
+        <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeProgGroupEditModalDirect()">취소</button>
       </div>
     </div>
   </div>
@@ -1923,6 +1998,9 @@ function showPanel(who,name){
     currentClassView = 'daily';
     currentCalDate = new Date();
     renderAdminClasses();
+  }
+  if(who==='a'&&name==='learning') {
+    renderLearningManagement();
   }
   if(who==='a'&&name==='progress') {
     renderProgressPanel();
@@ -2905,6 +2983,47 @@ function restoreStudent(id,name){
     renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();
     showToast(`🎉 "${name}" 학생이 복원되었습니다.`);
   }
+}
+
+function renderLearningManagement() {
+  const el = document.getElementById('learning-management-content');
+  if (!el) return;
+  const students = getUsers().filter(u => u.role === 'student');
+  if (!students.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">등록된 학생이 없습니다.</div>';
+    return;
+  }
+  
+  const rowsHtml = students.map(s => {
+    const affiliation = [s.school, s.grade].filter(Boolean).join(' / ') || '-';
+    return `
+      <tr>
+        <td class="student-name-cell">
+          <div class="student-avatar" style="width:32px; height:32px; font-size:12px">${s.name.charAt(0)}</div>
+          <span>${s.name}</span>
+        </td>
+        <td style="color:var(--text-muted); font-size:13px">${s.id}</td>
+        <td style="font-size:13px; color:var(--text); font-weight:500">${affiliation}</td>
+        <td><span style="color:var(--text-muted); font-size:12px; font-style:italic">내용 없음</span></td>
+      </tr>
+    `;
+  }).join('');
+
+  el.innerHTML = `
+    <table class="student-stat-table" style="width:100%; min-width:600px">
+      <thead>
+        <tr>
+          <th>학생 이름</th>
+          <th>아이디</th>
+          <th>소속 (학교/학년)</th>
+          <th>학습 내용</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderPaymentSummary() {
@@ -5095,6 +5214,222 @@ function deleteProgressSession(idsStr, label) {
   showToast('해당 개체의 모든 진도 항목이 삭제되었습니다.');
 }
 
+let currentEditSessionIds = [];
+let currentEditSessionBase = null; 
+
+function editProgressSession(idsStr, label) {
+  const ids = idsStr.split(',');
+  currentEditSessionIds = ids;
+  const topics = getProgressTopics();
+  const hwItems = getHomeworks();
+  
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('edit-session-topic-' + i).value = '';
+    document.getElementById('edit-session-hw-' + i).value = '';
+  }
+  
+  document.getElementById('edit-session-group-name').value = label;
+  
+  let firstT = topics.find(t => t.id === ids[0]);
+  if (!firstT) return;
+  
+  let baseStudents = getProgressCompletions().filter(c => c.topicId === firstT.id).map(c => c.studentId);
+  if (!baseStudents.length && firstT.hwId) {
+      const hw = hwItems.find(h => h.id === firstT.hwId);
+      if (hw && hw.assignedTo) baseStudents = hw.assignedTo;
+  }
+
+  let baseHwCategoryId = 'cat_other';
+  if (firstT.hwId) {
+      const hw = hwItems.find(h => h.id === firstT.hwId);
+      if (hw) baseHwCategoryId = hw.categoryId || 'cat_other';
+  }
+
+  currentEditSessionBase = {
+    entityId: firstT.entityId,
+    entityType: firstT.entityType,
+    subject: firstT.subject,
+    grade: firstT.grade,
+    color: firstT.color,
+    students: baseStudents,
+    categoryId: baseHwCategoryId
+  };
+  
+  document.getElementById('edit-session-date').value = firstT.targetDate || '';
+  
+  let commonDue = '';
+  for (let i = 0; i < ids.length && i < 5; i++) {
+    const t = topics.find(x => x.id === ids[i]);
+    if (t) {
+      document.getElementById('edit-session-topic-' + (i+1)).value = t.topic || '';
+      if (t.hwId) {
+        const hw = hwItems.find(h => h.id === t.hwId);
+        if (hw) {
+          document.getElementById('edit-session-hw-' + (i+1)).value = hw.title || '';
+          if (!commonDue) commonDue = hw.dueDate || '';
+        }
+      }
+    }
+  }
+  
+  if (!commonDue && firstT.targetDate) {
+      const hDue = new Date(firstT.targetDate);
+      hDue.setDate(hDue.getDate() + 7);
+      commonDue = formatDateLocal(hDue);
+  }
+  document.getElementById('edit-session-hw-due').value = commonDue;
+  
+  document.getElementById('progGroupEditModal').classList.add('open');
+}
+
+function closeProgGroupEditModalDirect() {
+  document.getElementById('progGroupEditModal').classList.remove('open');
+}
+
+function closeProgGroupEditModal(e) {
+  if (e.target.id === 'progGroupEditModal') closeProgGroupEditModalDirect();
+}
+
+function autoSetSessionDue() {
+  const dStr = document.getElementById('edit-session-date').value;
+  if (!dStr) return;
+  const d = new Date(dStr);
+  d.setDate(d.getDate() + 7);
+  document.getElementById('edit-session-hw-due').value = formatDateLocal(d);
+}
+
+function submitProgGroupEdit() {
+  const tDate = document.getElementById('edit-session-date').value;
+  const hDueBase = document.getElementById('edit-session-hw-due').value;
+  if (!tDate) {
+    showToast('수업 일자를 입력하세요.');
+    return;
+  }
+  
+  let topicsData = getProgressTopics();
+  let hwData = getHomeworks();
+  let topicsCompletions = getProgressCompletions();
+  let hwCompletions = getCompletions();
+  
+  let hwDueStr = hDueBase;
+  if (!hwDueStr) {
+      const hDue = new Date(tDate);
+      hDue.setDate(hDue.getDate() + 7);
+      hwDueStr = formatDateLocal(hDue);
+  }
+  
+  let changesMade = false;
+  
+  for (let i=0; i<5; i++) {
+    const valTopic = document.getElementById('edit-session-topic-' + (i+1)).value.trim();
+    const valHw = document.getElementById('edit-session-hw-' + (i+1)).value.trim();
+    
+    const existingId = currentEditSessionIds[i] || null;
+    if (existingId) {
+      const pIdx = topicsData.findIndex(t => t.id === existingId);
+      if (pIdx > -1) {
+        if (!valTopic) {
+          // DELETE
+          const hwIdToDel = topicsData[pIdx].hwId;
+          const oldTopicId = topicsData[pIdx].id;
+          
+          if (hwIdToDel) {
+            hwData = hwData.filter(h => h.id !== hwIdToDel);
+            hwCompletions = hwCompletions.filter(c => c.homeworkId !== hwIdToDel);
+          }
+          topicsCompletions = topicsCompletions.filter(c => c.topicId !== oldTopicId);
+          topicsData.splice(pIdx, 1);
+          changesMade = true;
+        } else {
+          // UPDATE
+          topicsData[pIdx].topic = valTopic;
+          topicsData[pIdx].targetDate = tDate;
+          
+          if (topicsData[pIdx].hwId) {
+            const hIdx = hwData.findIndex(h => h.id === topicsData[pIdx].hwId);
+            if (hIdx > -1) {
+              hwData[hIdx].title = valHw || valTopic;
+              hwData[hIdx].dueDate = hwDueStr;
+              hwData[hIdx].createdAt = tDate; 
+            } else if (valHw) { 
+               const newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
+               topicsData[pIdx].hwId = newHwId;
+               const newHw = {
+                 id: newHwId, title: valHw, dueDate: hwDueStr, createdAt: tDate, targetDate: tDate,
+                 categoryId: currentEditSessionBase.categoryId, subject: currentEditSessionBase.subject,
+                 grade: currentEditSessionBase.grade, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
+                 assignedTo: [...currentEditSessionBase.students]
+               };
+               hwData.unshift(newHw);
+               currentEditSessionBase.students.forEach(uid => {
+                  hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
+               });
+            }
+          } else if (valHw) {
+            // New Homework for existing topic
+            const newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
+            topicsData[pIdx].hwId = newHwId;
+            const newHw = {
+              id: newHwId, title: valHw, dueDate: hwDueStr, createdAt: tDate, targetDate: tDate,
+              categoryId: currentEditSessionBase.categoryId, subject: currentEditSessionBase.subject,
+              grade: currentEditSessionBase.grade, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
+              assignedTo: [...currentEditSessionBase.students]
+            };
+            hwData.unshift(newHw);
+            currentEditSessionBase.students.forEach(uid => {
+               hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
+            });
+          }
+          changesMade = true;
+        }
+      }
+    } else {
+      // CREATE NEW
+      if (valTopic) {
+        let newHwId = null;
+        if (valHw) {
+          newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
+          const newHw = {
+            id: newHwId, title: valHw, dueDate: hwDueStr, createdAt: tDate, targetDate: tDate,
+            categoryId: currentEditSessionBase.categoryId, subject: currentEditSessionBase.subject,
+            grade: currentEditSessionBase.grade, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
+            assignedTo: [...currentEditSessionBase.students]
+          };
+          hwData.unshift(newHw);
+          currentEditSessionBase.students.forEach(uid => {
+             hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
+          });
+        }
+        
+        const newTopicId = 'PT' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
+        const newPt = {
+            id: newTopicId, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
+            targetDate: tDate, subject: currentEditSessionBase.subject, grade: currentEditSessionBase.grade, color: currentEditSessionBase.color,
+            topic: valTopic, memo: '', hwId: newHwId, createdAt: new Date().toISOString()
+        };
+        topicsData.push(newPt);
+        currentEditSessionBase.students.forEach(uid => {
+             topicsCompletions.push({ topicId: newTopicId, studentId: uid, completedAt: null, memo: '' });
+        });
+        changesMade = true;
+      }
+    }
+  }
+
+  if (changesMade) {
+    saveProgressTopics(topicsData);
+    saveHomeworks(hwData);
+    saveCompletions(hwCompletions);
+    saveProgressCompletions(topicsCompletions);
+  }
+  
+  closeProgGroupEditModalDirect();
+  updateProgressClassList();
+  renderProgressContent();
+  renderAdminHWList();
+  showToast('진도 세션 개체가 성공적으로 일괄 수정되었습니다.');
+}
+
 function toggleProgressCompletion(topicId, studentId, isDone) {
   let comps = getProgressCompletions();
   if (isDone) {
@@ -5491,9 +5826,10 @@ function renderProgressContent(targetId) {
           <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${studentsInEntity.length}명</span>
           ${headerDateStr}
         </div>
-        <div style="display:flex; align-items:center; gap:8px">
-          <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
-          <button class="btn-del" style="font-size:11px;padding:3px 8px;background:#fff;color:#ef4444;border:1px solid #fecaca" onclick="event.stopPropagation();deleteProgressSession('${sessionTopicIds}', '${safeLabel}')">삭제</button>
+        <div style="display:flex; align-items:center; gap:4px">
+          <span style="font-size:12px;color:${gc.color};font-weight:700; margin-right:4px">${sessionTopics.length}개 항목</span>
+          <button class="btn-del" style="font-size:11px; padding:3px 6px; background:var(--success); color:#fff" onclick="event.stopPropagation();editProgressSession('${sessionTopicIds}', '${safeLabel}')">수정</button>
+          <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteProgressSession('${sessionTopicIds}', '${safeLabel}')">삭제</button>
         </div>
       </div>
       <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
