@@ -3621,7 +3621,7 @@ function openStudentDetail(sid){
   currentModalStudent=sid;
   const student=getUsers().find(u=>u.id===sid) || getRetiredUsers().find(u=>u.id===sid);
   if(!student) return;
-  document.getElementById('modal-student-name').textContent=`${student.name} 학생`;
+  document.getElementById('modal-student-name').textContent=`${student.name} 학생 숙제 현황`;
   renderModalContent(sid);
   document.getElementById('studentModal').classList.add('open');
 }
@@ -4754,7 +4754,7 @@ function renderAdminClassList() {
         const gColor = gIds.length > 0 ? getGroupColor(gIds[0]) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'};
         
         return `
-          <div class="admin-hw-item" style="cursor:pointer; background:${gColor.bg}; border-color:${gColor.border}" onclick="editClass('${c.id}')">
+          <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
             <div class="admin-hw-info">
               <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal"> - (매주 ${c.dayName}요일)</span></div>
               <div class="admin-hw-meta" style="color:#000">
@@ -4779,7 +4779,7 @@ function renderAdminClassList() {
       const grp = groups.find(g => g.id === c.groupId);
       const gColor = getGroupColor(c.groupId);
       return `
-        <div class="admin-hw-item" style="cursor:pointer; background:${gColor.bg}; border-color:${gColor.border}" onclick="editClass('${c.id}')">
+        <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
           <div class="admin-hw-info">
             <div class="admin-hw-title" style="color:${gColor.color}">📅 ${c.title}</div>
             <div class="admin-hw-meta" style="color:#000">
