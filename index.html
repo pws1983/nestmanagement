@@ -1722,10 +1722,12 @@ function migrateClassTypes() {
   if (changed) saveClasses(migrated);
 }
 
-let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly', currentModalStudent=null;
+let currentUser=null, pendingChecks={}, currentStudentTab='monthly', currentAdminTab='monthly';
 let currentCalDate = new Date(); // 달력/일정 표시용 기준 날짜
 let currentClassView = 'daily'; // daily, weekly, monthly
 let editingClassId = null, editingStudentId = null, editingProgressId = null;
+let currentModalStudent = null, currentModalSubject = '전체';
+let currentProgModalSubject = '전체';
 let currentPaymentMonth = new Date().toISOString().slice(0, 7);
 let currentAdminHWFilter = ''; // 숙제 관리 패널의 현재 선택된 그룹 필터
 
@@ -3010,20 +3012,33 @@ function renderLearningManagement() {
     const grpColor = grp ? getGroupColor(grp.id) : null;
     const grpBadge = grp ? `<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '';
     
-    const actionBtns = `
-      <div style="display:inline-flex; gap:4px; margin-left:8px">
-        <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();openProgStudentDetail('${s.id}')">진도</button>
-        <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();openStudentDetail('${s.id}')">숙제</button>
-        <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();">모의고사</button>
-      </div>
-    `;
+    // 학생이 수강 중인 과목들
+    const enrolledSubjects = (s.subject || '').split(',').map(x => x.trim()).filter(Boolean);
+    const subjectOrder = ['국어', '수학', '영어'];
+    const activeSubjects = subjectOrder.filter(sub => enrolledSubjects.some(es => es.startsWith(sub)));
+    // 기타 과목들 (선택사항)
+    const otherEnrolled = enrolledSubjects.filter(es => !subjectOrder.some(sub => es.startsWith(sub)));
+    const allUniqueActive = [...activeSubjects];
+    otherEnrolled.forEach(ot => { if(!allUniqueActive.includes(ot)) allUniqueActive.push(ot); });
+
+    let actionBtnsHtml = '';
+    allUniqueActive.forEach(sub => {
+      actionBtnsHtml += `
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-left:12px; background:var(--secondary); padding:2px 6px; border-radius:6px; border:1px solid var(--border)">
+          <span style="font-size:11px; font-weight:700; color:var(--text); margin-right:2px">${sub}</span>
+          <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#fff; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();openProgStudentDetail('${s.id}', '${sub}')">진도</button>
+          <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#fff; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();openStudentDetail('${s.id}', '${sub}')">숙제</button>
+          <button class="btn-add" style="font-size:10px; padding:2px 6px; background:#fff; color:var(--text); border:1px solid var(--border)" onclick="event.stopPropagation();">모의</button>
+        </div>
+      `;
+    });
     
     const loginId = s.loginId || s.id;
     const safeName = s.name.replace(/'/g, '\u2019');
     
     return `
       <tr onclick="openStudentDetail('${s.id}')" style="cursor:pointer">
-        <td><div class="student-name-cell"><div class="student-avatar">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}]</span>${grpBadge}${actionBtns}</div></td>
+        <td><div class="student-name-cell"><div class="student-avatar">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}]</span>${grpBadge}${actionBtnsHtml}</div></td>
         <td style="white-space:nowrap; text-align:right">
           <span style="font-size:12px;color:var(--text-muted);cursor:pointer;margin-right:8px" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
           <button class="btn-del" style="background:#f59e0b;color:#fff;border:none" onclick="event.stopPropagation();retireStudent('${s.id}','${safeName}')">퇴원</button>
@@ -3639,18 +3654,24 @@ function renderSubjectCheckboxes(containerId, nameAttr, selectedSubjects = [], f
 }
 
 // ── STUDENT DETAIL MODAL ──────────────────────────────────
-function openStudentDetail(sid){
+function openStudentDetail(sid, subject = '전체'){
   currentModalStudent=sid;
+  currentModalSubject=subject;
   const student=getUsers().find(u=>u.id===sid) || getRetiredUsers().find(u=>u.id===sid);
   if(!student) return;
-  document.getElementById('modal-student-name').textContent=`${student.name} 학생 숙제 현황`;
+  document.getElementById('modal-student-name').textContent=`${student.name} 학생 ${subject==='전체'?'':`[${subject}] `}숙제 현황`;
   renderModalContent(sid);
   document.getElementById('studentModal').classList.add('open');
 }
 function renderModalContent(sid){
   const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
   if (!student) return;
-  const hws = getStudentHWs(sid).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  
+  let hws = getStudentHWs(sid).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  if (currentModalSubject && currentModalSubject !== '전체') {
+    hws = hws.filter(h => h.subject && h.subject.startsWith(currentModalSubject));
+  }
+  
   const done=hws.filter(h=>isDoneFor(h.id,sid)).length;
   const total=hws.length;
   const pct=total?Math.round(done/total*100):0;
@@ -5570,21 +5591,26 @@ function toggleProgStudentDone(topicId, studentId, isDone) {
   showToast(isDone ? '✅ 완료로 표시했습니다!' : '미완료로 변경되었습니다.');
 }
 
-function openProgStudentDetail(sid, currentTopicId) {
+function openProgStudentDetail(sid, subject = '전체', currentTopicId = null) {
   const users = getUsers();
   const student = users.find(u => u.id === sid);
   if (!student) return;
 
-  document.getElementById('prog-detail-student-name').innerText = `👤 ${student.name} 학생 진도 현황`;
+  currentProgModalSubject = subject;
+  document.getElementById('prog-detail-student-name').innerText = `👤 ${student.name} 학생 ${subject === '전체' ? '' : `[${subject}] `}진도 현황`;
   renderProgStudentDetailContent(sid, currentTopicId);
   document.getElementById('progStudentDetailModal').classList.add('open');
 }
 
 function renderProgStudentDetailContent(sid, highlightTopicId) {
-  const topics = getStudentProgressTopics(sid).sort((a, b) => {
+  let topics = getStudentProgressTopics(sid).sort((a, b) => {
     const da = a.targetDate || '0000-00-00', db = b.targetDate || '0000-00-00';
     return db.localeCompare(da) || b.createdAt.localeCompare(a.createdAt);
   });
+  
+  if (currentProgModalSubject && currentProgModalSubject !== '전체') {
+    topics = topics.filter(t => t.subject && t.subject.startsWith(currentProgModalSubject));
+  }
   
   const doneCount = topics.filter(t => isProgressDoneFor(t.id, sid)).length;
   const totalCount = topics.length;
