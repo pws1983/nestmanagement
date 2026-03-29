@@ -5428,6 +5428,11 @@ function renderProgressContent(targetId) {
       }
       if (topicStudentListHtml) topicStudentListHtml = `<div style="margin-top:6px">${topicStudentListHtml}</div>`;
 
+      let subjTag = '';
+      if (t.subject) {
+        subjTag = `<span class="cat-tag${t.subject.startsWith('수학')?' math':''}" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">${t.subject}</span>`;
+      }
+
       return `<div class="admin-hw-item" onclick="openProgStudentModal('${t.id}')" style="margin-bottom:8px; align-items:flex-start; cursor:pointer" title="클릭하면 학습 현황을 관리할 수 있습니다">
         <div class="admin-hw-info">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px">
@@ -5438,7 +5443,7 @@ function renderProgressContent(targetId) {
             </div>
           </div>
           <div class="prog-topic-meta">
-            ${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
+            ${subjTag}${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.createdAt}
           </div>
           <div style="display:flex; align-items:center; gap:8px; margin-top:6px">
             <div style="flex:1;height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;max-width:120px">
