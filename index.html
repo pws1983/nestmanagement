@@ -5069,6 +5069,32 @@ function deleteProgressTopic(id) {
   showToast('진도 항목 및 자동 생성된 숙제가 삭제되었습니다.');
 }
 
+function deleteProgressSession(idsStr, label) {
+  if (!confirm(`"${label}" 관련 모든 진도 항목과 자동 생성된 숙제를 삭제하시겠습니까?`)) return;
+  
+  const ids = idsStr.split(',');
+  let topics = getProgressTopics();
+  let hwIdsToDelete = [];
+
+  ids.forEach(id => {
+    const topic = topics.find(t => t.id === id);
+    if (topic && topic.hwId) hwIdsToDelete.push(topic.hwId);
+  });
+
+  if (hwIdsToDelete.length > 0) {
+    saveHomeworks(getHomeworks().filter(h => !hwIdsToDelete.includes(h.id)));
+    saveCompletions(getCompletions().filter(c => !hwIdsToDelete.includes(c.homeworkId)));
+  }
+
+  saveProgressTopics(topics.filter(t => !ids.includes(t.id)));
+  saveProgressCompletions(getProgressCompletions().filter(c => !ids.includes(c.topicId)));
+  
+  renderProgressContent();
+  renderAdminHWList();
+  renderDashboard('a');
+  showToast('해당 개체의 모든 진도 항목이 삭제되었습니다.');
+}
+
 function toggleProgressCompletion(topicId, studentId, isDone) {
   let comps = getProgressCompletions();
   if (isDone) {
@@ -5456,13 +5482,19 @@ function renderProgressContent(targetId) {
       </div>`;
     }).join('');
 
+    const sessionTopicIds = sessionTopics.map(t => t.id).join(',');
+    const safeLabel = label.replace(/'/g, "\\'");
+
     return `<div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
       <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-radius:12px 12px 0 0">
         <div class="prog-group-title" style="color:${gc.color}; font-size:16px">${label}${subjectBadge}
           <span class="prog-group-badge" style="background:${gc.bg};color:${gc.color};border:1px solid ${gc.border}; font-size:11px; padding:2px 6px">${studentsInEntity.length}명</span>
           ${headerDateStr}
         </div>
-        <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:12px;color:${gc.color};font-weight:700">${sessionTopics.length}개 항목</span>
+          <button class="btn-del" style="font-size:11px;padding:3px 8px;background:#fff;color:#ef4444;border:1px solid #fecaca" onclick="event.stopPropagation();deleteProgressSession('${sessionTopicIds}', '${safeLabel}')">삭제</button>
+        </div>
       </div>
       <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
         <div class="prog-summary-stat">
@@ -5476,9 +5508,6 @@ function renderProgressContent(targetId) {
         <div class="prog-summary-stat">
           <div class="prog-summary-val" style="color:var(--warning); font-size:14px">${groupTotalItems - groupDoneItems}</div>
           <div class="prog-summary-label" style="font-size:11px">미완료</div>
-        </div>
-        <div style="flex:2; margin-left:10px">
-          <div class="progress-bar-wrap" style="height:6px"><div class="progress-bar" style="width:${groupPct}%;background:${groupBarColor}"></div></div>
         </div>
       </div>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff; align-items:start">
