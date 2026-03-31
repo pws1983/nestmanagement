@@ -663,6 +663,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .modal-form-row input[type="text"], .modal-form-row select, .modal-form-row textarea {
     width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-family: inherit; font-size: 14px; outline: none;
   }
+  /* COLOR PICKER */
+  .color-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .color-chip { 
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer; 
+    border: 2px solid #fff; transition: all 0.2s; box-shadow: 0 0 0 1px var(--border);
+  }
+  .color-chip:hover { transform: scale(1.2); }
+  .color-chip.active { border-color: var(--text); transform: scale(1.1); box-shadow: 0 0 8px rgba(0,0,0,0.2); }
 </style>
 </head>
 <body>
@@ -1037,6 +1045,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
             </select>
           </div>
           <div class="form-row"><label>수업 제목</label><input id="cls-title" type="text" placeholder="예) 중등 수학 A반 보강"></div>
+          <div class="form-row"><label>수업 색상 (직접 지정 시 우선 적용)</label>
+            <div id="cls-color-picker" class="color-picker"></div>
+            <input type="hidden" id="cls-color-index" value="">
+          </div>
           <div class="form-row"><label>대상 그룹 (중복 선택 가능, 미선택 시 전체 대상)</label>
             <div id="cls-group-checkboxes" class="subject-chip-group">
               <!-- JS will populate -->
@@ -1742,10 +1754,47 @@ const GROUP_COLORS=[
   {bg:'#ffedd5',color:'#c2410c',border:'rgba(194,65,12,0.25)'},   // 주황색
   {bg:'#f0fdf4',color:'#166534',border:'rgba(22,101,52,0.25)'},   // 진품녹
 ];
-function getGroupColor(groupId){
+function getGroupColor(groupId, seed = null, manualColorIndex = null){
+  if (manualColorIndex !== null && manualColorIndex !== undefined && manualColorIndex !== '') {
+    return GROUP_COLORS[parseInt(manualColorIndex) % GROUP_COLORS.length];
+  }
   const groups=getStudentGroups();
   const idx=groups.findIndex(g=>g.id===groupId);
-  return GROUP_COLORS[idx<0?0:idx%GROUP_COLORS.length];
+  let colorIdx = idx < 0 ? 0 : idx;
+  
+  if (seed) {
+    // Generate simple hash from seed to offset the color
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i) | 0;
+    colorIdx += Math.abs(hash);
+  }
+  
+  return GROUP_COLORS[colorIdx % GROUP_COLORS.length];
+}
+
+function renderColorPicker(containerId, inputId, selectedIdx = null) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const input = document.getElementById(inputId);
+  if (input && selectedIdx === null) selectedIdx = input.value;
+  
+  let html = GROUP_COLORS.map((c, i) => {
+    const isActive = selectedIdx !== null && selectedIdx !== '' && parseInt(selectedIdx) === i;
+    return `<div class="color-chip${isActive ? ' active' : ''}" 
+      style="background:${c.bg}; border-color:${c.color}" 
+      onclick="selectColorChip('${containerId}', '${inputId}', ${i})"
+      title="색상 ${i + 1}"></div>`;
+  }).join('');
+  
+  html += `<button type="button" class="btn-del" style="padding:2px 8px; font-size:10px; margin-left:8px; border:1px solid var(--border); background:#fff; color:var(--text-muted)" onclick="selectColorChip('${containerId}', '${inputId}', null)">초기화</button>`;
+  
+  container.innerHTML = html;
+}
+
+function selectColorChip(containerId, inputId, idx) {
+  const input = document.getElementById(inputId);
+  if (input) input.value = (idx === null || idx === undefined) ? '' : idx;
+  renderColorPicker(containerId, inputId, idx);
 }
 function buildGroups(hws, studentGroups, subjects = []) {
   const map = {};
@@ -3854,67 +3903,7 @@ function saveTopicMemo() {
   showToast('✅ 메모가 저장되었습니다.');
 }
 
-// ── PROGRESS STUDENT DETAIL MODAL ──────────────────────────
-function openProgStudentDetail(sid, currentTopicId) {
-  const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
-  if (!student) return;
-  document.getElementById('prog-detail-student-name').textContent = `${student.name} 학생 (진도 현황)`;
-  renderProgStudentDetailContent(sid, currentTopicId);
-  document.getElementById('progStudentDetailModal').classList.add('open');
-}
-
-function renderProgStudentDetailContent(sid, currentTopicId) {
-  const student = getUsers().find(u => u.id === sid) || getRetiredUsers().find(u => u.id === sid);
-  if (!student) return;
-  
-  const topics = getStudentProgressTopics(sid).sort((a,b) => (b.targetDate || '').localeCompare(a.targetDate || ''));
-  const done = topics.filter(t => isProgressDoneFor(t.id, sid)).length;
-  const total = topics.length;
-  const pct = total ? Math.round(done / total * 100) : 0;
-
-  const subjectTags = (student.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join(' ') || '-';
-  const grp = getStudentGroupOf(sid);
-  let schoolDisplay = student.school || (grp ? grp.name : '-');
-
-  document.getElementById('prog-detail-summary').innerHTML = `
-    <div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:20px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid var(--border);">
-      <div style="font-size:12px; color:var(--text-muted);">🏫 <span style="font-weight:700">학교:</span> ${schoolDisplay}</div>
-      <div style="font-size:12px; color:var(--text-muted);">🎓 <span style="font-weight:700">학년:</span> ${student.grade || '-'}</div>
-      <div style="font-size:12px; color:var(--text-muted); display:flex; gap:4px; align-items:center">📚 <span style="font-weight:700">과목:</span> ${subjectTags}</div>
-    </div>
-    <div class="modal-summary" style="margin-bottom:0">
-      <div class="msummary-card"><div class="msummary-label">진도 달성률</div><div class="msummary-val">${pct}%</div>
-        <div class="progress-bar-wrap" style="margin-top:8px"><div class="progress-bar" style="width:${pct}%"></div></div></div>
-      <div class="msummary-card"><div class="msummary-label">완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--success);background:none">${done}</div></div>
-      <div class="msummary-card"><div class="msummary-label">미완료</div><div class="msummary-val" style="-webkit-text-fill-color:var(--warning);background:none">${total-done}</div></div>
-      <div class="msummary-card"><div class="msummary-label">전체</div><div class="msummary-val" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div></div>
-    </div>`;
-
-  if (!topics.length) {
-    document.getElementById('prog-detail-topic-list').innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>진도 데이터가 없습니다</div></div>';
-    return;
-  }
-
-  document.getElementById('prog-detail-topic-list').innerHTML = topics.map(t => {
-    const d = isProgressDoneFor(t.id, sid);
-    const isCurrent = t.id === currentTopicId;
-    const highlightAttr = isCurrent ? 'style="border:2px solid var(--primary-light); background:var(--primary-bg);"' : '';
-    
-    return `<div class="detail-hw-item" ${highlightAttr}>
-      <div class="detail-hw-info">
-        <div class="detail-hw-title">📖 ${t.topic}${isCurrent ? ' <span style="font-size:10px; color:var(--primary); font-weight:700">(현재 항목)</span>' : ''}</div>
-        <div class="detail-hw-meta">수업일: ${t.targetDate || '미정'} · 등록: ${t.createdAt}</div>
-      </div>
-      <div class="detail-pct-wrap">
-        <span class="detail-status hw-badge ${d?'badge-done':'badge-pending'}">${d?'완료':'미완료'}</span>
-        <button class="pct-toggle ${d?'done':'pending'}" title="${d?'미완료로 변경':'완료로 변경'}"
-          onclick="toggleProgStudentHistoryCompletion('${t.id}','${sid}',${d}, '${currentTopicId}')">
-          ${d?'✓':'○'}
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-}
+// (Duplicate removed)
 
 function toggleProgStudentHistoryCompletion(topicId, sid, currentlyDone, currentViewTopicId) {
   let comps = getProgressCompletions();
@@ -4312,7 +4301,7 @@ function renderDailySchedule(containerId, isStudent) {
     html += dayClasses.map(c => {
       const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
       const firstGId = targetIds[0] || null;
-      const gColor = getGroupColor(firstGId);
+      const gColor = getGroupColor(firstGId, c.title, c.colorIndex);
       const gNames = targetIds.length > 0 
         ? targetIds.map(gid => getStudentGroups().find(g => g.id === gid)?.name || gid).join(', ')
         : '전체 대상';
@@ -4389,7 +4378,7 @@ function renderWeeklySchedule(containerId, isStudent) {
           ${dayClasses.length ? dayClasses.map(c => {
             const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
             const firstGId = targetIds[0] || null;
-            const gColor = getGroupColor(firstGId);
+            const gColor = getGroupColor(firstGId, c.title, c.colorIndex);
             const gNames = targetIds.length > 0 
               ? targetIds.map(gid => getStudentGroups().find(g => g.id === gid)?.name || gid).join(', ')
               : '전체';
@@ -4472,7 +4461,7 @@ function renderUniversalCalendar(containerId, isStudent) {
     const classItems = dayClasses.map(c => {
       const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
       const firstGId = targetIds[0] || null;
-      const gColor = getGroupColor(firstGId);
+      const gColor = getGroupColor(firstGId, c.title, c.colorIndex);
       return `<div class="class-mini" title="${c.title} ${c.subject ? `(${c.subject})` : ''}" style="background:${gColor.bg}; border-color:${gColor.border}; color:#000; cursor:pointer" onclick="event.stopPropagation(); ${isStudent ? '' : `openClassEditModal('${c.id}')`}"><span style="color:#000">${c.startTime}</span> <span style="color:${gColor.color}; font-weight:700">${c.title}</span></div>`;
     }).join('');
 
@@ -4506,6 +4495,7 @@ function addClass() {
   const selectedSubject = document.getElementById('cls-subject').value;
   const desc = document.getElementById('cls-desc').value.trim();
   const type = document.querySelector('input[name="cls-type"]:checked').value;
+  const colorIndex = document.getElementById('cls-color-index').value;
   
   // 과목 기반 학생 필터링
   const allUsers = getUsers();
@@ -4554,7 +4544,7 @@ function addClass() {
 
     classes = classes.map(c => c.id === editingClassId ? {
       ...c, title, date, startTime: `${sh}:${sm}`, endTime: `${eh}:${em}`, groupIds, description: desc,
-      subject: selectedSubject, assignedTo
+      subject: selectedSubject, assignedTo, colorIndex
     } : c);
     addedCount = 1;
     showToast('✅ 수업 일정이 수정되었습니다.');
@@ -4588,7 +4578,7 @@ function addClass() {
               title, 
               date: formatDateLocal(iter), 
               startTime: start, endTime: end, groupIds, description: desc,
-              subject: selectedSubject, assignedTo
+              subject: selectedSubject, assignedTo, colorIndex
             });
           }
           iter.setDate(iter.getDate() + 1);
@@ -4599,7 +4589,7 @@ function addClass() {
           id: 'cls' + Date.now() + Math.random().toString(36).substr(2, 5),
           type: 'single',
           title, date, startTime: start, endTime: end, groupIds, description: desc,
-          subject: selectedSubject, assignedTo
+          subject: selectedSubject, assignedTo, colorIndex
         });
         addedCount++;
       }
@@ -4627,6 +4617,8 @@ function cancelClassEdit() {
   document.getElementById('cls-subject').value = '';
   document.getElementById('cls-title').value = '';
   document.getElementById('cls-desc').value = '';
+  document.getElementById('cls-color-index').value = '';
+  renderColorPicker('cls-color-picker', 'cls-color-index', '');
   
   // Reset and hide slots
   for (let i = 1; i <= 3; i++) {
@@ -4688,6 +4680,9 @@ function editClass(id) {
   updateClassStudentList();
   
   document.getElementById('cls-title').value = c.title;
+  
+  document.getElementById('cls-color-index').value = c.colorIndex !== undefined ? c.colorIndex : '';
+  renderColorPicker('cls-color-picker', 'cls-color-index', c.colorIndex);
   
   // Only Slot 1 for editing
   document.getElementById('cls-date-1').value = c.date;
@@ -4759,6 +4754,8 @@ function renderAdminClassList() {
     }
   });
 
+  renderColorPicker('cls-color-picker', 'cls-color-index', '');
+
   const regList = Array.from(regMap.values()).sort((a,b) => {
     const days = ['월','화','수','목','금','토','일'];
     return days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
@@ -4794,7 +4791,7 @@ function renderAdminClassList() {
         const gIds = c.groupIds || (c.groupId ? [c.groupId] : []);
         const matchedGroups = groups.filter(g => gIds.includes(g.id));
         const gNames = matchedGroups.map(g => g.name).join(', ');
-        const gColor = gIds.length > 0 ? getGroupColor(gIds[0]) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'};
+        const gColor = gIds.length > 0 ? getGroupColor(gIds[0], c.title, c.colorIndex) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'};
         
         return `
           <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
@@ -4820,7 +4817,7 @@ function renderAdminClassList() {
     html += '<div style="font-size:13px; font-weight:700; color:var(--accent); margin:20px 0 8px; border-bottom:1px solid var(--border)">📎 보충수업 목록 <span style="font-weight:normal; font-size:11px; color:var(--text-muted)">(일회성)</span></div>';
     html += singles.map(c => {
       const grp = groups.find(g => g.id === c.groupId);
-      const gColor = getGroupColor(c.groupId);
+      const gColor = getGroupColor(c.groupId, c.title, c.colorIndex);
       return `
         <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
           <div class="admin-hw-info">
@@ -5743,8 +5740,8 @@ function renderProgressContent(targetId) {
 
     const label = classSeries ? classSeries.label : (group ? `🏫 ${group.name}` : `🏷️ ${entityId}`);
     const gc = classSeries 
-      ? (classSeries.groups.length > 0 ? getGroupColor(classSeries.groups[0].id) : GROUP_COLORS[0])
-      : (group ? getGroupColor(group.id) : GROUP_COLORS[0]);
+      ? (classSeries.groups.length > 0 ? getGroupColor(classSeries.groups[0].id, classSeries.title, classSeries.colorIndex) : GROUP_COLORS[0])
+      : (group ? getGroupColor(group.id, group.name) : GROUP_COLORS[0]);
     
     const studentsInEntity = classSeries 
       ? classSeries.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean)
@@ -5869,8 +5866,8 @@ function renderProgressContent(targetId) {
       membersForTopic.forEach(s => {
         const done = isProgressDoneFor(t.id, s.id);
         const nameColor = done ? 'var(--success)' : 'var(--text)';
-        const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openProgStudentDetail('${s.id}', '${t.id}')">${s.name}</span>`;
-        if (done) doneList.push(nameHtml);
+        const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openProgStudentDetail('${s.id}', '전체', '${t.id}')">${s.name}</span>`;
+      if (done) doneList.push(nameHtml);
         else notDoneList.push(nameHtml);
       });
 
@@ -6008,6 +6005,9 @@ function openClassEditModal(id) {
     document.getElementById('modal-cls-end-m').value = m;
   }
   
+  document.getElementById('modal-cls-color-index').value = c.colorIndex !== undefined ? c.colorIndex : '';
+  renderColorPicker('modal-cls-color-picker', 'modal-cls-color-index', c.colorIndex);
+  
   document.getElementById('classEditModal').classList.add('open');
 }
 
@@ -6028,6 +6028,8 @@ function saveModalClass() {
     return;
   }
   
+  const colorIndex = document.getElementById('modal-cls-color-index').value;
+  
   let classes = getClasses();
   classes = classes.map(c => {
     if (c.id === currentModalClassId) {
@@ -6037,7 +6039,8 @@ function saveModalClass() {
         startTime: `${sh}:${sm}`, 
         endTime: `${eh}:${em}`, 
         subject, 
-        description: desc 
+        description: desc,
+        colorIndex
       };
     }
     return c;
@@ -6138,6 +6141,9 @@ function openRegularClassSeriesEditModal(title, start, end, groupIdsKey, dayName
     currentModalManualExclusions = [];
   }
 
+  document.getElementById('modal-reg-color-index').value = sample ? (sample.colorIndex !== undefined ? sample.colorIndex : '') : '';
+  renderColorPicker('modal-reg-color-picker', 'modal-reg-color-index', sample ? sample.colorIndex : '');
+
   updateRegularModalStudentList();
   document.getElementById('regularClassSeriesEditModal').classList.add('open');
 }
@@ -6219,6 +6225,7 @@ function saveRegularClassSeries() {
   const newEnd = `${neh}:${nem}`;
   const newSubject = document.getElementById('modal-reg-subject').value;
   const newDesc = document.getElementById('modal-reg-desc').value.trim();
+  const colorIndex = document.getElementById('modal-reg-color-index').value;
   
   const newGroupChecked = document.querySelectorAll('input[name="modal-reg-group"]:checked');
   const newGroupIds = Array.from(newGroupChecked).map(cb => cb.value);
@@ -6271,7 +6278,8 @@ function saveRegularClassSeries() {
         subject: newSubject,
         description: newDesc,
         groupIds: newGroupIds,
-        assignedTo: assignedTo // Update assigned students based on new criteria
+        assignedTo: assignedTo,
+        colorIndex: colorIndex
       };
     }
     return c;
@@ -6316,6 +6324,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="modal-form-row">
           <label>수업 제목</label>
           <input type="text" id="modal-cls-title" placeholder="수업 제목 입력">
+        </div>
+        <div class="modal-form-row">
+          <label>수업 색상</label>
+          <div id="modal-cls-color-picker" class="color-picker"></div>
+          <input type="hidden" id="modal-cls-color-index" value="">
         </div>
         <div class="modal-form-row">
           <label>날짜 및 시간</label>
@@ -6380,6 +6393,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="form-row">
           <label>수업 제목</label>
           <input type="text" id="modal-reg-title" placeholder="예) 중등 수학 A반 보강">
+        </div>
+
+        <div class="form-row">
+          <label>수업 색상</label>
+          <div id="modal-reg-color-picker" class="color-picker"></div>
+          <input type="hidden" id="modal-reg-color-index" value="">
         </div>
 
         <div class="form-row">
