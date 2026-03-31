@@ -1629,7 +1629,8 @@ function getAllClassSeries() {
         subject: c.subject,
         days: new Set(),
         assignedTo: c.assignedTo || [],
-        dateSample: c.date // fallback date
+        dateSample: c.date, // fallback date
+        colorIndex: c.colorIndex === undefined ? '' : c.colorIndex
       };
     }
     seriesMap[key].days.add(dayIdx);
@@ -1661,7 +1662,8 @@ function getAllClassSeries() {
     return {
       ...s,
       label: label,
-      groups: matchedGroups
+      groups: matchedGroups,
+      colorIndex: s.colorIndex
     };
   });
 }
@@ -4758,9 +4760,9 @@ function renderAdminClassList() {
 
   const regList = Array.from(regMap.values()).sort((a,b) => {
     const days = ['월','화','수','목','금','토','일'];
-    return days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
+    return a.title.localeCompare(b.title, 'ko') || days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
   });
-  singles.sort((a,b) => b.date.localeCompare(a.date) || a.startTime.localeCompare(b.startTime));
+  singles.sort((a,b) => a.title.localeCompare(b.title, 'ko') || b.date.localeCompare(a.date) || a.startTime.localeCompare(b.startTime));
 
   let html = '';
   
@@ -4783,7 +4785,7 @@ function renderAdminClassList() {
     sortedSubs.forEach(sub => {
       const subList = regBySub[sub].sort((a,b) => {
         const days = ['월','화','수','목','금','토','일'];
-        return days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
+        return a.title.localeCompare(b.title, 'ko') || days.indexOf(a.dayName) - days.indexOf(b.dayName) || a.startTime.localeCompare(b.startTime);
       });
 
       html += `<div style="font-size:13px; font-weight:700; color:var(--primary); margin:20px 0 8px; border-bottom:1px solid var(--border)">📚 ${sub} 정규수업 <span style="font-weight:normal; font-size:11px; color:var(--text-muted)">(매주 고정)</span></div>`;
