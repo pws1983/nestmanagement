@@ -921,7 +921,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
               <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
             </select>
           </div>
-          <div class="form-row"><label>학원비 (원)</label><input id="new-student-fee" type="number" placeholder="예) 300000"></div>
+          <div class="form-row"><label>과목별 학원비 (원)</label><div id="new-student-fee-wrap" style="display:flex; flex-direction:column; gap:6px"><div style="font-size:12px; color:var(--text-muted)">위에서 과목을 선택하면 입력칸이 나타납니다.</div></div></div>
           
           <div class="payment-toggle-row" id="payment-toggle-container" onclick="document.getElementById('new-student-ispaid').click()" style="display:flex; align-items:center; gap:20px;">
             <div style="flex:none; display:flex; align-items:center; gap:10px">
@@ -1493,7 +1493,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <option value="고1">고1</option><option value="고2">고2</option><option value="고3">고3</option>
         </select>
       </div>
-      <div class="form-row"><label>학원비 (원)</label><input id="edit-popup-student-fee" type="number" placeholder="예) 300000"></div>
+      <div class="form-row"><label>과목별 학원비 (원)</label><div id="edit-popup-fee-wrap" style="display:flex; flex-direction:column; gap:6px"><div style="font-size:12px; color:var(--text-muted)">과목을 선택하면 입력칸이 나타납니다.</div></div></div>
       
       <div class="payment-toggle-row" id="edit-popup-payment-toggle-container" onclick="document.getElementById('edit-popup-student-ispaid').click()" style="display:flex; align-items:center; gap:20px;">
         <div style="flex:none; display:flex; align-items:center; gap:10px">
@@ -2908,7 +2908,14 @@ function addStudent(){
   const subjs = [];
   document.querySelectorAll('input[name="subj"]:checked').forEach(cb => subjs.push(cb.value));
   const subject = subjs.join(',');
-  const fee = document.getElementById('new-student-fee').value.trim();
+
+  // 과목별 학원비 수집 (JSON 형태로 저장)
+  const feeData = {};
+  document.querySelectorAll('#new-student-fee-wrap input[data-fee-subject]').forEach(inp => {
+    const val = parseInt(inp.value) || 0;
+    if (val > 0) feeData[inp.dataset.feeSubject] = val;
+  });
+  const fee = JSON.stringify(feeData);
   const isPaid = document.getElementById('new-student-ispaid').checked;
   const payDate = document.getElementById('new-student-paydate').value;
   const grade = document.getElementById('new-student-grade').value;
@@ -3153,26 +3160,73 @@ function renderPaymentSummary() {
   let totalAcademyExpected = 0;
   let totalAcademyCollected = 0;
   
-  // 과목별 수금액 초기화
-  const subjects = ['국어', '영어', '수학'];
+  // 과목별 수금액 초기화 (기타 항목 추가)
+  const mainSubjects = ['국어', '수학', '영어'];
+  const allDisplaySubjects = [...mainSubjects, '기타'];
   const subjStats = {};
-  subjects.forEach(sub => {
+  allDisplaySubjects.forEach(sub => {
     subjStats[sub] = { expected: 0, collected: 0 };
   });
 
   students.forEach(s => {
-    const fee = parseInt(s.fee) || 0;
     const isPaid = isPaidForMonth(s, currentPaymentMonth);
-    totalAcademyExpected += fee;
-    if (isPaid) totalAcademyCollected += fee;
+    let feeBySubject = null;
+    let totalFee = 0;
+    
+    try {
+      if (s.fee && String(s.fee).startsWith('{')) {
+        feeBySubject = JSON.parse(s.fee);
+        totalFee = Object.values(feeBySubject).reduce((a, b) => a + (parseInt(b) || 0), 0);
+      } else {
+        totalFee = parseInt(s.fee) || 0;
+      }
+    } catch(e) { totalFee = parseInt(s.fee) || 0; }
+    
+    totalAcademyExpected += totalFee;
+    if (isPaid) totalAcademyCollected += totalFee;
 
     const sSubjs = (s.subject || '').split(',').filter(x => x);
-    sSubjs.forEach(sub => {
-      if (subjStats[sub]) {
-        subjStats[sub].expected += fee;
-        if (isPaid) subjStats[sub].collected += fee;
-      }
-    });
+
+    if (feeBySubject) {
+      // 과목별 fee가 명시된 경우 배분 (퍼지 매칭: "수학(중1)" -> "수학" 도 시도)
+      const usedKeys = new Set();
+      sSubjs.forEach(sub => {
+        let subFee = 0;
+        if (feeBySubject[sub] !== undefined) {
+          subFee = parseInt(feeBySubject[sub]) || 0;
+          usedKeys.add(sub);
+        } else {
+          const base = sub.split('(')[0];
+          if (feeBySubject[base] !== undefined) {
+            subFee = parseInt(feeBySubject[base]) || 0;
+            usedKeys.add(base);
+          }
+        }
+        const target = mainSubjects.includes(sub.split('(')[0]) ? sub.split('(')[0] : '기타';
+        subjStats[target].expected += subFee;
+        if (isPaid) subjStats[target].collected += subFee;
+      });
+      // fee 데이터에는 있지만 체크되지 않은 나머지 금액 -> 기타
+      Object.entries(feeBySubject).forEach(([key, val]) => {
+        if (!usedKeys.has(key)) {
+          subjStats['기타'].expected += parseInt(val) || 0;
+          if (isPaid) subjStats['기타'].collected += parseInt(val) || 0;
+        }
+      });
+    } else if (sSubjs.length === 0) {
+      subjStats['기타'].expected += totalFee;
+      if (isPaid) subjStats['기타'].collected += totalFee;
+    } else {
+      const share = Math.floor(totalFee / sSubjs.length);
+      let distributed = 0;
+      sSubjs.forEach((sub, idx) => {
+        const subFee = (idx === sSubjs.length - 1) ? (totalFee - distributed) : share;
+        distributed += subFee;
+        const target = mainSubjects.includes(sub.split('(')[0]) ? sub.split('(')[0] : '기타';
+        subjStats[target].expected += subFee;
+        if (isPaid) subjStats[target].collected += subFee;
+      });
+    }
   });
 
   const el = document.getElementById('payment-summary-content');
@@ -3230,7 +3284,7 @@ function renderPaymentSummary() {
       <!-- 과목별 수금액 -->
       <div class="pay-detail-section">
         <div class="pay-detail-section-title">📚 과목별 수금 현황</div>
-        ${subjects.map(sub => {
+        ${allDisplaySubjects.map(sub => {
           const sExpected = subjStats[sub].expected;
           const sCollected = subjStats[sub].collected;
           const sPct = sExpected ? Math.round((sCollected / sExpected) * 100) : 0;
@@ -3328,7 +3382,17 @@ function renderDetailedStudentList() {
     const grp = getStudentGroupOf(s.id);
     const grpColor = grp ? getGroupColor(grp.id) : null;
     const grpBadge = grp ? `<span class="grp-badge" style="background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '<span style="color:#cbd5e1">-</span>';
-    const feeDisplay = s.fee ? parseInt(s.fee).toLocaleString() + '원' : '-';
+    let feeDisplay = '-';
+    try {
+      if (s.fee && String(s.fee).startsWith('{')) {
+        const feeObj = JSON.parse(s.fee);
+        const total = Object.values(feeObj).reduce((a, b) => a + (parseInt(b)||0), 0);
+        const breakdown = Object.entries(feeObj).map(([sub, v]) => `${sub} ${parseInt(v).toLocaleString()}원`).join('<br>');
+        feeDisplay = `<span title="${breakdown}">${total.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${Object.keys(feeObj).join('+')})</span></span>`;
+      } else if (s.fee) {
+        feeDisplay = parseInt(s.fee).toLocaleString() + '원';
+      }
+    } catch(e) { feeDisplay = s.fee || '-'; }
     
     // 과목 복수 태그 처리
     const subjectTags = (s.subject || '').split(',').filter(x => x).map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join('') || '-';
@@ -3384,7 +3448,6 @@ function openStudentEditModal(sid) {
   document.getElementById('edit-popup-student-pw2').value = '';
   document.getElementById('edit-popup-parent-hp').value = student.parentHp || '';
   document.getElementById('edit-popup-student-hp').value = student.studentHp || '';
-  document.getElementById('edit-popup-student-fee').value = student.fee || '';
   document.getElementById('edit-popup-student-entered').value = student.enteredAt || '';
   document.getElementById('edit-popup-student-grade').value = student.grade || '';
 
@@ -3392,7 +3455,7 @@ function openStudentEditModal(sid) {
   const isPaidCb = document.getElementById('edit-popup-student-ispaid');
   isPaidCb.checked = isMonthPaid;
   const payDateInput = document.getElementById('edit-popup-student-paydate');
-  payDateInput.value = isMonthPaid && typeof student.payments[currentPaymentMonth] === 'string' ? student.payments[currentPaymentMonth] : '';
+  payDateInput.value = isMonthPaid && student.payments && typeof student.payments[currentPaymentMonth] === 'string' ? student.payments[currentPaymentMonth] : '';
   
   const toggleContainer = document.getElementById('edit-popup-payment-toggle-container');
   if (isMonthPaid) toggleContainer.classList.add('active');
@@ -3400,6 +3463,50 @@ function openStudentEditModal(sid) {
 
   // Subjects - Use forceBasic=true as requested
   renderSubjectCheckboxes('edit-popup-subject-wrap', 'edit-popup-subj', (student.subject || '').split(','), true);
+
+  // 과목별 fee 입력 칸에 기존 값 채우기 (renderSubjectCheckboxes의 setTimeout 이후)
+  setTimeout(() => {
+    let savedFees = {};
+    let isJson = false;
+    try {
+      if (student.fee && String(student.fee).startsWith('{')) {
+        savedFees = JSON.parse(student.fee);
+        isJson = true;
+      }
+    } catch(e) {}
+
+    const feeWrap = document.getElementById('edit-popup-fee-wrap');
+    if (!feeWrap) return;
+
+    const feeInputs = feeWrap.querySelectorAll('input[data-fee-subject]');
+    const sSubjs = (student.subject || '').split(',').filter(x => x);
+
+    if (isJson) {
+      feeInputs.forEach(inp => {
+        const sub = inp.dataset.feeSubject;
+        if (savedFees[sub] !== undefined) {
+          inp.value = savedFees[sub];
+        } else {
+          // Fuzzy match: if savedFees has "수학" and sub is "수학(중1)"
+          const base = sub.split('(')[0];
+          if (savedFees[base] !== undefined) {
+            inp.value = savedFees[base];
+          }
+        }
+      });
+    } else if (student.fee && parseInt(student.fee) > 0 && sSubjs.length > 0) {
+      // Legacy distribution
+      const totalFee = parseInt(student.fee);
+      const share = Math.floor(totalFee / sSubjs.length);
+      let distributed = 0;
+      
+      feeInputs.forEach((inp, idx) => {
+        const subFee = (idx === feeInputs.length - 1) ? (totalFee - distributed) : share;
+        distributed += subFee;
+        inp.value = subFee;
+      });
+    }
+  }, 50);
 
   // 학교 input에 현재 그룹에서 학교명 추출
   const currentGrp = getStudentGroupOf(sid);
@@ -3452,7 +3559,6 @@ function submitStudentEditModal() {
     student.name = document.getElementById('edit-popup-student-name').value.trim() || student.name;
     student.parentHp = document.getElementById('edit-popup-parent-hp').value.trim();
     student.studentHp = document.getElementById('edit-popup-student-hp').value.trim();
-    student.fee = document.getElementById('edit-popup-student-fee').value || 0;
     student.grade = document.getElementById('edit-popup-student-grade').value || '';
     student.enteredAt = document.getElementById('edit-popup-student-entered').value;
     
@@ -3463,6 +3569,14 @@ function submitStudentEditModal() {
 
     const cb = document.querySelectorAll('input[name="edit-popup-subj"]:checked');
     student.subject = Array.from(cb).map(x => x.value).join(',');
+
+    // 과목별 학원비 수집
+    const feeData = {};
+    document.querySelectorAll('#edit-popup-fee-wrap input[data-fee-subject]').forEach(inp => {
+      const val = parseInt(inp.value) || 0;
+      if (val > 0) feeData[inp.dataset.feeSubject] = val;
+    });
+    student.fee = JSON.stringify(feeData);
     
     const schoolName = document.getElementById('edit-popup-student-school').value.trim();
     syncStudentGroup(editingStudentId, schoolName, student.grade);
@@ -3560,7 +3674,9 @@ function cancelStudentEdit() {
   document.getElementById('new-student-pw2').value = '';
   document.getElementById('new-student-parent-hp').value = '';
   document.getElementById('new-student-student-hp').value = '';
-  document.getElementById('new-student-fee').value = '';
+  // 과목별 학원비 입력 초기화
+  const feeWrap = document.getElementById('new-student-fee-wrap');
+  if (feeWrap) feeWrap.innerHTML = '<div style="font-size:12px; color:var(--text-muted)">위에서 과목을 선택하면 입력칸이 나타납니다.</div>';
   // 과목 체크박스 초기화
   document.querySelectorAll('input[name="subj"]').forEach(cb => {
     cb.checked = false;
@@ -3700,7 +3816,37 @@ function renderSubjectCheckboxes(containerId, nameAttr, selectedSubjects = [], f
   
   container.innerHTML = cats.map(c => {
     const isChecked = selectedSubjects.includes(c.name);
-    return `<label class="subject-chip ${isChecked ? 'active' : ''}${c.name.startsWith('수학')?' math':''}"><input type="checkbox" name="${nameAttr}" value="${c.name}" ${isChecked ? 'checked' : ''} onchange="toggleSubjectChip(this)"> ${c.name}</label>`;
+    return `<label class="subject-chip ${isChecked ? 'active' : ''}${c.name.startsWith('수학')?' math':''}" ><input type="checkbox" name="${nameAttr}" value="${c.name}" ${isChecked ? 'checked' : ''} onchange="toggleSubjectChip(this); updateSubjectFeeInputs('${containerId}', '${nameAttr}')"> ${c.name}</label>`;
+  }).join('');
+
+  setTimeout(() => updateSubjectFeeInputs(containerId, nameAttr), 0);
+}
+
+function updateSubjectFeeInputs(subjectContainerId, nameAttr) {
+  const feeWrapId = subjectContainerId === 'new-student-subject-wrap' ? 'new-student-fee-wrap' : 'edit-popup-fee-wrap';
+  const feeWrap = document.getElementById(feeWrapId);
+  if (!feeWrap) return;
+
+  const selectedSubjs = Array.from(document.querySelectorAll(`input[name="${nameAttr}"]:checked`)).map(cb => cb.value);
+
+  if (selectedSubjs.length === 0) {
+    feeWrap.innerHTML = '<div style="font-size:12px; color:var(--text-muted)">위에서 과목을 선택하면 입력칸이 나타납니다.</div>';
+    return;
+  }
+
+  const existing = {};
+  feeWrap.querySelectorAll('input[data-fee-subject]').forEach(inp => {
+    existing[inp.dataset.feeSubject] = inp.value;
+  });
+
+  feeWrap.innerHTML = selectedSubjs.map(sub => {
+    const savedVal = existing[sub] || '';
+    const mathClass = sub.startsWith('수학') ? ' math' : '';
+    return `<div style="display:flex; align-items:center; gap:8px; margin-bottom:2px">
+      <span class="cat-tag${mathClass}" style="min-width:48px; text-align:center; flex-shrink:0">${sub}</span>
+      <input type="number" data-fee-subject="${sub}" placeholder="학원비 (원)" value="${savedVal}"
+        style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:13px; outline:none">
+    </div>`;
   }).join('');
 }
 
@@ -3750,7 +3896,7 @@ function renderModalContent(sid){
       <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학부모 HP:</span> ${formatPhone(student.parentHp)}</div>
       <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학생 HP:</span> ${formatPhone(student.studentHp)}</div>
       <div style="font-size:12px; color:var(--text-muted); display:flex; gap:4px; align-items:center">📚 <span style="font-weight:700">과목:</span> ${subjectTags}</div>
-      <div style="font-size:12px; color:var(--text-muted);">💰 <span style="font-weight:700">학원비:</span> ${student.fee ? parseInt(student.fee).toLocaleString() + '원' : '-'}</div>
+      <div style="font-size:12px; color:var(--text-muted);">💰 <span style="font-weight:700">학원비:</span> ${(() => { try { if (student.fee && String(student.fee).startsWith('{')) { const fObj = JSON.parse(student.fee); const tot = Object.values(fObj).reduce((a,b)=>a+(parseInt(b)||0),0); const lst = Object.entries(fObj).map(([s,v])=>`${s}: ${parseInt(v).toLocaleString()}원`).join(', '); return `${tot.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${lst})</span>`; } return student.fee ? parseInt(student.fee).toLocaleString()+'원' : '-'; } catch(e){return student.fee||'-';} })()}</div>
     </div>
     <div class="modal-summary" style="margin-bottom:0">
       <div class="msummary-card"><div class="msummary-label">전체 달성률</div><div class="msummary-val">${pct}%</div>
@@ -5642,7 +5788,7 @@ function renderProgStudentDetailContent(sid, highlightTopicId) {
       <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학부모 HP:</span> ${formatPhone(student.parentHp)}</div>
       <div style="font-size:12px; color:var(--text-muted);">📱 <span style="font-weight:700">학생 HP:</span> ${formatPhone(student.studentHp)}</div>
       <div style="font-size:12px; color:var(--text-muted); display:flex; gap:4px; align-items:center">📚 <span style="font-weight:700">과목:</span> ${subjectTags}</div>
-      <div style="font-size:12px; color:var(--text-muted);">💰 <span style="font-weight:700">학원비:</span> ${student.fee ? parseInt(student.fee).toLocaleString() + '원' : '-'}</div>
+      <div style="font-size:12px; color:var(--text-muted);">💰 <span style="font-weight:700">학원비:</span> ${(() => { try { if (student.fee && String(student.fee).startsWith('{')) { const fObj = JSON.parse(student.fee); const tot = Object.values(fObj).reduce((a,b)=>a+(parseInt(b)||0),0); const lst = Object.entries(fObj).map(([s,v])=>`${s}: ${parseInt(v).toLocaleString()}원`).join(', '); return `${tot.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${lst})</span>`; } return student.fee ? parseInt(student.fee).toLocaleString()+'원' : '-'; } catch(e){return student.fee||'-';} })()}</div>
     </div>
     <div class="modal-summary" style="margin-bottom:0">
       <div class="msummary-card"><div class="msummary-label">전체 진도 달성률</div><div class="msummary-val">${pct}%</div>
