@@ -3165,7 +3165,7 @@ function renderPaymentSummary() {
   const allDisplaySubjects = [...mainSubjects, '기타'];
   const subjStats = {};
   allDisplaySubjects.forEach(sub => {
-    subjStats[sub] = { expected: 0, collected: 0 };
+    subjStats[sub] = { expected: 0, collected: 0, expCount: 0, colCount: 0 };
   });
 
   students.forEach(s => {
@@ -3187,8 +3187,35 @@ function renderPaymentSummary() {
 
     const sSubjs = (s.subject || '').split(',').filter(x => x);
 
+    // 인원 통계용 카테고리 집계 (중복 방지)
+    const studentCategories = new Set();
+    sSubjs.forEach(sub => {
+      const target = mainSubjects.includes(sub.split('(')[0]) ? sub.split('(')[0] : '기타';
+      studentCategories.add(target);
+    });
+    
+    // fee 데이터에는 있지만 체크되지 않은 과목이 있다면 '기타' 추가
     if (feeBySubject) {
-      // 과목별 fee가 명시된 경우 배분 (퍼지 매칭: "수학(중1)" -> "수학" 도 시도)
+      Object.keys(feeBySubject).forEach(key => {
+        if (!sSubjs.some(sub => sub === key || sub.startsWith(key + '('))) {
+           studentCategories.add('기타');
+        }
+      });
+    }
+    
+    // 과목 체크가 없는데 학원비가 있는 경우 '기타'
+    if (sSubjs.length === 0 && totalFee > 0) {
+      studentCategories.add('기타');
+    }
+
+    // 인원 수 업데이트
+    studentCategories.forEach(cat => {
+      subjStats[cat].expCount++;
+      if (isPaid) subjStats[cat].colCount++;
+    });
+
+    // 금액 통계 업데이트
+    if (feeBySubject) {
       const usedKeys = new Set();
       sSubjs.forEach(sub => {
         let subFee = 0;
@@ -3206,11 +3233,11 @@ function renderPaymentSummary() {
         subjStats[target].expected += subFee;
         if (isPaid) subjStats[target].collected += subFee;
       });
-      // fee 데이터에는 있지만 체크되지 않은 나머지 금액 -> 기타
       Object.entries(feeBySubject).forEach(([key, val]) => {
         if (!usedKeys.has(key)) {
-          subjStats['기타'].expected += parseInt(val) || 0;
-          if (isPaid) subjStats['기타'].collected += parseInt(val) || 0;
+          const v = parseInt(val) || 0;
+          subjStats['기타'].expected += v;
+          if (isPaid) subjStats['기타'].collected += v;
         }
       });
     } else if (sSubjs.length === 0) {
@@ -3293,7 +3320,10 @@ function renderPaymentSummary() {
               <div class="pay-subject-name">${sub}</div>
               <div class="pay-subject-money-wrap">
                 <div class="pay-subject-money">
-                  <span style="color:var(--text-muted); font-size:10px">${sCollected.toLocaleString()} / ${sExpected.toLocaleString()}</span>
+                  <span style="color:var(--text-muted); font-size:10px">
+                    ${sCollected.toLocaleString()} / ${sExpected.toLocaleString()}
+                    <span style="color:var(--primary); font-weight:600; margin-left:4px">(${subjStats[sub].colCount}/${subjStats[sub].expCount}명)</span>
+                  </span>
                   <span style="font-weight:800; color:var(--primary)">${sPct}%</span>
                 </div>
                 <div class="progress-bar-wrap" style="height:3px; margin-top:4px; background:#f1f5f9">
