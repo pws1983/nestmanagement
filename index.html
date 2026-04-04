@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -5537,14 +5537,41 @@ function editProgressSession(idsStr, label) {
   }
   document.getElementById('edit-session-hw-due').value = commonDue;
   
-  const allStudents = getUsers().filter(u => u.role === 'student');
+  let allStudents = getUsers().filter(u => u.role === 'student').map(stu => {
+      let sSchool = stu.school || '';
+      let sGrade = stu.grade || '';
+      const sg = getStudentGroupOf(stu.id);
+      if (!sSchool && sg) {
+          sSchool = sg.name;
+          const gVals = ['중1','중2','중3','고1','고2','고3'];
+          for (const gv of gVals) {
+             if (sSchool.endsWith(' ' + gv)) {
+                sSchool = sSchool.slice(0, -(gv.length + 1));
+                if (!sGrade) sGrade = gv;
+                break;
+             }
+          }
+      }
+      return { ...stu, calculatedSchool: sSchool, calculatedGrade: sGrade };
+  });
+
+  allStudents.sort((a,b) => {
+      if (a.calculatedSchool !== b.calculatedSchool) return a.calculatedSchool.localeCompare(b.calculatedSchool);
+      if (a.calculatedGrade !== b.calculatedGrade) return a.calculatedGrade.localeCompare(b.calculatedGrade);
+      return a.name.localeCompare(b.name);
+  });
+
   const stuWrap = document.getElementById('edit-session-student-list');
   if (stuWrap) {
       let html = '';
       allStudents.forEach(stu => {
           const isChecked = baseStudents.includes(stu.id) ? 'checked' : '';
-          html += `<label class="multi-check-item">
-            <input type="checkbox" value="${stu.id}" ${isChecked}> ${stu.name}
+          const scText = stu.calculatedSchool ? `[${stu.calculatedSchool} ${stu.calculatedGrade}]`.trim() : '';
+          html += `<label class="multi-check-item" style="justify-content: space-between; padding-right:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" value="${stu.id}" ${isChecked}> <span>${stu.name}</span>
+            </div>
+            <span style="color:var(--text-muted); font-size:11px;">${scText}</span>
           </label>`;
       });
       stuWrap.innerHTML = html;
