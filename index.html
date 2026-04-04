@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1353,7 +1353,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           </div>
           <div class="form-row"><label>숙제 마감일 (공통 적용)</label>
             <input id="edit-session-hw-due" type="date">
-          </div>
+          </div>`n          <div class="form-row" style="margin-top:14px;"><label>대상 학생 관리</label>`n            <div id="edit-session-student-list" class="multi-check-wrap" style="max-height:150px; margin-top:6px;"></div>`n          </div>
           <p style="font-size:12px; color:var(--text-muted); margin-top:4px">※ 일자를 변경하면 그룹 내 모든 항목의 연동 날짜가 변경됩니다.</p>
         </div>
         <div>
@@ -5081,9 +5081,49 @@ function renderProgressPanel() {
 
   const tabEl = document.getElementById('prog-filter-tabs');
   if (tabEl) {
+    // 현재 등록된 수업 시리즈 목록
     const classSeries = getAllClassSeries();
+    const allClassSeriesMap = {};
+    classSeries.forEach(cs => { allClassSeriesMap[cs.id] = cs; });
+
+    // 실제 진도 항목에서 사용 중인 groupId도 탭에 추가 (수업이 삭제된 경우도 표시)
+    const topics = getProgressTopics();
+    const usedEntityIds = [...new Set(topics.map(t => {
+      let eid = t.groupId;
+      // 현재 시리즈에 있으면 그 id 사용
+      if (allClassSeriesMap[eid]) return eid;
+      // legacy key 변환 시도
+      let cs = null;
+      if (eid && eid.startsWith('reg-')) {
+        const parts = eid.split('-');
+        if (parts.length >= 5) {
+          const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+          cs = classSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.slice().sort().join(',') === gids);
+        }
+      }
+      if (!cs && eid && eid.startsWith('single-')) {
+        const parts = eid.split('-');
+        if (parts.length >= 3) {
+          const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+          cs = classSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.slice().sort().join(',') === gids);
+        }
+      }
+      return cs ? cs.id : eid;
+    }))];
+
+    // 현재 시리즈에 없는 (삭제된 수업의) entityId들을 추가 탭으로 포함
+    const extraIds = usedEntityIds.filter(eid => eid && !allClassSeriesMap[eid]);
+    const extraTabs = extraIds.map(eid => {
+      // 외부 그룹인지 확인
+      const grp = getStudentGroups().find(g => g.id === eid);
+      const label = grp ? `🏫 ${grp.name}` : `📋 ${eid.substring(0, 20)}`;
+      return { id: eid, label };
+    });
+
+    const allTabs = classSeries.concat(extraTabs);
+
     tabEl.innerHTML = `<button class="sftab ${currentProgressFilter===''?'active':''}" onclick="filterProgress('',this)">전체</button>` +
-      classSeries.map(cs => `<button class="sftab ${currentProgressFilter===cs.id?'active':''}" onclick="filterProgress('${cs.id}',this)">${cs.label}</button>`).join('');
+      allTabs.map(cs => `<button class="sftab ${currentProgressFilter===cs.id?'active':''}" onclick="filterProgress('${cs.id}',this)">${cs.label}</button>`).join('');
   }
 
   renderProgressContent();
@@ -5497,6 +5537,19 @@ function editProgressSession(idsStr, label) {
   }
   document.getElementById('edit-session-hw-due').value = commonDue;
   
+  const allStudents = getUsers().filter(u => u.role === 'student');
+  const stuWrap = document.getElementById('edit-session-student-list');
+  if (stuWrap) {
+      let html = '';
+      allStudents.forEach(stu => {
+          const isChecked = baseStudents.includes(stu.id) ? 'checked' : '';
+          html += `<label class="multi-check-item">
+            <input type="checkbox" value="${stu.id}" ${isChecked}> ${stu.name}
+          </label>`;
+      });
+      stuWrap.innerHTML = html;
+  }
+  
   document.getElementById('progGroupEditModal').classList.add('open');
 }
 
@@ -5518,6 +5571,11 @@ function autoSetSessionDue() {
 
 function submitProgGroupEdit() {
   const tDate = document.getElementById('edit-session-date').value;
+  const stuWrap = document.getElementById('edit-session-student-list');
+  if(stuWrap && typeof currentEditSessionBase !== 'undefined' && currentEditSessionBase) {
+      const checkedBoxes = Array.from(stuWrap.querySelectorAll('input[type="checkbox"]:checked'));
+      currentEditSessionBase.students = checkedBoxes.map(cb => cb.value);
+  }
   const hDueBase = document.getElementById('edit-session-hw-due').value;
   if (!tDate) {
     showToast('수업 일자를 입력하세요.');
@@ -5562,6 +5620,15 @@ function submitProgGroupEdit() {
           // UPDATE
           topicsData[pIdx].topic = valTopic;
           topicsData[pIdx].targetDate = tDate;
+          topicsData[pIdx].assignedTo = [...currentEditSessionBase.students];
+          
+          const tId = topicsData[pIdx].id;
+          topicsCompletions = topicsCompletions.filter(c => !(c.topicId === tId && !currentEditSessionBase.students.includes(c.studentId)));
+          currentEditSessionBase.students.forEach(uid => {
+             if(!topicsCompletions.some(c => c.topicId === tId && c.studentId === uid)) {
+                 topicsCompletions.push({ topicId: tId, studentId: uid, completedAt: null, memo: '' });
+             }
+          });
           
           if (topicsData[pIdx].hwId) {
             const hIdx = hwData.findIndex(h => h.id === topicsData[pIdx].hwId);
@@ -5569,6 +5636,15 @@ function submitProgGroupEdit() {
               hwData[hIdx].title = valHw || valTopic;
               hwData[hIdx].dueDate = hwDueStr;
               hwData[hIdx].createdAt = tDate; 
+              hwData[hIdx].assignedTo = [...currentEditSessionBase.students];
+              
+              const hwIdVal = topicsData[pIdx].hwId;
+              hwCompletions = hwCompletions.filter(c => !(c.homeworkId === hwIdVal && !currentEditSessionBase.students.includes(c.studentId)));
+              currentEditSessionBase.students.forEach(uid => {
+                 if(!hwCompletions.some(c => c.homeworkId === hwIdVal && c.studentId === uid)) {
+                     hwCompletions.push({ homeworkId: hwIdVal, studentId: uid, isDone: false });
+                 }
+              });
             } else if (valHw) { 
                const newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
                topicsData[pIdx].hwId = newHwId;
@@ -5623,7 +5699,7 @@ function submitProgGroupEdit() {
         const newPt = {
             id: newTopicId, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
             targetDate: tDate, subject: currentEditSessionBase.subject, grade: currentEditSessionBase.grade, color: currentEditSessionBase.color,
-            topic: valTopic, memo: '', hwId: newHwId, createdAt: new Date().toISOString()
+            topic: valTopic, memo: '', hwId: newHwId, createdAt: new Date().toISOString(), assignedTo: [...currentEditSessionBase.students]
         };
         topicsData.push(newPt);
         currentEditSessionBase.students.forEach(uid => {
@@ -5706,9 +5782,7 @@ function renderProgStudentList(topicId) {
   }
 
   const grp = groups.find(g => g.id === t.groupId);
-  let targetStudents = cs 
-    ? cs.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean)
-    : (grp ? (grp.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean) : []);
+  let targetStudents = t.assignedTo ? t.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean) : (cs ? cs.assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean) : (grp ? (grp.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean) : []));
 
   if (t.subject) {
     targetStudents = targetStudents.filter(s => s.subject && s.subject.split(',').includes(t.subject));
@@ -5940,7 +6014,7 @@ function renderProgressContent(targetId) {
         gc,
         date,
         topics: datesMap[date],
-        studentsInEntity,
+        studentsInEntity: (datesMap[date].length > 0 && datesMap[date][0].assignedTo) ? datesMap[date][0].assignedTo.map(sid => students.find(s => s.id === sid)).filter(Boolean) : studentsInEntity,
         sortDate: date === '날짜 미지정' ? '0000-00-00' : date,
         isClass: !!classSeries
       });
@@ -6616,3 +6690,5 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </body>
 </html>
+
+
