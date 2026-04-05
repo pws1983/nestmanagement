@@ -747,8 +747,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <div class="section-title">📅 내 일정 (오늘)</div>
           <div class="period-tabs" style="margin-bottom:16px">
             <button class="tab-btn" onclick="switchClassView('sd', 'daily', this)">오늘</button>
-            <button class="tab-btn" onclick="switchClassView('sd', 'weekly', this)">주간</button>
-            <button class="tab-btn active" onclick="switchClassView('sd', 'monthly', this)">월간</button>
+            <button class="tab-btn active" onclick="switchClassView('sd', 'weekly', this)">주간</button>
+            <button class="tab-btn" onclick="switchClassView('sd', 'monthly', this)">월간</button>
           </div>
           <div id="sd-class-view-content"></div>
         </div>
@@ -2125,6 +2125,19 @@ function formatDateLocal(date) {
   return `${year}-${month}-${day}`;
 }
 
+function getStudentTotalFee(s) {
+  if (!s || !s.fee) return 0;
+  try {
+    if (String(s.fee).startsWith('{')) {
+      const feeBySubject = JSON.parse(s.fee);
+      return Object.values(feeBySubject).reduce((a, b) => a + (parseInt(b) || 0), 0);
+    }
+    return parseInt(s.fee) || 0;
+  } catch(e) {
+    return parseInt(s.fee) || 0;
+  }
+}
+
 // 핸드폰 번호 포맷팅 (010-XXXX-XXXX)
 function formatPhone(val) {
   if (!val) return '-';
@@ -2349,7 +2362,7 @@ function renderDashboard(who) {
     return isMine && c.date === todayStr;
   });
 
-  currentClassView = isStudent ? 'monthly' : (hasTodayClass ? 'daily' : 'weekly');
+  currentClassView = isStudent ? 'weekly' : (hasTodayClass ? 'daily' : 'weekly');
 
   // Sync tab button active state
   const tabBtns = document.querySelectorAll(`#${prefix}-class-view-content`)
@@ -2479,10 +2492,10 @@ function renderStudentHomework(){
     const items=g.items.map(h=>{
       const d=isDone(h.id);
       const chk=pendingChecks[h.id]!==undefined?pendingChecks[h.id]:d;
-      return`<div class="hw-item${d?' done':''}">
+      return`<div class="hw-item${chk?' done':''}">
         <div class="hw-checkbox${chk?' checked':''}" onclick="toggleCheck('${h.id}',${d})"></div>
         <div class="hw-info"><div class="hw-title">${h.title}</div><div class="hw-meta">마감: ${h.dueDate||'미정'} · 등록: ${h.createdAt}</div></div>
-        <span class="hw-badge ${d?'badge-done':'badge-pending'}">${d?'완료':'미완료'}</span>
+        <span class="hw-badge ${chk?'badge-done':'badge-pending'}">${chk?'완료':(d?'취소 예정':'미완료')}</span>
       </div>`;
     }).join('');
     return header+items;
@@ -2490,17 +2503,36 @@ function renderStudentHomework(){
   return;
 }
 function toggleCheck(hId,done){
-  if(done)return;
-  pendingChecks[hId]=pendingChecks[hId]===undefined?true:!pendingChecks[hId];
+  // 이미 제출된 상태(done)여도 토글 가능하도록 if(done)return 삭제
+  pendingChecks[hId] = pendingChecks[hId] === undefined ? !done : !pendingChecks[hId];
   renderStudentHomework();
 }
 function submitHomework(){
-  const comps=getCompletions(); const today=formatDateLocal(new Date()); let cnt=0;
+  let comps=getCompletions(); const today=formatDateLocal(new Date()); 
+  let submitCount=0; let cancelCount=0;
+  
   for(const[hId,chk] of Object.entries(pendingChecks)){
-    if(chk&&!comps.some(c=>c.homeworkId===hId&&c.studentId===currentUser.id)){comps.push({homeworkId:hId,studentId:currentUser.id,completedAt:today});cnt++;}
+    const alreadyDone = comps.some(c=>c.homeworkId===hId&&c.studentId===currentUser.id);
+    if(chk && !alreadyDone){
+      // 새로 제출
+      comps.push({homeworkId:hId,studentId:currentUser.id,completedAt:today});
+      submitCount++;
+    } else if(!chk && alreadyDone){
+      // 제출 취소
+      comps = comps.filter(c => !(c.homeworkId===hId && c.studentId===currentUser.id));
+      cancelCount++;
+    }
   }
-  saveCompletions(comps);pendingChecks={};renderStudentHomework();
-  showToast(cnt?`✅ ${cnt}개 숙제를 제출했습니다!`:'새로 완료한 숙제가 없습니다.');
+  
+  saveCompletions(comps); pendingChecks={}; renderStudentHomework();
+  
+  let msg = '';
+  if(submitCount > 0 && cancelCount > 0) msg = `✅ ${submitCount}개 제출, 🚫 ${cancelCount}개 취소되었습니다.`;
+  else if(submitCount > 0) msg = `✅ ${submitCount}개 숙제를 제출했습니다!`;
+  else if(cancelCount > 0) msg = `🚫 ${cancelCount}개 숙제 제출이 취소되었습니다.`;
+  else msg = '변경 사항이 없습니다.';
+  
+  showToast(msg);
 }
 
 // ── STUDENT STATS ─────────────────────────────────────────
@@ -3460,17 +3492,13 @@ function renderPaymentSummary() {
 
   students.forEach(s => {
     const isPaid = isPaidForMonth(s, currentPaymentMonth);
+    const totalFee = getStudentTotalFee(s);
     let feeBySubject = null;
-    let totalFee = 0;
-    
     try {
       if (s.fee && String(s.fee).startsWith('{')) {
         feeBySubject = JSON.parse(s.fee);
-        totalFee = Object.values(feeBySubject).reduce((a, b) => a + (parseInt(b) || 0), 0);
-      } else {
-        totalFee = parseInt(s.fee) || 0;
       }
-    } catch(e) { totalFee = parseInt(s.fee) || 0; }
+    } catch(e) {}
     
     totalAcademyExpected += totalFee;
     if (isPaid) totalAcademyCollected += totalFee;
@@ -3588,7 +3616,7 @@ function renderPaymentSummary() {
                   <div class="pay-pending-name">${s.name}${badge}</div>
                   <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
                     <div style="display:flex; gap:2px">${subjects}</div>
-                    <div class="pay-pending-fee" style="margin-top:0">${(parseInt(s.fee)||0).toLocaleString()}원</div>
+                    <div class="pay-pending-fee" style="margin-top:0">${getStudentTotalFee(s).toLocaleString()}원</div>
                   </div>
                 </div>
                 <button class="btn-check-pay" onclick="confirmPayment('${s.id}')">수금 체크</button>
@@ -3710,7 +3738,7 @@ function renderDetailedStudentList() {
         const breakdown = Object.entries(feeObj).map(([sub, v]) => `${sub} ${parseInt(v).toLocaleString()}원`).join('<br>');
         feeDisplay = `<span title="${breakdown}">${total.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${Object.keys(feeObj).join('+')})</span></span>`;
       } else if (s.fee) {
-        feeDisplay = parseInt(s.fee).toLocaleString() + '원';
+        feeDisplay = getStudentTotalFee(s).toLocaleString() + '원';
       }
     } catch(e) { feeDisplay = s.fee || '-'; }
     
@@ -4076,7 +4104,7 @@ function togglePaymentStatus(sid, isPaid) {
     if (!s.payments) s.payments = {};
     
     if (isPaid) {
-      const fee = parseInt(s.fee) || 0;
+      const fee = getStudentTotalFee(s);
       const formattedFee = fee.toLocaleString();
       if (!confirm(`📢 [수금 확인]\n\n"${s.name}" 학생의 학원비 ${formattedFee}원을 수납 완료 처리하시겠습니까?`)) {
         renderDetailedStudentList();
