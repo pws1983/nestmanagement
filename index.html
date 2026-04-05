@@ -202,6 +202,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .admin-hw-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
 .btn-del{background:var(--danger-bg);border:none;color:var(--danger);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;transition:background .2s;}
 .btn-del:hover{background:#fecaca;}
+.btn-edit-green{background:var(--success-bg);border:none;color:var(--success);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;transition:background .2s;}
+.btn-edit-green:hover{background:#d1fae5;}
 /* GROUP STATS */
 .gs-period-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow);}
 .gs-period-label{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
@@ -1578,7 +1580,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
             <label>등급</label>
             <input type="text" id="mock-rank" placeholder="예: 1">
           </div>
-          <button class="btn-add" style="height:38px; padding:0 20px" onclick="addMockExam()">추가</button>
+          <button id="btn-mock-add" class="btn-add" style="height:38px; padding:0 20px" onclick="addMockExam()">추가</button>
+          <button id="btn-mock-cancel" class="btn-del" style="height:38px; padding:0 20px; background:#94a3b8; display:none" onclick="cancelMockEdit()">취소</button>
         </div>
       </div>
 
@@ -1828,7 +1831,10 @@ function renderMockExamList() {
       <td>${e.grade}</td>
       <td style="font-weight:700">${e.score}</td>
       <td style="color:var(--primary); font-weight:700">${e.rank}</td>
-      <td><button class="btn-del" style="padding:4px 8px; font-size:11px" onclick="deleteMockExam('${e.id}')">삭제</button></td>
+      <td>
+        <button class="btn-edit-green" style="padding:4px 8px; font-size:11px; margin-right:4px" onclick="editMockExam('${e.id}')">수정</button>
+        <button class="btn-del" style="padding:4px 8px; font-size:11px" onclick="deleteMockExam('${e.id}')">삭제</button>
+      </td>
     </tr>
   `).join('');
 }
@@ -1845,22 +1851,55 @@ function addMockExam() {
     return;
   }
   
-  const exams = getMockExams();
-  const newExam = {
-    id: 'mock' + Date.now(),
-    studentId: currentMockStudentId,
-    subject: currentMockSubject,
-    grade, year, month, score, rank
-  };
-  
-  exams.push(newExam);
-  saveMockExams(exams);
-  
-  document.getElementById('mock-score').value = '';
-  document.getElementById('mock-rank').value = '';
+  let exams = getMockExams();
+  if (currentMockEditingId) {
+    const idx = exams.findIndex(e => e.id === currentMockEditingId);
+    if (idx > -1) {
+      exams[idx] = { ...exams[idx], grade, year, month, score, rank };
+      saveMockExams(exams);
+      showToast('✅ 성적이 수정되었습니다.');
+    }
+    cancelMockEdit();
+  } else {
+    const newExam = {
+      id: 'mock' + Date.now(),
+      studentId: currentMockStudentId,
+      subject: currentMockSubject,
+      grade, year, month, score, rank
+    };
+    exams.push(newExam);
+    saveMockExams(exams);
+    document.getElementById('mock-score').value = '';
+    document.getElementById('mock-rank').value = '';
+    showToast('✅ 성적이 등록되었습니다.');
+  }
   
   renderMockExamList();
-  showToast('✅ 성적이 등록되었습니다.');
+}
+
+function editMockExam(id) {
+  const exams = getMockExams();
+  const e = exams.find(x => x.id === id);
+  if (!e) return;
+  
+  currentMockEditingId = id;
+  document.getElementById('mock-grade').value = e.grade;
+  document.getElementById('mock-year').value = e.year;
+  document.getElementById('mock-month').value = e.month;
+  document.getElementById('mock-score').value = e.score;
+  document.getElementById('mock-rank').value = e.rank;
+  
+  document.getElementById('btn-mock-add').textContent = '수정 완료';
+  document.getElementById('btn-mock-cancel').style.display = 'block';
+  document.getElementById('mock-score').focus();
+}
+
+function cancelMockEdit() {
+  currentMockEditingId = null;
+  document.getElementById('mock-score').value = '';
+  document.getElementById('mock-rank').value = '';
+  document.getElementById('btn-mock-add').textContent = '추가';
+  document.getElementById('btn-mock-cancel').style.display = 'none';
 }
 
 function deleteMockExam(id) {
@@ -1946,7 +1985,7 @@ let currentClassView = 'daily'; // daily, weekly, monthly
 let editingClassId = null, editingStudentId = null, editingProgressId = null;
 let currentModalStudent = null, currentModalSubject = '전체';
 let currentProgModalSubject = '전체';
-let currentMockStudentId = null, currentMockSubject = null;
+let currentMockStudentId = null, currentMockSubject = null, currentMockEditingId = null;
 let currentPaymentMonth = new Date().toISOString().slice(0, 7);
 let currentAdminHWFilter = ''; // 숙제 관리 패널의 현재 선택된 그룹 필터
 
