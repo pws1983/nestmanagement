@@ -136,7 +136,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 }
 .hw-item:hover{box-shadow:var(--shadow-md);border-color:var(--border-strong);}
 .hw-item.done{opacity:.65;}
-.hw-item.done .hw-title{text-decoration:line-through;color:var(--text-muted);}
+.hw-item.done .hw-title{color:var(--text-muted);}
 .hw-checkbox{
   width:22px;height:22px;border-radius:6px;border:2px solid var(--border-strong);
   background:transparent;cursor:pointer;flex-shrink:0;
@@ -726,10 +726,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <span class="role-badge role-student">학생</span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item" onclick="showPanel('s','dashboard')" id="snav-dashboard"><span>🏠</span> 대시보드</div>
-      <div class="nav-item" onclick="showPanel('s','homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
-      <div class="nav-item" onclick="showPanel('s','classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
-      <div class="nav-item" onclick="showPanel('s','stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
+      <div class="nav-item" onclick="showPanel('s', 'dashboard')" id="snav-dashboard"><span>🏠</span> 대시보드</div>
+      <div class="nav-item" onclick="showPanel('s', 'homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
+      <div class="nav-item" onclick="showPanel('s', 'classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
+      <div class="nav-item" onclick="showPanel('s', 'progress')" id="snav-progress"><span>📖</span> 수업 진도</div>
+      <div class="nav-item" onclick="showPanel('s', 'stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
     </nav>
   <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
     <button class="logout-btn" style="background:var(--secondary); color:#3b82f6; border:none; margin-bottom:4px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
@@ -745,9 +746,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="card">
           <div class="section-title">📅 내 일정 (오늘)</div>
           <div class="period-tabs" style="margin-bottom:16px">
-            <button class="tab-btn active" onclick="switchClassView('sd', 'daily', this)">오늘</button>
+            <button class="tab-btn" onclick="switchClassView('sd', 'daily', this)">오늘</button>
             <button class="tab-btn" onclick="switchClassView('sd', 'weekly', this)">주간</button>
-            <button class="tab-btn" onclick="switchClassView('sd', 'monthly', this)">월간</button>
+            <button class="tab-btn active" onclick="switchClassView('sd', 'monthly', this)">월간</button>
           </div>
           <div id="sd-class-view-content"></div>
         </div>
@@ -768,11 +769,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="panel-title">내 수업 일정</div>
       <div class="panel-sub">보기 방식을 선택하여 일정을 확인하세요</div>
       <div class="period-tabs" style="margin-bottom:16px">
-        <button class="tab-btn active" onclick="switchClassView('s', 'daily', this)">오늘</button>
+        <button class="tab-btn" onclick="switchClassView('s', 'daily', this)">오늘</button>
         <button class="tab-btn" onclick="switchClassView('s', 'weekly', this)">주간</button>
-        <button class="tab-btn" onclick="switchClassView('s', 'monthly', this)">월간</button>
+        <button class="tab-btn active" onclick="switchClassView('s', 'monthly', this)">월간</button>
       </div>
       <div id="s-class-view-content"></div>
+    </div>
+    <div class="panel" id="s-panel-progress">
+      <div class="panel-title">수업 진도</div>
+      <div class="panel-sub">내가 속한 수업의 진도 현황과 연관된 숙제를 확인하세요.</div>
+      <div id="s-progress-content"></div>
     </div>
     <div class="panel" id="s-panel-stats">
       <div class="panel-title">숙제 달성 통계</div>
@@ -2320,10 +2326,13 @@ function showPanel(who,name){
   if(who==='a'&&name==='progress') {
     renderProgressPanel();
   }
-  if(who==='s'&&name==='classes') {
-    currentClassView = 'daily';
+  if(who==='s'&&name=='classes') {
+    currentClassView = 'monthly';
     currentCalDate = new Date();
     renderStudentClasses();
+  }
+  if(who==='s'&&name==='progress') {
+    renderStudentProgress();
   }
 }
 
@@ -2340,7 +2349,7 @@ function renderDashboard(who) {
     return isMine && c.date === todayStr;
   });
 
-  currentClassView = hasTodayClass ? 'daily' : 'weekly';
+  currentClassView = isStudent ? 'monthly' : (hasTodayClass ? 'daily' : 'weekly');
 
   // Sync tab button active state
   const tabBtns = document.querySelectorAll(`#${prefix}-class-view-content`)
@@ -6245,6 +6254,185 @@ function closeProgStudentModal(e) {
   if (e.target === document.getElementById('progStudentModal')) {
     document.getElementById('progStudentModal').classList.remove('open');
   }
+}
+
+function renderStudentProgress() {
+  renderStudentProgressContent('s-progress-content');
+}
+
+function renderStudentProgressContent(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+
+  try {
+    const topics = getProgressTopics();
+    const hws = getHomeworks();
+    const hwComps = getCompletions();
+    const students = getUsers().filter(u => u.role === 'student');
+    const allClassSeries = getAllClassSeries();
+    const myId = currentUser ? String(currentUser.id) : null;
+
+    if (!myId) {
+      el.innerHTML = '<div class="empty-state">로그인이 필요하거나 사용자 정보가 없습니다.</div>';
+      return;
+    }
+
+    const currentStudent = students.find(u => String(u.id) === myId);
+    if (!currentStudent) {
+      el.innerHTML = `<div class="empty-state">학생 정보를 찾을 수 없습니다. (ID: ${myId})</div>`;
+      return;
+    }
+
+    // 1. Resolve entity for topics
+    const resolvedTopics = topics.map(t => {
+      let eid = String(t.groupId);
+      let cs = allClassSeries.find(c => String(c.id) === eid);
+      if (!cs && eid.startsWith('reg-')) {
+        const parts = eid.split('-');
+        if (parts.length >= 5) {
+          const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+          cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && (c.groupIds || []).slice().sort().join(',') === gids.split('-').sort().join(','));
+        }
+      }
+      return { ...t, effectiveEntityId: cs ? String(cs.id) : eid };
+    });
+
+    // 2. Student assignments
+    const myGroups = getStudentGroups().filter(g => g.studentIds && g.studentIds.map(String).includes(myId));
+    const myGroupIds = myGroups.map(g => String(g.id));
+    const myClassSeries = allClassSeries.filter(cs => 
+      (cs.assignedTo && cs.assignedTo.map(String).includes(myId)) || 
+      (cs.groupIds && cs.groupIds.some(gid => myGroupIds.includes(String(gid))))
+    );
+    const myEntityIds = [...new Set([...myGroupIds, ...myClassSeries.map(cs => String(cs.id))])];
+
+    const sessions = [];
+    myEntityIds.forEach(entityId => {
+      const entityTopics = resolvedTopics.filter(t => t.effectiveEntityId === entityId);
+      if (!entityTopics.length) return;
+
+      const cs = allClassSeries.find(c => String(c.id) === entityId);
+      const grp = getStudentGroups().find(g => String(g.id) === entityId);
+      const label = cs ? cs.label : (grp ? grp.name : '소속 반');
+      
+      let gc = GROUP_COLORS[0];
+      if (cs) {
+        gc = cs.groups && cs.groups.length > 0 ? getGroupColor(cs.groups[0].id, cs.title, cs.colorIndex) : GROUP_COLORS[0];
+      } else if (grp) {
+        gc = getGroupColor(grp.id, grp.name, 0);
+      }
+
+      const datesMap = {};
+      entityTopics.forEach(t => {
+        const d = t.targetDate || '날짜 미지정';
+        if (!datesMap[d]) datesMap[d] = [];
+        datesMap[d].push(t);
+      });
+
+      Object.keys(datesMap).forEach(date => {
+        const filteredTopics = datesMap[date].filter(t => {
+          if (t.assignedTo && t.assignedTo.length > 0) return t.assignedTo.map(String).includes(myId);
+          if (t.subject) {
+            const sSubjs = (currentStudent.subject || "").split(',').map(x => x.trim()).filter(Boolean);
+            if (sSubjs.length > 0 && !sSubjs.includes(t.subject.trim())) return false;
+          }
+          if (t.grade && currentStudent.grade) {
+            if (currentStudent.grade.trim() !== t.grade.trim()) return false;
+          }
+          return true;
+        });
+
+        if (filteredTopics.length > 0) {
+          sessions.push({
+            entityId, label, gc, date, topics: filteredTopics,
+            sortDate: date === '날짜 미지정' ? '0000-00-00' : date
+          });
+        }
+      });
+    });
+
+    sessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.label.localeCompare(b.label));
+
+    if (!sessions.length) {
+      el.innerHTML = `
+        <div class="prog-no-data" style="padding:40px; text-align:center">
+          <div style="font-size:40px; margin-bottom:10px">📋</div>
+          <div style="font-weight:700; color:var(--text-muted)">현재 확인 가능한 진도 항목이 없습니다.</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:10px">진단: 학생(${myId}), 소속반(${myGroupIds.length}개), 수업(${myClassSeries.length}개)</div>
+        </div>`;
+      return;
+    }
+
+    const cardsHtml = sessions.map(session => {
+      const { label, gc, date, topics: sessionTopics } = session;
+      const subjects = [...new Set(sessionTopics.map(t => t.subject).filter(Boolean))];
+      const subjectBadge = subjects.length ? `<span style="font-size:13px; font-weight:700; color:${gc.color}; margin-left:6px">[${subjects.join(', ')}]</span>` : '';
+      const doneItems = sessionTopics.filter(t => isProgressDoneFor(t.id, myId)).length;
+      const pct = Math.round(doneItems / sessionTopics.length * 100);
+      const dObj = new Date(date);
+      const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
+
+      const topicRows = sessionTopics.map(t => {
+        const isDone = isProgressDoneFor(t.id, myId);
+        const subjTag = t.subject ? `<span class="cat-tag${t.subject.startsWith('수학')?' math':''}" style="margin-right:6px; font-size:10px">${t.subject}</span>` : '';
+        return `
+          <div class="admin-hw-item" style="cursor:pointer; background:${isDone?'var(--success-bg)':'#f8fafc'}; border-color:${isDone?'var(--success)':'var(--border)'}" onclick="toggleStudentProgress('${t.id}')">
+            <div style="display:flex; align-items:center; gap:10px; width:100%">
+              <div class="hw-checkbox ${isDone ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0"></div>
+              <div style="flex:1">
+                <div class="prog-topic-title" style="font-size:14px; font-weight:600; ${isDone?'color:var(--text-muted)':''}">📖 ${t.topic}</div>
+                <div class="prog-topic-meta" style="font-size:11px">${subjTag}등록: ${t.targetDate || t.createdAt}</div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      const hwRows = sessionTopics.map(t => {
+        if (!t.hwId) return '';
+        const h = hws.find(x => x.id === t.hwId);
+        if (!h) return '';
+        const isHwDone = hwComps.some(c => c.hwId === h.id && c.studentId === myId);
+        return `
+          <div class="hw-item ${isHwDone ? 'done' : ''}" style="padding:10px 14px; margin-bottom:8px">
+            <div class="hw-info">
+              <div class="hw-title" style="font-size:14px">${h.title}</div>
+              <div class="hw-meta">${h.subject || ''} · 마감: ${h.dueDate}</div>
+            </div>
+            <span class="hw-badge ${isHwDone ? 'badge-done' : 'badge-pending'}">${isHwDone ? '완료' : '진행중'}</span>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="prog-group-card" style="border-left:4px solid ${gc.color}">
+          <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-bottom:1px solid var(--border)">
+            <div class="prog-group-title" style="color:${gc.color}; font-size:16px">${label}${subjectBadge}
+              <span style="margin-left:10px; font-size:12px; font-weight:500; opacity:0.8">📅 ${date} (${dayName})</span>
+            </div>
+          </div>
+          <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
+            <div class="prog-summary-stat"><div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:14px">${pct}%</div><div class="prog-summary-label">달성률</div></div>
+            <div class="prog-summary-stat"><div class="prog-summary-val" style="color:var(--success)">${doneItems}</div><div class="prog-summary-label">완료</div></div>
+            <div class="prog-summary-stat"><div class="prog-summary-val" style="color:var(--warning)">${sessionTopics.length - doneItems}</div><div class="prog-summary-label">미완료</div></div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff">
+            <div><div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📖 진도 항목</div>${topicRows}</div>
+            <div><div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📚 해당 수업 숙제</div>${hwRows || '<div style="font-size:12px; color:var(--text-muted); padding:10px">등록된 숙제가 없습니다.</div>'}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `<div style="display:flex; flex-direction:column; gap:20px;">${cardsHtml}</div>`;
+  } catch (err) {
+    el.innerHTML = `<div style="padding:20px; color:red; font-size:12px; background:#fff1f2; border-radius:10px">⚠️ 렌더링 오류: ${err.message}</div>`;
+    console.error(err);
+  }
+}
+
+function toggleStudentProgress(topicId) {
+  const myId = currentUser.id;
+  const isDone = isProgressDoneFor(topicId, myId);
+  toggleProgressCompletion(topicId, myId, !isDone);
+  renderStudentProgress();
 }
 
 function renderProgressContent(targetId) {
