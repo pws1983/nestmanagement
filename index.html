@@ -1653,8 +1653,25 @@ function migrateToNewSubjects() {
   if (hwChanged) saveHomeworks(hws);
 }
 
+function migrateHWToClasses() {
+  const hws = getHomeworks();
+  const topics = getProgressTopics();
+  let changed = false;
+  hws.forEach(h => {
+    if (!h.classId) {
+      const topic = topics.find(t => t.hwId === h.id);
+      if (topic) {
+        h.classId = topic.groupId;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveHomeworks(hws);
+}
+
 function initData(){
   migrateToNewSubjects();
+  migrateHWToClasses();
   if(!localStorage.getItem('hwapp_users')){
     saveUsers(DEFAULT_USERS);
     const today=new Date().toISOString().slice(0,10);
@@ -1698,6 +1715,10 @@ const saveClasses=d=>localStorage.setItem('hwapp_classes',JSON.stringify(d));
 const getMockExams=()=>JSON.parse(localStorage.getItem('hwapp_mock_exams')||'[]');
 const saveMockExams=d=>localStorage.setItem('hwapp_mock_exams',JSON.stringify(d));
 const saveUsers=d=>localStorage.setItem('hwapp_users',JSON.stringify(d));
+const getProgressTopics = () => JSON.parse(localStorage.getItem('hwapp_progress_topics') || '[]');
+const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]');
+const saveProgressTopics = d => localStorage.setItem('hwapp_progress_topics', JSON.stringify(d));
+const saveProgressCompletions = d => localStorage.setItem('hwapp_progress_completions', JSON.stringify(d));
 
 function getAllClassSeries() {
   const classes = getClasses();
@@ -1984,7 +2005,18 @@ function selectColorChip(containerId, inputId, idx) {
 }
 function buildGroups(hws, studentGroups, subjects = []) {
   const map = {};
+  const classMap = {};
+  const allSeries = getAllClassSeries();
+
   hws.forEach(h => {
+    // 1. 수업별(classId) 그룹화 우선순위
+    if (h.classId) {
+      if (!classMap[h.classId]) classMap[h.classId] = [];
+      classMap[h.classId].push(h);
+      return;
+    }
+    
+    // 2. 일반 그룹/과목별 그룹화 (기존 로직)
     const catId = h.categoryId || '_none';
     if (!map[catId]) map[catId] = [];
     map[catId].push(h);
@@ -1992,7 +2024,14 @@ function buildGroups(hws, studentGroups, subjects = []) {
   
   const results = [];
   
-  // 1. Student Groups Matching
+  // 1. 수업(Class Series) 그룹 결과 추가
+  Object.keys(classMap).forEach(cid => {
+    const cs = allSeries.find(s => s.id === cid);
+    const label = cs ? cs.label : cid;
+    results.push({ catId: cid, label: label, items: classMap[cid], type: 'class' });
+  });
+  
+  // 2. 학생 그룹(School/Grade) 매칭
   studentGroups.forEach(g => {
     if (map[g.id]) {
       results.push({ catId: g.id, label: g.name, items: map[g.id], type: 'group' });
@@ -2000,7 +2039,7 @@ function buildGroups(hws, studentGroups, subjects = []) {
     }
   });
 
-  // 2. Subjects (Categories) Matching
+  // 3. 과목(Subject) 매칭
   subjects.forEach(s => {
     if (map[s.id]) {
       results.push({ catId: s.id, label: s.name, items: map[s.id], type: 'subject' });
@@ -2008,16 +2047,14 @@ function buildGroups(hws, studentGroups, subjects = []) {
     }
   });
   
-  // The fix for legacy name-based categoryId
+  // 레거시 보완 (이름 기반 매칭)
   Object.keys(map).forEach(catId => {
-    // Check Groups first
     const matchedGrp = studentGroups.find(sg => sg.id === catId || sg.name === catId);
     if (matchedGrp) {
       results.push({ catId: matchedGrp.id, label: matchedGrp.name, items: map[catId], type: 'group' });
       delete map[catId];
       return;
     }
-    // Then check Subjects
     const matchedSub = subjects.find(sub => sub.id === catId || sub.name === catId);
     if (matchedSub) {
       results.push({ catId: matchedSub.id, label: matchedSub.name, items: map[catId], type: 'subject' });
@@ -2025,7 +2062,7 @@ function buildGroups(hws, studentGroups, subjects = []) {
     }
   });
 
-  // 3. Leftovers
+  // 4. 나머지
   Object.keys(map).forEach(catId => {
     const label = catId === '_none' ? '미분류' : catId;
     results.push({ catId: catId === '_none' ? null : catId, label, items: map[catId], type: 'other' });
@@ -2152,7 +2189,9 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
     if (cat) subjTag = `<span class="cat-tag${cat.name.startsWith('수학')?' math':''}" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">${cat.name}</span>`;
   }
 
-  const meta = `${subjTag}대상: ${names || '없음'} ${h.createdAt ? `· 등록: ${h.createdAt}` : ''} · 마감: ${h.dueDate || '미정'} ${diffStr}`;
+  const hideTarget = options.hideTarget || false;
+  const targetStr = hideTarget ? '' : `대상: ${names || '없음'} · `;
+  const meta = `${subjTag}${targetStr}${h.createdAt ? `등록: ${h.createdAt}` : ''} · 마감: ${h.dueDate || '미정'} ${diffStr}`;
 
   let actionsHtml = '';
   if (showActions) {
@@ -2317,15 +2356,22 @@ function renderDashboard(who) {
   const hwGroups = buildGroups(filteredHws, studentGroups, subjects);
 
   listEl.innerHTML = hwGroups.map(g => {
-    const relatedClass = classes.find(c => c.title.includes(g.label) || g.label.includes(c.title));
-    const displayLabel = relatedClass ? relatedClass.title : g.label;
-    
-    const matchedGrp = studentGroups.find(sg => sg.id === g.catId);
-    const matchedGi = matchedGrp ? studentGroups.indexOf(matchedGrp) : -1;
-    const gc = matchedGrp ? GROUP_COLORS[matchedGi % GROUP_COLORS.length] : null;
-    const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
+    const allSeries = getAllClassSeries();
+    let gc = { bg: '#f1f5f9', color: 'var(--primary)', border: 'var(--primary-light)' };
+    let labelPrefix = '🏷️ ';
 
-    const header = `<div class="cat-group-header" ${headerStyle}>🏷️ ${displayLabel}<span class="cat-count">${g.items.length}개</span></div>`;
+    if (g.type === 'class') {
+      const s = allSeries.find(x => x.id === g.catId);
+      gc = getGroupColor(g.catId, null, s ? s.colorIndex : null);
+      labelPrefix = s && s.type === 'regular' ? '📅 ' : '✨ ';
+    } else if (g.type === 'group') {
+      gc = getGroupColor(g.catId);
+      labelPrefix = '🏫 ';
+    }
+    
+    const headerStyle = `style="background:${gc.bg}; border-left-color:${gc.color}; color:${gc.color}"`;
+
+    const header = `<div class="cat-group-header" ${headerStyle}>${labelPrefix}${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
     
     const items = g.items.map(h => {
       if (isStudent) {
@@ -2346,7 +2392,7 @@ function renderDashboard(who) {
           </div>
         `;
       } else {
-        return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
+        return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: g.type === 'class' });
       }
     }).join('');
 
@@ -2764,14 +2810,26 @@ function renderAdminHWList(){
   const hwGroups = buildGroups(hws, studentGroups, subjects);
   
   const html = hwGroups.map(g => {
-    const matchedGrp = studentGroups.find(sg => sg.id === g.catId);
-    const gc = matchedGrp ? getGroupColor(matchedGrp.id) : (g.type === 'subject' ? { bg: '#f1f5f9', color: 'var(--primary)', border: 'var(--primary-light)' } : null);
+    const allSeries = getAllClassSeries();
+    let gc = { bg: '#f1f5f9', color: 'var(--primary)', border: 'var(--primary-light)' };
+    let labelPrefix = '🏷️ ';
+
+    if (g.type === 'class') {
+      const s = allSeries.find(x => x.id === g.catId);
+      gc = getGroupColor(g.catId, null, s ? s.colorIndex : null);
+      labelPrefix = s && s.type === 'regular' ? '📅 ' : '✨ ';
+    } else if (g.type === 'group') {
+      gc = getGroupColor(g.catId);
+      labelPrefix = '🏫 ';
+    } else if (g.type === 'subject') {
+      labelPrefix = '📚 ';
+    }
     
-    const headerStyle = gc ? `style="background:${gc.bg};border-left-color:${gc.color};color:${gc.color}"` : '';
-    const labelPrefix = g.type === 'subject' ? '📚 ' : (g.type === 'group' ? '🏫 ' : '🏷️ ');
+    const headerStyle = `style="background:${gc.bg}; border-left-color:${gc.color}; color:${gc.color}"`;
     
     const itemsHtml = g.items.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(h => {
-      return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
+      // 수업진도에서는 대상 표시를 없애고 싶어하셨으므로, 수업별 그룹(class type)일 때 감춤
+      return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: g.type === 'class' });
     }).join('');
 
     return `
@@ -5227,10 +5285,7 @@ function deleteClass(id) {
 }
 
 // ── CLASS PROGRESS MANAGEMENT ─────────────────────────────
-const getProgressTopics = () => JSON.parse(localStorage.getItem('hwapp_progress_topics') || '[]');
-const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]');
-const saveProgressTopics = d => localStorage.setItem('hwapp_progress_topics', JSON.stringify(d));
-const saveProgressCompletions = d => localStorage.setItem('hwapp_progress_completions', JSON.stringify(d));
+
 
 let currentProgressFilter = '';
 
@@ -5448,14 +5503,14 @@ function addProgressTopic() {
       if (topicHwId) {
         // 기존 숙제 업데이트
         hws = hws.map(h => h.id === topicHwId ? {
-          ...h, title: entries[0].hwTitle, categoryId: hwCategoryId, subject: selectedSubject, dueDate: hwDue, createdAt: targetDate, assignedTo: [...studentIds]
+          ...h, title: entries[0].hwTitle, categoryId: hwCategoryId, classId: groupId, subject: selectedSubject, dueDate: hwDue, createdAt: targetDate, assignedTo: [...studentIds]
         } : h);
       } else {
         // 새로 숙제 생성
         const newHwId = 'hw' + Date.now() + Math.random().toString(36).substr(2, 5);
         topicHwId = newHwId;
         hws.push({
-          id: newHwId, title: entries[0].hwTitle, categoryId: hwCategoryId, subject: selectedSubject, assignedTo: [...studentIds], dueDate: hwDue, createdAt: targetDate
+          id: newHwId, title: entries[0].hwTitle, categoryId: hwCategoryId, classId: groupId, subject: selectedSubject, assignedTo: [...studentIds], dueDate: hwDue, createdAt: targetDate
         });
       }
       saveHomeworks(hws);
@@ -5486,6 +5541,7 @@ function addProgressTopic() {
           id: hwId,
           title: entry.hwTitle,
           categoryId: hwCategoryId,
+          classId: groupId,
           subject: selectedSubject, // 과목 정보 추가
           assignedTo: [...studentIds], // 해당 그룹 학생 전체
           dueDate: hwDue,
@@ -5876,7 +5932,7 @@ function submitProgGroupEdit() {
             topicsData[pIdx].hwId = newHwId;
             const newHw = {
               id: newHwId, title: valHw, dueDate: hwDueStr, createdAt: tDate, targetDate: tDate,
-              categoryId: currentEditSessionBase.categoryId, subject: currentEditSessionBase.subject,
+              categoryId: currentEditSessionBase.categoryId, classId: currentEditSessionBase.entityId, subject: currentEditSessionBase.subject,
               grade: currentEditSessionBase.grade, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
               assignedTo: [...currentEditSessionBase.students]
             };
@@ -5896,7 +5952,7 @@ function submitProgGroupEdit() {
           newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
           const newHw = {
             id: newHwId, title: valHw, dueDate: hwDueStr, createdAt: tDate, targetDate: tDate,
-            categoryId: currentEditSessionBase.categoryId, subject: currentEditSessionBase.subject,
+            categoryId: currentEditSessionBase.categoryId, classId: currentEditSessionBase.entityId, subject: currentEditSessionBase.subject,
             grade: currentEditSessionBase.grade, entityType: currentEditSessionBase.entityType, entityId: currentEditSessionBase.entityId,
             assignedTo: [...currentEditSessionBase.students]
           };
@@ -6286,7 +6342,7 @@ function renderProgressContent(targetId) {
       if(!t.hwId) return '';
       const h = hws.find(x => x.id === t.hwId);
       if(!h) return '';
-      return getAdminHWItemHtml(h, students, hwComps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true });
+      return getAdminHWItemHtml(h, students, hwComps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: true });
     }).join('');
 
     const topicRows = sessionTopics.map(t => {
