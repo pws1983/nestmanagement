@@ -3314,19 +3314,36 @@ function cleanupStudentData(sid){
   saveStudentGroups(groups);
   saveProgressCompletions(getProgressCompletions().filter(c => c.studentId !== sid));
 }
-function retireStudent(id,name){
-  if(!confirm(`⚠️ "${name}" 학생을 정말 퇴원 처리하시겠습니까?\n퇴원 처리 시 학생 목록에서 숨겨지고 퇴원 현황으로 이동합니다.`))return;
+function retireStudent(id,name, existingDate = null){
+  const defaultDate = existingDate || formatDateLocal(new Date());
+  const rDate = prompt(`⚠️ "${name}" 학생의 퇴원일을 입력하세요 (YYYY-MM-DD):`, defaultDate);
+  if(!rDate) return;
+
   const users=getUsers();
   const retired=getRetiredUsers();
   const studentIdx=users.findIndex(u=>u.id===id);
   if(studentIdx>-1){
     const st=users.splice(studentIdx,1)[0];
-    retired.push({...st, retiredAt:formatDateLocal(new Date())});
+    retired.push({...st, retiredAt:rDate});
     saveUsers(users);
     saveRetiredUsers(retired);
-    renderAdminStudents();renderDetailedStudentList();
-    showToast(`😢 "${name}" 학생이 퇴원 처리되었습니다.`);
+    renderAdminStudents();renderDetailedStudentList();renderPaymentSummary();
+    showToast(`😢 "${name}" 학생이 ${rDate}부로 퇴원 처리되었습니다.`);
   }
+}
+
+function updateRetirementDate(id) {
+  const retired = getRetiredUsers();
+  const student = retired.find(s => s.id === id);
+  if (!student) return;
+  
+  const newDate = prompt(`"${student.name}" 학생의 새로운 퇴원일을 입력하세요 (YYYY-MM-DD):`, student.retiredAt);
+  if (!newDate) return;
+  
+  student.retiredAt = newDate;
+  saveRetiredUsers(retired);
+  renderRetiredStudents();renderPaymentSummary();renderDetailedStudentList();
+  showToast("퇴원일이 수정되었습니다.");
 }
 function renderRetiredStudents(){
   const retired=getRetiredUsers();
@@ -3345,8 +3362,9 @@ function renderRetiredStudents(){
       <td><span class="pct-cell" style="color:#94a3b8">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%;background:#94a3b8"></div></div></td>
       <td style="white-space:nowrap;text-align:right">
         <span style="font-size:12px;color:var(--text-muted);cursor:pointer;margin-right:12px" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
-        <button class="btn-del" style="background:var(--success);color:#fff;border:none" onclick="event.stopPropagation();restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
-        <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation();deleteRetiredStudent('${s.id}','${safeName}')">탈퇴</button>
+        <button class="btn-submit" style="margin-left:0; background:var(--primary); border:none; color:#fff; font-size:11px; padding:4px 8px" onclick="event.stopPropagation();updateRetirementDate('${s.id}')">퇴원일 수정</button>
+        <button class="btn-check-pay" style="margin-left:4px; background:var(--success); color:#fff; border:none; font-size:11px; padding:4px 8px" onclick="event.stopPropagation();restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
+        <button class="btn-del" style="margin-left:4px; font-size:11px; padding:4px 8px" onclick="event.stopPropagation();deleteRetiredStudent('${s.id}','${safeName}')">탈퇴</button>
       </td>
     </tr>`;
   }).join('');
@@ -3476,7 +3494,10 @@ function renderPaymentSummary() {
   const pendingCount = total - paidCount;
   const pct = total ? Math.round((paidCount / total) * 100) : 0;
   
-  const pendingStudents = students.filter(s => !isPaidForMonth(s, currentPaymentMonth) && s.fee);
+  const pendingStudents = students.filter(s => {
+    if (s.status === '퇴원') return false; // 퇴원한 학생은 당월 미납 명단에서 자동 제외
+    return !isPaidForMonth(s, currentPaymentMonth) && getStudentTotalFee(s) > 0;
+  });
 
   // 학원 전체 수금액 계산
   let totalAcademyExpected = 0;
