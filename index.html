@@ -6588,6 +6588,8 @@ function renderProgressContent(targetId) {
     const subjectBadge = sessionSubjects.length ? `<span style="font-size:13px; font-weight:700; color:${gc.color}; margin-left:6px">[${sessionSubjects.join(', ')}]</span>` : '';
 
     let groupTotalItems = 0, groupDoneItems = 0;
+    let sessHwTotal = 0, sessHwDone = 0;
+
     sessionTopics.forEach(t => {
       let membersForTopic = studentsInEntity;
       if (t.subject) {
@@ -6596,13 +6598,18 @@ function renderProgressContent(targetId) {
       if (t.grade) {
         membersForTopic = membersForTopic.filter(s => s.grade === t.grade);
       }
-
       membersForTopic.forEach(s => {
         groupTotalItems++;
         if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
+        
+        if (t.hwId) {
+          sessHwTotal++;
+          if (isDoneFor(t.hwId, s.id)) sessHwDone++;
+        }
       });
     });
     const groupPct = groupTotalItems ? Math.round(groupDoneItems / groupTotalItems * 100) : 0;
+    const sessHwPct = sessHwTotal ? Math.round(sessHwDone / sessHwTotal * 100) : 0;
     const groupBarColor = groupPct === 100 ? 'var(--success)' : groupPct > 0 ? gc.color : 'var(--border-strong)';
 
     let headerDateStr = '';
@@ -6640,18 +6647,17 @@ function renderProgressContent(targetId) {
       if (t.hwId) {
         const h = hws.find(x => x.id === t.hwId);
         if (h) {
-          const hwDone = membersForTopic.filter(s => isDoneFor(h.id, s.id)).length;
-          const hwTotal = membersForTopic.length;
-          const hwPct = hwTotal ? Math.round(hwDone / hwTotal * 100) : 0;
-          const hwColor = hwPct === 100 ? 'var(--primary)' : hwPct > 0 ? 'var(--primary-light)' : 'var(--border-strong)';
+          const hwDoneForThisTopic = membersForTopic.filter(s => isDoneFor(h.id, s.id)).length;
+          const hwTotalForThisTopic = membersForTopic.length;
+          const hwPctForThisTopic = hwTotalForThisTopic ? Math.round(hwDoneForThisTopic / hwTotalForThisTopic * 100) : 0;
           
           hwAttainmentHtml = `
             <div style="display:flex; align-items:center; gap:8px">
               <div style="width:1px; height:12px; background:var(--border); margin:0 4px"></div>
               <div style="width:60px; height:4px; background:#f1f5f9; border-radius:99px; overflow:hidden">
-                <div style="height:100%; border-radius:99px; background:var(--primary); width:${hwPct}%; transition:width .4s"></div>
+                <div style="height:100%; border-radius:99px; background:var(--primary); width:${hwPctForThisTopic}%; transition:width .4s"></div>
               </div>
-              <span style="font-size:11px; font-weight:700; color:var(--primary)">🏠숙제 ${hwDone}/${hwTotal}</span>
+              <span style="font-size:11px; font-weight:700; color:var(--primary)">🏠숙제 ${hwDoneForThisTopic}/${hwTotalForThisTopic}</span>
             </div>
           `;
         }
@@ -6729,27 +6735,55 @@ function renderProgressContent(targetId) {
           <button class="btn-del" style="font-size:11px; padding:3px 6px" onclick="event.stopPropagation();deleteProgressSession('${sessionTopicIds}', '${safeLabel}')">삭제</button>
         </div>
       </div>
-      <div class="prog-group-summary" style="padding:10px 14px; background:#fafafa; border-bottom:1px solid var(--border)">
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:14px">${groupPct}%</div>
-          <div class="prog-summary-label" style="font-size:11px">달성률</div>
-        </div>
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="color:var(--success); font-size:14px">${groupDoneItems}</div>
-          <div class="prog-summary-label" style="font-size:11px">완료</div>
-        </div>
-        <div class="prog-summary-stat">
-          <div class="prog-summary-val" style="color:var(--warning); font-size:14px">${groupTotalItems - groupDoneItems}</div>
-          <div class="prog-summary-label" style="font-size:11px">미완료</div>
-        </div>
-      </div>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 14px; background:#fff; align-items:start">
         <div class="prog-topic-list-col">
-          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📖 진도 항목</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+            <div style="font-size:12px; font-weight:700; color:var(--text-muted)">📖 진도 항목</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:11px; font-weight:700; color:${groupPct===100?'var(--success)':'var(--primary)'}">${groupPct}%</span>
+              <span style="font-size:10px; color:var(--text-muted)">(${groupDoneItems}/${groupTotalItems})</span>
+            </div>
+          </div>
+          <div class="prog-group-summary" style="padding:6px 10px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; margin-bottom:10px; border-bottom:1px solid var(--border)">
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent; font-size:13px">${groupPct}%</div>
+              <div class="prog-summary-label" style="font-size:10px">달성률</div>
+            </div>
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="color:var(--success); font-size:13px">${groupDoneItems}</div>
+              <div class="prog-summary-label" style="font-size:10px">완료</div>
+            </div>
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="color:var(--warning); font-size:13px">${groupTotalItems - groupDoneItems}</div>
+              <div class="prog-summary-label" style="font-size:10px">미완료</div>
+            </div>
+          </div>
           ${topicRows}
         </div>
         <div class="prog-hw-list-col">
-          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px">📚 해당 수업 숙제</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
+            <div style="font-size:12px; font-weight:700; color:var(--text-muted)">📚 해당 수업 숙제</div>
+            ${sessHwTotal > 0 ? `
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:11px; font-weight:700; color:${sessHwPct===100?'var(--success)':'var(--accent)'}">${sessHwPct}%</span>
+              <span style="font-size:10px; color:var(--text-muted)">(${sessHwDone}/${sessHwTotal})</span>
+            </div>` : ''}
+          </div>
+          ${sessHwTotal > 0 ? `
+          <div class="prog-group-summary" style="padding:6px 10px; background:#f0f9ff; border:1px solid var(--border); border-radius:10px; margin-bottom:10px; border-bottom:1px solid var(--border)">
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="color:var(--accent); font-size:13px">${sessHwPct}%</div>
+              <div class="prog-summary-label" style="font-size:10px">달성률</div>
+            </div>
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="color:var(--success); font-size:13px">${sessHwDone}</div>
+              <div class="prog-summary-label" style="font-size:10px">완료</div>
+            </div>
+            <div class="prog-summary-stat">
+              <div class="prog-summary-val" style="color:var(--warning); font-size:13px">${sessHwTotal - sessHwDone}</div>
+              <div class="prog-summary-label" style="font-size:10px">미완료</div>
+            </div>
+          </div>` : ''}
           ${homeworkRows || '<div style="font-size:12px; color:var(--text-muted); padding:10px">등록된 숙제가 없습니다.</div>'}
         </div>
       </div>
