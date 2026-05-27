@@ -8715,7 +8715,8 @@ function renderStudentProgressContent(targetId) {
       const { label, gc: originalGc, date, topics: sessionTopics } = session;
       
       let gc = { ...originalGc };
-      // 학생 계정인 경우에만 월별 색상(내 숙제와 동일) 적용
+      // 학생 계정인 경우에만 월별 색상(내 숙제 뱃지와 동일한 솔리드 컬러) 적용
+      let headerBorderColor = originalGc.color;
       if (currentUser && currentUser.role === 'student') {
         let yyyyMm = '';
         if (date && date !== '등록 일 안됨' && date.length >= 7) {
@@ -8727,8 +8728,11 @@ function renderStudentProgressContent(targetId) {
         if (yyyyMm) {
           let hash = 0;
           for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
-          gc.color = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 55%)';
-          gc.bg = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 96%)'; // 배경은 약간 더 밝게
+          const monthColor = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 55%)';
+          
+          gc.bg = monthColor; // 배경을 뱃지와 동일한 단색으로
+          gc.color = '#ffffff'; // 텍스트는 흰색으로
+          headerBorderColor = monthColor; // 테두리도 단색으로
         }
       }
 
@@ -8796,7 +8800,7 @@ function renderStudentProgressContent(targetId) {
       const sessHwPct = sessHwTotal ? Math.round(sessHwDone / sessHwTotal * 100) : 0;
 
       return `
-        <div class="prog-group-card" style="border-left:4px solid ${gc.color}; margin-bottom:12px">
+        <div class="prog-group-card" style="border-left:4px solid ${headerBorderColor}; margin-bottom:12px">
           <div class="prog-group-header" style="background:${gc.bg}; padding:12px 14px; border-radius:12px 12px 0 0">
             <div class="prog-group-title" style="color:${gc.color}; font-size:16px">${label}${subjectBadge}
               ${headerDateStr}
