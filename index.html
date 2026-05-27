@@ -8712,7 +8712,26 @@ function renderStudentProgressContent(targetId) {
     }
 
     const cardsHtml = sessions.map(session => {
-      const { label, gc, date, topics: sessionTopics } = session;
+      const { label, gc: originalGc, date, topics: sessionTopics } = session;
+      
+      let gc = { ...originalGc };
+      // 학생 계정인 경우에만 월별 색상(내 숙제와 동일) 적용
+      if (currentUser && currentUser.role === 'student') {
+        let yyyyMm = '';
+        if (date && date !== '등록 일 안됨' && date.length >= 7) {
+          yyyyMm = date.slice(0, 7);
+        } else if (sessionTopics.length > 0 && sessionTopics[0].createdAt && sessionTopics[0].createdAt.length >= 7) {
+          yyyyMm = sessionTopics[0].createdAt.slice(0, 7);
+        }
+        
+        if (yyyyMm) {
+          let hash = 0;
+          for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
+          gc.color = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 55%)';
+          gc.bg = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 96%)'; // 배경은 약간 더 밝게
+        }
+      }
+
       const subjects = [...new Set(sessionTopics.map(t => t.subject).filter(Boolean))];
       const subjectBadge = subjects.length ? `<span style="font-size:13px; font-weight:700; color:${gc.color}; margin-left:6px">[${subjects.join(', ')}]</span>` : '';
       const doneItems = sessionTopics.filter(t => isProgressDoneFor(t.id, myId)).length;
