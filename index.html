@@ -758,6 +758,7 @@ body.is-instructor button[onclick="importData()"] {
     <nav class="sidebar-nav">
       <div class="nav-item" onclick="showPanel('s', 'dashboard')" id="snav-dashboard"><span>🏠</span> 대시보드</div>
       <div class="nav-item" onclick="showPanel('s', 'homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
+      <div class="nav-item" onclick="showPanel('s', 'myclasses')" id="snav-myclasses"><span>📚</span> 내 수업</div>
       <div class="nav-item" onclick="showPanel('s', 'progress')" id="snav-progress"><span>📖</span> 수업 진도</div>
       <div class="nav-item" onclick="showPanel('s', 'classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
       <div class="nav-item" onclick="showPanel('s', 'stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
@@ -794,6 +795,12 @@ body.is-instructor button[onclick="importData()"] {
       <div class="stats-row" id="s-quick-stats"></div>
       <div class="hw-list" id="s-hw-list"></div>
       <div class="submit-row" style="display:none;"><button class="btn-submit" onclick="submitHomework()">✅ 제출하기</button></div>
+    </div>
+    <div class="panel" id="s-panel-myclasses">
+      <div class="panel-title">내 수업 목록</div>
+      <div class="panel-sub" id="s-myclass-sub"></div>
+      <div class="stats-row" id="s-myclass-stats"></div>
+      <div class="hw-list" id="s-myclass-list"></div>
     </div>
     <div class="panel" id="s-panel-classes">
       <div class="panel-title">내 수업 일정</div>
@@ -2153,12 +2160,23 @@ function getActiveStudents() {
 function getActiveRetiredStudents() {
   const all = getRetiredUsers();
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
-    const instStudentIds = currentUser.studentIds || [];
-    const instRetired = currentUser.retiredStudents || [];
+    const freshInst = getInstructors().find(i => i.id === currentUser.id) || currentUser;
+    const instStudentIds = (freshInst.studentIds || []).map(String);
+    const instRetired = freshInst.retiredStudents || [];
     const instRetiredIds = instRetired.map(x => x.id);
+    const instSubjects = (freshInst.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
+    const instSchools = (freshInst.schools || '').split(',').filter(Boolean);
+    const isMatchedToInstructor = s => {
+      if (instStudentIds.includes(String(s.id)) || instRetiredIds.includes(s.id)) return true;
+      const sSubjects = (s.subject || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
+      const subjectMatch = instSubjects.length > 0 && sSubjects.some(sub => instSubjects.includes(sub));
+      const schoolMatch = instSchools.length > 0 && instSchools.some(key => isStudentInSchoolGrade(s, key));
+      if (instSchools.length && instSubjects.length) return subjectMatch && schoolMatch;
+      return subjectMatch || schoolMatch;
+    };
     
     // 강사의 퇴원생: 전체 퇴원생 중 강사와 연관된 학생 + 전체 재원생 중 강사에게만 퇴원된 학생
-    const globallyRetired = all.filter(s => instStudentIds.includes(s.id) || instRetiredIds.includes(s.id));
+    const globallyRetired = all.filter(isMatchedToInstructor);
     
     const activeSharedButRetiredHere = getUsers().filter(u => u.role === 'student' && instRetiredIds.includes(u.id))
       .map(u => {
@@ -2166,7 +2184,8 @@ function getActiveRetiredStudents() {
         return { ...u, retiredAt: rInfo ? rInfo.retiredAt : (u.retiredAt || '') };
       });
       
-    return [...globallyRetired, ...activeSharedButRetiredHere];
+    const merged = [...globallyRetired, ...activeSharedButRetiredHere];
+    return merged.filter((s, idx, arr) => arr.findIndex(x => x.id === s.id) === idx);
   }
   return all;
 }
@@ -2895,6 +2914,59 @@ const getProgressTopics = () => JSON.parse(localStorage.getItem('hwapp_progress_
 const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]');
 const saveProgressTopics = d => localStorage.setItem('hwapp_progress_topics', JSON.stringify(d));
 const saveProgressCompletions = d => localStorage.setItem('hwapp_progress_completions', JSON.stringify(d));
+function getLinkedProgressHomeworkIds() {
+  return new Set(getProgressTopics().map(t => t && t.hwId).filter(Boolean).map(String));
+}
+function getStudentLinkedProgressHomeworkIds(studentId) {
+  const myId = String(studentId || '');
+  const students = getUsers().filter(u => u.role === 'student');
+  const currentStudent = students.find(u => String(u.id) === myId);
+  if (!currentStudent) return new Set();
+
+  const studentGroups = getStudentGroups();
+  const allClassSeries = getAllClassSeries();
+  const myGroups = studentGroups.filter(g => (g.studentIds || []).map(String).includes(myId));
+  const myGroupIds = myGroups.map(g => String(g.id));
+  const myClassSeries = allClassSeries.filter(cs =>
+    (cs.assignedTo && cs.assignedTo.map(String).includes(myId)) ||
+    (cs.groupIds && cs.groupIds.some(gid => myGroupIds.includes(String(gid))))
+  );
+  const myEntityIds = new Set([...myGroupIds, ...myClassSeries.map(cs => String(cs.id))]);
+
+  const resolveEntityId = t => {
+    let eid = String(t.groupId || '');
+    if (!eid) return '';
+    let cs = allClassSeries.find(c => String(c.id) === eid);
+    if (!cs && eid.startsWith('reg-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 5) {
+        const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+        cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && (c.groupIds || []).slice().sort().join(',') === gids.split('-').sort().join(','));
+      }
+    }
+    if (!cs && eid.startsWith('single-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 3) {
+        const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+        cs = allClassSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && (c.groupIds || []).slice().sort().join(',') === gids.split('-').sort().join(','));
+      }
+    }
+    return cs ? String(cs.id) : eid;
+  };
+
+  const sSubjects = (currentStudent.subject || '').split(',').map(x => x.trim()).filter(Boolean);
+  const linkedHwIds = new Set();
+  getProgressTopics().forEach(t => {
+    if (!t || !t.hwId) return;
+    const entityId = resolveEntityId(t);
+    if (!myEntityIds.has(entityId)) return;
+    if (t.assignedTo && t.assignedTo.length > 0 && !t.assignedTo.map(String).includes(myId)) return;
+    if (t.subject && sSubjects.length > 0 && !sSubjects.includes(t.subject.trim())) return;
+    if (t.grade && currentStudent.grade && currentStudent.grade.trim() !== t.grade.trim()) return;
+    linkedHwIds.add(String(t.hwId));
+  });
+  return linkedHwIds;
+}
 
 function getAllClassSeries() {
   const classes = getVisibleClasses();
@@ -2921,6 +2993,8 @@ function getAllClassSeries() {
         assignedTo: c.assignedTo || [],
         dateSample: c.date, // fallback date
         colorIndex: c.colorIndex === undefined ? '' : c.colorIndex,
+        instructorId: c.instructorId || '',
+        instructorColorIndex: c.instructorColorIndex === undefined ? '' : c.instructorColorIndex,
         instructorName: c.instructorName || ''
       };
     }
@@ -3612,6 +3686,7 @@ function showPanel(who,name){
   if(who==='a'&&name==='dashboard') renderDashboard('a');
   if(who==='a'&&name==='manage') renderAdminManage();
   if(who==='s'&&name==='homework') renderStudentHomework();
+  if(who==='s'&&name==='myclasses') renderStudentMyClasses();
   if(who==='s'&&name==='stats')renderStudentStats();
   if(who==='a'&&name==='students'){
     renderAdminStudents();
@@ -3705,20 +3780,20 @@ function renderDashboard(who) {
   // 학생: 이번 주 내 마감 + 아직 기한 안 지난 숙제 / 관리자: 오늘 마감 숙제
   let filteredHws;
   if (isStudent) {
-    // 이번 주 일요일 계산 (이번 주 = 오늘 포함 이번 주 일~토)
+    // 이번 주 숙제 = 이미 지난 마감은 제외하고 오늘부터 7일 안에 마감되는 숙제.
+    const linkedHwIds = getStudentLinkedProgressHomeworkIds(currentUser.id);
     const weekEnd = new Date(today);
-    const day = today.getDay(); // 0=일, 6=토
-    weekEnd.setDate(today.getDate() + (6 - day)); // 이번 주 토요일
+    weekEnd.setDate(today.getDate() + 7);
     weekEnd.setHours(23, 59, 59, 999);
     filteredHws = hws.filter(h => {
       if (!h.dueDate) return false;
-      if (!(h.assignedTo || []).includes(currentUser.id)) return false;
+      if (!linkedHwIds.has(String(h.id))) return false;
+      if (!(h.assignedTo || []).map(String).includes(String(currentUser.id))) return false;
       const p = h.dueDate.split('-');
       const due = new Date(+p[0], +p[1]-1, +p[2]);
       due.setHours(0, 0, 0, 0);
-      // 마감일이 오늘 이후(오늘 포함)이면서 이번 주 토요일 이내
       return due >= today && due <= weekEnd;
-    });
+    }).sort((a,b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
   } else {
     filteredHws = hws.filter(h => {
       if (!h.dueDate || h.dueDate !== todayStr) return false;
@@ -3755,7 +3830,7 @@ function renderDashboard(who) {
         const badgeText = d ? '완료' : (diff !== null ? 'D-' + diff : '진행중');
         
         return `
-          <div class="admin-hw-item" style="cursor:pointer; margin-bottom:8px; align-items:flex-start; ${chk?'background:var(--success-bg); border-color:var(--success);':''}" onclick="toggleCheck('${h.id}',${d})">
+          <div class="admin-hw-item" style="cursor:pointer; margin-bottom:8px; align-items:flex-start;" onclick="toggleCheck('${h.id}',${d})">
             <div style="display:flex; align-items:flex-start; gap:10px; width:100%">
               <div class="hw-checkbox ${chk ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0; margin-top:2px"></div>
               <div class="admin-hw-info" style="flex:1">
@@ -3783,7 +3858,8 @@ function renderDashboardProgress() {
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
 function renderStudentHomework(){
-  const hws=getHomeworks().filter(h=>h.assignedTo.includes(currentUser.id));
+  const linkedHwIds = getStudentLinkedProgressHomeworkIds(currentUser.id);
+  const hws=getHomeworks().filter(h=>linkedHwIds.has(String(h.id)) && (h.assignedTo || []).map(String).includes(String(currentUser.id)));
   const studentGroups=getStudentGroups();
   const comps=getCompletions();
   const isDone=id=>comps.some(c=>c.homeworkId===id&&c.studentId===currentUser.id);
@@ -3802,6 +3878,26 @@ function renderStudentHomework(){
   const list=document.getElementById('s-hw-list');
   if(!hws.length){list.innerHTML='<div class="empty-state"><div class="ei">🎉</div><div>배정된 숙제가 없습니다</div></div>';return;}
   
+  const getHomeworkMonthVisual = (dateStr) => {
+    if (!dateStr || dateStr.length < 7) {
+      return { key:'date-unknown', label:'날짜 미정', strip:'미정', color:'#64748b', bg:'#f1f5f9', text:'#475569' };
+    }
+    const yyyyMm = dateStr.slice(0, 7);
+    const yyyy = yyyyMm.slice(0, 4);
+    const mm = parseInt(yyyyMm.slice(5, 7), 10);
+    let hash = 0;
+    for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash * 137) % 360;
+    return {
+      key: yyyyMm,
+      label: `${yyyy}년 ${mm}월`,
+      strip: `${yyyy}년<br>${mm}월`,
+      color: `hsl(${hue}, 75%, 42%)`,
+      bg: `hsl(${hue}, 95%, 90%)`,
+      text: `hsl(${hue}, 85%, 30%)`
+    };
+  };
+
   const hwGroups=buildGroups(hws,studentGroups);
   list.innerHTML=hwGroups.map(g=>{
     const headerStyle = `style="background:${g.gc.bg}; border-left-color:${g.gc.color}; color:${g.gc.color}"`;
@@ -3813,7 +3909,7 @@ function renderStudentHomework(){
       if (vA < vB) return 1;
       return 0;
     });
-    const items=sortedItems.map(h=>{
+    const renderItem = h=>{
       const d=isDone(h.id);
       const chk=pendingChecks[h.id]!==undefined?pendingChecks[h.id]:d;
       let diff = null;
@@ -3825,25 +3921,15 @@ function renderStudentHomework(){
       }
       const badgeClass = (diff !== null && diff <= 2 && !chk) ? 'badge-danger' : 'badge-pending';
       const badgeText = chk ? '완료' : (d ? '취소 예정' : (diff !== null ? 'D-' + diff : '미완료'));
-      const dateStr = h.createdAt || '';
-      let monthStr = '미정';
-      let monthColor = '#cbd5e1';
-      if (dateStr.length >= 7) {
-        const yyyyMm = dateStr.slice(0, 7);
-        const yyyy = yyyyMm.slice(0, 4);
-        const mm = parseInt(yyyyMm.slice(5, 7), 10);
-        monthStr = yyyy + '년<br>' + mm + '월';
-        let hash = 0;
-        for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
-        monthColor = 'hsl(' + (Math.abs(hash * 137) % 360) + ', 65%, 55%)';
-      }
+      const dueColor = diff !== null && diff < 0 ? 'inherit' : 'var(--danger)';
+      const month = getHomeworkMonthVisual(h.createdAt || '');
       return `
-        <div class="detail-hw-item" style="padding:0; overflow:hidden; align-items:stretch; cursor:pointer; margin-bottom:8px; ${chk ? 'border-color:var(--success);' : ''}" onclick="toggleCheck('${h.id}',${d})">
-          <div style="flex:0 0 70px; background:${monthColor}; color:white; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; font-weight:700; line-height:1.4;">${monthStr}</div>
-          <div style="flex:1; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; ${chk ? 'background:var(--success-bg);' : ''}">
+        <div class="detail-hw-item" style="padding:0; overflow:hidden; align-items:stretch; cursor:pointer; margin-bottom:8px;" onclick="toggleCheck('${h.id}',${d})">
+          <div style="flex:0 0 70px; background:${month.color}; color:white; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; font-weight:700; line-height:1.4;">${month.strip}</div>
+          <div style="flex:1; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
             <div class="detail-hw-info">
               <div class="detail-hw-title" style="${chk ? 'color:var(--text-muted)' : ''}">${h.title}</div>
-              <div class="detail-hw-meta">${h.subject ? '<span class="cat-tag' + (h.subject.startsWith('수학') ? ' math' : '') + '" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">' + h.subject + '</span>' : ''}출제일: ${h.createdAt || '알수없음'} · <span style="color:var(--danger); font-weight:700">마감: ${h.dueDate || '미정'}</span></div>
+              <div class="detail-hw-meta">${h.subject ? '<span class="cat-tag' + (h.subject.startsWith('수학') ? ' math' : '') + '" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">' + h.subject + '</span>' : ''}출제일: ${h.createdAt || '알수없음'} · <span style="color:${dueColor}; font-weight:700">마감: ${h.dueDate || '미정'}</span></div>
             </div>
             <div class="detail-pct-wrap">
               <span class="detail-status hw-badge ${chk ? 'badge-done' : badgeClass}">${badgeText}</span>
@@ -3852,10 +3938,189 @@ function renderStudentHomework(){
           </div>
         </div>
       `;
+    };
+    const monthGroups = {};
+    sortedItems.forEach(h => {
+      const month = getHomeworkMonthVisual(h.createdAt || '');
+      if (!monthGroups[month.key]) monthGroups[month.key] = { month, items: [] };
+      monthGroups[month.key].items.push(h);
+    });
+    const items = Object.values(monthGroups).map(monthGroup => {
+      const monthHeaderStyle = `style="background:${monthGroup.month.bg}; border-left-color:${monthGroup.month.color}; color:${monthGroup.month.text}"`;
+      const monthHeader = `<div class="cat-group-header" ${monthHeaderStyle}>📚 ${monthGroup.month.label}<span class="cat-count">${monthGroup.items.length}개</span></div>`;
+      return monthHeader + monthGroup.items.map(renderItem).join('');
     }).join('');
     return header+items;
   }).join('');
   return;
+}
+
+function renderStudentMyClasses(){
+  const myId = currentUser ? String(currentUser.id) : '';
+  const list = document.getElementById('s-myclass-list');
+  const studentGroups = getStudentGroups();
+  const students = getUsers().filter(u => u.role === 'student');
+  const currentStudent = students.find(u => String(u.id) === myId);
+  const myGroups = studentGroups.filter(g => (g.studentIds || []).map(String).includes(myId));
+  const myGroupIds = myGroups.map(g => String(g.id));
+  const allClassSeries = getAllClassSeries();
+  const topics = getProgressTopics();
+
+  if (!currentStudent) {
+    document.getElementById('s-myclass-sub').textContent = '학생 정보를 찾을 수 없습니다.';
+    document.getElementById('s-myclass-stats').innerHTML = '';
+    list.innerHTML = '<div class="empty-state"><div class="ei">📚</div><div>학생 정보를 찾을 수 없습니다</div></div>';
+    return;
+  }
+
+  const resolvedTopics = topics.map(t => {
+    let eid = String(t.groupId || '');
+    let cs = allClassSeries.find(c => String(c.id) === eid);
+    if (!cs && eid.startsWith('reg-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 5) {
+        const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+        cs = allClassSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && (c.groupIds || []).slice().sort().join(',') === gids.split('-').sort().join(','));
+      }
+    }
+    return { ...t, effectiveEntityId: cs ? String(cs.id) : eid };
+  });
+
+  const myClassSeries = allClassSeries.filter(cs =>
+    (cs.assignedTo && cs.assignedTo.map(String).includes(myId)) ||
+    (cs.groupIds && cs.groupIds.some(gid => myGroupIds.includes(String(gid))))
+  );
+  const myEntityIds = [...new Set([...myGroupIds, ...myClassSeries.map(cs => String(cs.id))])];
+  const sessions = [];
+
+  myEntityIds.forEach(entityId => {
+    const entityTopics = resolvedTopics.filter(t => t.effectiveEntityId === entityId);
+    if (!entityTopics.length) return;
+
+    const cs = allClassSeries.find(c => String(c.id) === entityId);
+    const grp = studentGroups.find(g => String(g.id) === entityId);
+    const label = cs ? (cs.label || cs.title) : (grp ? grp.name : '소속 반');
+    const manualIdx = cs && cs.colorIndex !== undefined && cs.colorIndex !== null && cs.colorIndex !== '' ? cs.colorIndex : null;
+    const gc = getGroupColor(entityId, cs ? (cs.title || cs.label) : (grp ? grp.name : null), manualIdx);
+    const datesMap = {};
+
+    entityTopics.forEach(t => {
+      const d = t.targetDate || '날짜 미지정';
+      if (!datesMap[d]) datesMap[d] = [];
+      datesMap[d].push(t);
+    });
+
+    Object.keys(datesMap).forEach(date => {
+      const filteredTopics = datesMap[date].filter(t => {
+        if (t.assignedTo && t.assignedTo.length > 0) return t.assignedTo.map(String).includes(myId);
+        if (t.subject) {
+          const sSubjs = (currentStudent.subject || '').split(',').map(x => x.trim()).filter(Boolean);
+          if (sSubjs.length > 0 && !sSubjs.includes(t.subject.trim())) return false;
+        }
+        if (t.grade && currentStudent.grade && currentStudent.grade.trim() !== t.grade.trim()) return false;
+        return true;
+      });
+
+      if (filteredTopics.length > 0) {
+        sessions.push({
+          entityId, label, gc, date, topics: filteredTopics,
+          sortDate: date === '날짜 미지정' ? '0000-00-00' : date
+        });
+      }
+    });
+  });
+
+  sessions.sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.label.localeCompare(b.label));
+
+  const total = sessions.length;
+  const totalTopics = sessions.reduce((sum, s) => sum + s.topics.length, 0);
+  const doneTopics = sessions.reduce((sum, s) => sum + s.topics.filter(t => isProgressDoneFor(t.id, myId)).length, 0);
+  const pct = totalTopics ? Math.round(doneTopics / totalTopics * 100) : 0;
+
+  document.getElementById('s-myclass-sub').textContent = `총 ${total}개 수업 · 진도 ${totalTopics}개`;
+  document.getElementById('s-myclass-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">전체 진도 달성률</div><div class="stat-pct">${pct}%</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div class="stat-detail">${doneTopics} / ${totalTopics} 완료</div></div>
+    <div class="stat-card"><div class="stat-label">수업</div>
+      <div class="stat-pct" style="-webkit-text-fill-color:var(--primary);background:none">${total}</div>
+      <div class="stat-detail">진도 등록 수업</div></div>
+    <div class="stat-card"><div class="stat-label">미완료 진도</div>
+      <div class="stat-pct" style="-webkit-text-fill-color:var(--warning);background:none">${totalTopics - doneTopics}</div>
+      <div class="stat-detail">남은 진도 항목</div></div>`;
+
+  if (!sessions.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ei">📚</div><div>배정된 수업이 없습니다</div></div>';
+    return;
+  }
+
+  const getMonthVisual = (dateStr) => {
+    if (!dateStr || dateStr.length < 7) {
+      return { key:'날짜 미정', label:'날짜 미정', strip:'미정', color:'#cbd5e1', bg:'#f8fafc', text:'var(--text-muted)' };
+    }
+    const yyyyMm = dateStr.slice(0, 7);
+    const yyyy = yyyyMm.slice(0, 4);
+    const mm = parseInt(yyyyMm.slice(5, 7), 10);
+    let hash = 0;
+    for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash * 137) % 360;
+    return {
+      key: yyyyMm,
+      label: `${yyyy}년 ${mm}월`,
+      strip: `${yyyy}년<br>${mm}월`,
+      color: `hsl(${hue}, 75%, 42%)`,
+      bg: `hsl(${hue}, 95%, 90%)`,
+      text: `hsl(${hue}, 85%, 30%)`
+    };
+  };
+
+  const grouped = {};
+  sessions.forEach(session => {
+    const month = getMonthVisual(session.date);
+    if (!grouped[month.key]) grouped[month.key] = { month, sessions: [] };
+    grouped[month.key].sessions.push(session);
+  });
+
+  list.innerHTML = Object.keys(grouped).sort((a,b) => b.localeCompare(a)).map(monthKey => {
+    const monthGroup = grouped[monthKey];
+    const headerStyle = `style="background:${monthGroup.month.bg}; border-left-color:${monthGroup.month.color}; color:${monthGroup.month.text}"`;
+    const header = `<div class="cat-group-header" ${headerStyle}>📚 ${monthGroup.month.label}<span class="cat-count">${monthGroup.sessions.length}개</span></div>`;
+
+    const items = monthGroup.sessions.map(session => {
+      const done = session.topics.filter(t => isProgressDoneFor(t.id, myId)).length;
+      const sessionPct = session.topics.length ? Math.round(done / session.topics.length * 100) : 0;
+      const subjects = [...new Set(session.topics.map(t => t.subject).filter(Boolean))];
+      const dateLabel = session.date !== '날짜 미지정' ? session.date : '날짜 미정';
+      const dObj = new Date(session.date);
+      const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
+      const month = getMonthVisual(session.date);
+      const topicPreview = session.topics.slice(0, 3).map(t => t.topic).join(', ');
+      const badgeClass = sessionPct === 100 ? 'badge-done' : 'badge-pending';
+      const badgeText = sessionPct === 100 ? '완료' : sessionPct + '%';
+
+      return `
+        <div class="detail-hw-item" style="padding:0; overflow:hidden; align-items:stretch; cursor:default; margin-bottom:8px;">
+          <div style="flex:0 0 70px; background:${month.color}; color:white; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; font-weight:700; line-height:1.4;">${month.strip}</div>
+          <div style="flex:1; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="detail-hw-info">
+              <div class="detail-hw-title">${session.label}</div>
+              <div class="detail-hw-meta">
+                ${subjects.map(sub => '<span class="cat-tag' + (sub.startsWith('수학') ? ' math' : '') + '" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">' + sub + '</span>').join('')}
+                수업일: ${dateLabel}${dayName ? ' (' + dayName + ')' : ''} · 진도 ${session.topics.length}개
+              </div>
+              <div class="detail-hw-meta" style="margin-top:4px; color:${month.color}">${topicPreview}${session.topics.length > 3 ? ' 외 ' + (session.topics.length - 3) + '개' : ''}</div>
+            </div>
+            <div class="detail-pct-wrap">
+              <span class="detail-status hw-badge ${badgeClass}">${badgeText}</span>
+              <div class="hw-checkbox ${sessionPct === 100 ? 'checked' : ''}" style="width:22px; height:22px; margin-top:6px;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return header + items;
+  }).join('');
 }
 function toggleCheck(hId,done){
   if(event) event.stopPropagation();
@@ -8778,9 +9043,9 @@ function renderStudentProgressContent(targetId) {
         const isDone = isProgressDoneFor(t.id, myId);
         const subjTag = t.subject ? `<span class="cat-tag${t.subject.startsWith('수학')?' math':''}" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">${t.subject}</span>` : '';
         return `
-          <div class="admin-hw-item" style="cursor:pointer; align-items:flex-start; ${isDone?'background:#eff6ff; border-color:#3b82f6;':''}" onclick="toggleStudentProgress('${t.id}')">
+          <div class="admin-hw-item" style="cursor:pointer; align-items:flex-start;" onclick="toggleStudentProgress('${t.id}')">
             <div style="display:flex; align-items:flex-start; gap:10px; width:100%">
-              <div class="hw-checkbox ${isDone ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0; margin-top:2px; ${isDone ? 'background:#3b82f6; border-color:#3b82f6;' : ''}"></div>
+              <div class="hw-checkbox ${isDone ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0; margin-top:2px"></div>
               <div class="admin-hw-info" style="flex:1">
                 <div class="prog-topic-title" style="${isDone?'color:var(--text-muted)':''}">📖 ${t.topic}${t.memo ? ' <span style="font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-bg);padding:1px 6px;border-radius:99px;vertical-align:middle;">📝 수업메모</span>' : ''}</div>
                 <div class="prog-topic-meta">${subjTag}${t.totalPages ? t.totalPages + '페이지 · ' : ''}등록: ${t.targetDate || t.createdAt}</div>
@@ -8806,7 +9071,7 @@ function renderStudentProgressContent(targetId) {
         }
         const badgeClass = (diff !== null && diff <= 2) ? 'badge-danger' : 'badge-pending';
         return `
-          <div class="admin-hw-item" style="cursor:pointer; align-items:flex-start; ${isHwDone?'background:var(--success-bg); border-color:var(--success);':''}" onclick="toggleCheck('${h.id}',${isHwDone})">
+          <div class="admin-hw-item" style="cursor:pointer; align-items:flex-start;" onclick="toggleCheck('${h.id}',${isHwDone})">
             <div style="display:flex; align-items:flex-start; gap:10px; width:100%">
               <div class="hw-checkbox ${isHwDone ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0; margin-top:2px"></div>
               <div class="admin-hw-info" style="flex:1">
