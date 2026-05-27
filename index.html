@@ -3565,7 +3565,7 @@ function showPage(role){
 
 // ── NAV ──────────────────────────────────────────────────
 function getAdminHWItemHtml(h, users, comps, options = {}) {
-  const { showActions = false, showStudentList = false, onEdit = null, dynamicStudents = null } = options;
+  const { showActions = false, showStudentList = false, onEdit = null, dynamicStudents = null, studentNameAction = 'detail' } = options;
   const today = new Date(); today.setHours(0,0,0,0);
 
   const title = h.title || '(제목 없음)';
@@ -3621,7 +3621,10 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
       if (!s) return;
       const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
       const nameColor = done ? 'var(--success)' : 'var(--text)';
-      const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();openStudentDetail('${sid}')">${s.name}</span>`;
+      const clickAction = studentNameAction === 'toggleHomework'
+        ? `toggleHomeworkCompletionFromProgress('${h.id}', '${sid}', ${done})`
+        : `openStudentDetail('${sid}')`;
+      const nameHtml = `<span style="font-size:12px; font-weight:600; cursor:pointer; color:${nameColor}; text-decoration:underline dotted; margin-right:4px" onclick="event.stopPropagation();${clickAction}">${s.name}</span>`;
       if (done) doneList.push(nameHtml);
       else notDoneList.push(nameHtml);
     });
@@ -3766,16 +3769,22 @@ function renderDashboard(who) {
     renderDashboardProgress();
   }
 
+  renderDashboardHomeworkList(who);
+}
+
+function renderDashboardHomeworkList(who) {
+  const isStudent = who === 's';
   const hwListId = isStudent ? 's-dashboard-hw-list' : 'a-dashboard-hw-list';
   const listEl = document.getElementById(hwListId);
+  if (!listEl) return;
   const hws = getVisibleHomeworks();
   const studentGroups = getStudentGroups();
   const comps = getCompletions();
-  const classes = getVisibleClasses().filter(c => c.type === 'regular');
   const users = getUsers();
   
   const today = new Date();
   today.setHours(0,0,0,0);
+  const selectedDateStr = isStudent ? formatDateLocal(today) : formatDateLocal(currentCalDate || today);
   
   // 학생: 이번 주 내 마감 + 아직 기한 안 지난 숙제 / 관리자: 오늘 마감 숙제
   let filteredHws;
@@ -3796,7 +3805,7 @@ function renderDashboard(who) {
     }).sort((a,b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
   } else {
     filteredHws = hws.filter(h => {
-      if (!h.dueDate || h.dueDate !== todayStr) return false;
+      if (!h.dueDate || h.dueDate !== selectedDateStr) return false;
       return true;
     });
   }
@@ -3850,6 +3859,16 @@ function renderDashboard(who) {
 
     return header + items;
   }).join('');
+}
+
+function refreshDashboardHomeworkForCalendar(containerId, isStudent) {
+  if (!isStudent && containerId === 'ad-class-view-content') renderDashboardHomeworkList('a');
+}
+
+function resetCalendarDate(containerId, isStudent) {
+  currentCalDate = new Date();
+  renderClassView(containerId.split('-')[0], isStudent);
+  refreshDashboardHomeworkForCalendar(containerId, isStudent);
 }
 
 function renderDashboardProgress() {
@@ -4865,6 +4884,19 @@ function toggleHWStudentDone(hwId,sid,isDone){
   renderDashboard(currentUser.role==='student'?'s':'a');
   renderAdminStats();
   showToast(isDone?'완료가 취소되었습니다.':'✅ 완료로 표시했습니다!');
+}
+function toggleHomeworkCompletionFromProgress(hwId, sid, isDone) {
+  let comps = getCompletions();
+  if (isDone) {
+    comps = comps.filter(c => !(c.homeworkId === hwId && c.studentId === sid));
+  } else {
+    comps.push({ homeworkId: hwId, studentId: sid, completedAt: formatDateLocal(new Date()) });
+  }
+  saveCompletions(comps);
+  renderProgressContent();
+  renderDashboard(currentUser.role === 'student' ? 's' : 'a');
+  renderAdminStats();
+  showToast(isDone ? '숙제 완료가 취소되었습니다.' : '✅ 숙제 완료로 표시했습니다!');
 }
 function closeHWModal(e){
   if(e.target===document.getElementById('hwStudentModal'))
@@ -7208,6 +7240,7 @@ function switchClassView(who, view, btn) {
   
   const isStudent = (who === 's' || who === 'sd');
   renderClassView(who, isStudent);
+  refreshDashboardHomeworkForCalendar(who + '-class-view-content', isStudent);
 }
 
 function renderClassView(who, isStudent) {
@@ -7239,7 +7272,7 @@ function renderDailySchedule(containerId, isStudent) {
       <div class="cal-title">${currentCalDate.getFullYear()}년 ${currentCalDate.getMonth()+1}월 ${currentCalDate.getDate()}일 <span style="color:${dayColor}">(${dayName})</span></div>
       <div class="cal-nav">
         <button class="cal-btn" onclick="changeDate('${containerId}', -1, ${isStudent})">◀</button>
-        <button class="cal-btn" onclick="currentCalDate=new Date();renderDailySchedule('${containerId}', ${isStudent})">오늘</button>
+        <button class="cal-btn" onclick="resetCalendarDate('${containerId}', ${isStudent})">오늘</button>
         <button class="cal-btn" onclick="changeDate('${containerId}', 1, ${isStudent})">▶</button>
       </div>
     </div>
@@ -7303,7 +7336,7 @@ function renderWeeklySchedule(containerId, isStudent) {
       <div class="cal-title" style="text-align:center">${start.getMonth()+1}/${start.getDate()}(${startDay}) ~ ${end.getMonth()+1}/${end.getDate()}(${endDay})</div>
       <div class="cal-nav" style="width:100%; display:flex; justify-content:space-between">
         <button class="cal-btn" onclick="changeDate('${containerId}', -7, ${isStudent})">◀</button>
-        <button class="cal-btn" style="flex:1; margin:0 6px" onclick="currentCalDate=new Date();renderWeeklySchedule('${containerId}', ${isStudent})">이번주</button>
+        <button class="cal-btn" style="flex:1; margin:0 6px" onclick="resetCalendarDate('${containerId}', ${isStudent})">이번주</button>
         <button class="cal-btn" onclick="changeDate('${containerId}', 7, ${isStudent})">▶</button>
       </div>
     </div>
@@ -7360,6 +7393,7 @@ function renderWeeklySchedule(containerId, isStudent) {
 function changeDate(containerId, delta, isStudent) {
   currentCalDate.setDate(currentCalDate.getDate() + delta);
   renderClassView(containerId.split('-')[0], isStudent);
+  refreshDashboardHomeworkForCalendar(containerId, isStudent);
 }
 
 function renderUniversalCalendar(containerId, isStudent) {
@@ -7379,7 +7413,7 @@ function renderUniversalCalendar(containerId, isStudent) {
       <div class="cal-title">${year}년 ${month + 1}월</div>
       <div class="cal-nav">
         <button class="cal-btn" onclick="changeMonth('${containerId}', -1, ${isStudent})">◀</button>
-        <button class="cal-btn" onclick="currentCalDate=new Date();renderUniversalCalendar('${containerId}', ${isStudent})">오늘</button>
+        <button class="cal-btn" onclick="resetCalendarDate('${containerId}', ${isStudent})">오늘</button>
         <button class="cal-btn" onclick="changeMonth('${containerId}', 1, ${isStudent})">▶</button>
       </div>
     </div>
@@ -7444,6 +7478,7 @@ function renderUniversalCalendar(containerId, isStudent) {
 function changeMonth(containerId, delta, isStudent) {
   currentCalDate.setMonth(currentCalDate.getMonth() + delta);
   renderClassView(containerId.split('-')[0], isStudent);
+  refreshDashboardHomeworkForCalendar(containerId, isStudent);
 }
 
 function addClass() {
@@ -9392,7 +9427,7 @@ function renderProgressContent(targetId) {
       if(!t.hwId) return '';
       const h = hws.find(x => x.id === t.hwId);
       if(!h) return '';
-      return getAdminHWItemHtml(h, students, hwComps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: true, dynamicStudents: studentsInEntity });
+      return getAdminHWItemHtml(h, students, hwComps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: true, dynamicStudents: studentsInEntity, studentNameAction: 'toggleHomework' });
     }).join('');
 
     const topicRows = sessionTopics.map(t => {
