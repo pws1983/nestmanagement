@@ -691,6 +691,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .modal-form-row input[type="text"], .modal-form-row select, .modal-form-row textarea {
     width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-family: inherit; font-size: 14px; outline: none;
   }
+  .exam-unit-list { display:flex; flex-direction:column; gap:8px; }
+  .exam-unit-card { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
+  .exam-unit-card input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-family:inherit; font-size:13px; outline:none; }
+  .exam-unit-card .unit-index { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:var(--primary-bg); color:var(--primary); font-size:12px; font-weight:800; flex-shrink:0; }
+  .exam-unit-add { width:100%; margin-top:8px; padding:8px 10px; border:1px dashed var(--primary); border-radius:8px; background:#fff; color:var(--primary); font-size:12px; font-weight:800; cursor:pointer; }
   /* COLOR PICKER */
   .color-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
   .color-chip { 
@@ -741,7 +746,7 @@ body.is-instructor button[onclick="importData()"] {
     </div>
     <button class="btn btn-primary" style="margin-top:8px" onclick="doLogin()">로그인</button>
     <div class="login-hint">
-      <p><strong>관리자:</strong> admin / admin123</p>
+      <p><strong>관리자:</strong> admin / 1111</p>
       <p><strong>학생 예시:</strong> 김민준, 이서연, 박지호 / 1234</p>
     </div>
   </div>
@@ -847,7 +852,6 @@ body.is-instructor button[onclick="importData()"] {
       <div class="nav-item" onclick="showPanel('a','classes')" id="anav-classes"><span>📅</span> 수업 목록</div>
       <div class="nav-item" onclick="showPanel('a','exam')" id="anav-exam"><span>🎯</span> 시험범위</div>
       <div class="nav-item" onclick="showPanel('a','progress')" id="anav-progress"><span>📖</span> 수업 진도</div>
-      <div class="nav-item" onclick="showPanel('a','manage')" id="anav-manage"><span>📋</span> 숙제 관리</div>
       <div class="nav-item" onclick="showPanel('a','learning')" id="anav-learning"><span>📖</span> 학습 관리</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학교 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
@@ -889,7 +893,10 @@ body.is-instructor button[onclick="importData()"] {
       </div>
       <div class="admin-grid" style="margin-top:20px; grid-template-columns: 1fr;">
         <div class="card">
-          <div class="section-title">📖 최근 수업 진도 <span style="font-size:12px; font-weight:normal; color:var(--text-muted); margin-left:8px">(각 반별 가장 최근 수업)</span></div>
+          <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+            <div>📖 최근 수업 진도 <span style="font-size:12px; font-weight:normal; color:var(--text-muted); margin-left:8px">(각 반별 가장 최근 수업)</span></div>
+            <div id="dashboard-progress-tabs" class="student-filter-tabs" style="margin-bottom:0"></div>
+          </div>
           <div id="a-dashboard-progress-list"></div>
         </div>
       </div>
@@ -1348,6 +1355,7 @@ body.is-instructor button[onclick="importData()"] {
       </div>
       <div class="panel-sub">전체 학생의 정보를 확인합니다. 목록을 클릭 시 추후 상세 학습 현황으로 연결할 수 있습니다.</div>
       <div class="card" style="overflow-x:auto;">
+        <div class="section-title">👥 학생별 학습 현황</div>
         <div id="learning-management-content"></div>
       </div>
     </div>
@@ -1774,11 +1782,103 @@ body.is-instructor button[onclick="importData()"] {
                 for(let y=2026; y>=2015; y--) document.write(`<option value="${y}">${y}년</option>`);
               
 // === EXAM SCOPE LOGIC ===
+function normalizeExamScope(scope) {
+  scope = scope || {};
+  return {
+    ...scope,
+    textbookUnits: Array.isArray(scope.textbookUnits) ? scope.textbookUnits : [],
+    supplementUnits: Array.isArray(scope.supplementUnits) ? scope.supplementUnits : [],
+    createdAt: scope.createdAt || scope.updatedAt || new Date().toISOString(),
+    updatedAt: scope.updatedAt || scope.createdAt || new Date().toISOString()
+  };
+}
 function getExamScopes() {
-  return JSON.parse(localStorage.getItem('hwapp_exam_scopes') || '[]');
+  const primary = localStorage.getItem('hwapp_exam_scopes');
+  const backup = localStorage.getItem('hwapp_exam_scopes_backup');
+  const raw = primary || backup || '[]';
+  try {
+    const scopes = JSON.parse(raw);
+    const normalized = Array.isArray(scopes) ? scopes.map(normalizeExamScope) : [];
+    if (!primary && backup) localStorage.setItem('hwapp_exam_scopes', JSON.stringify(normalized));
+    return normalized;
+  } catch(e) {
+    return [];
+  }
 }
 function saveExamScopes(scopes) {
-  localStorage.setItem('hwapp_exam_scopes', JSON.stringify(scopes));
+  const normalized = (Array.isArray(scopes) ? scopes : []).map(normalizeExamScope);
+  const payload = JSON.stringify(normalized);
+  localStorage.setItem('hwapp_exam_scopes', payload);
+  localStorage.setItem('hwapp_exam_scopes_backup', payload);
+}
+function escapeExamText(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+function collectExamUnits(type, includeEmpty = false) {
+  return Array.from(document.querySelectorAll(`[data-exam-unit="${type}"]`))
+    .map(input => input.value.trim())
+    .filter(value => includeEmpty || value);
+}
+function renderExamUnitCards(type, units = []) {
+  const container = document.getElementById(type === 'textbook' ? 'es-textbook-units' : 'es-supplement-units');
+  if (!container) return;
+  const label = type === 'textbook' ? '교과서 단원' : '부교재 단원';
+  const values = Array.isArray(units) && units.length ? units : [''];
+  container.innerHTML = values.map((unit, idx) => `
+    <div class="exam-unit-card">
+      <div class="unit-index">${idx + 1}</div>
+      <input type="text" data-exam-unit="${type}" value="${escapeExamText(unit)}" placeholder="${label} 입력">
+      <button type="button" class="btn-del" style="padding:6px 9px;font-size:11px" onclick="removeExamUnit('${type}', ${idx})">삭제</button>
+    </div>
+  `).join('');
+}
+function addExamUnit(type) {
+  const units = collectExamUnits(type, true);
+  units.push('');
+  renderExamUnitCards(type, units);
+}
+function removeExamUnit(type, index) {
+  const units = collectExamUnits(type, true);
+  units.splice(index, 1);
+  renderExamUnitCards(type, units.length ? units : ['']);
+}
+function renderExamUnitSummary(title, units) {
+  const cleanUnits = Array.isArray(units) ? units.map(x => String(x || '').trim()).filter(Boolean) : [];
+  if (!cleanUnits.length) return '';
+  return `
+    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center">
+      <span style="font-size:12px;font-weight:800;color:var(--text-muted)">${title}</span>
+      ${cleanUnits.map((unit, idx) => `<span class="grp-badge" style="background:#f8fafc;color:var(--text);border:1px solid var(--border)">${idx + 1}. ${escapeExamText(unit)}</span>`).join('')}
+    </div>
+  `;
+}
+function getExamScopeGroupColor(scope) {
+  const school = String(scope.school || '').trim();
+  const grade = String(scope.grade || '').trim();
+  const groups = getStudentGroups();
+  const matchedGroup = groups.find(g => {
+    const parsed = parseGroupName(g.name || '');
+    return parsed.school === school && parsed.grade === grade;
+  }) || groups.find(g => String(g.name || '').trim() === `${school} ${grade}`.trim());
+  return matchedGroup
+    ? getGroupColor(matchedGroup.id)
+    : { bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0' };
+}
+function renderExamScopeBadges(scope) {
+  const gc = getExamScopeGroupColor(scope);
+  const groupStyle = `background:${gc.bg};color:${gc.color};border:1px solid ${gc.border};margin-left:0`;
+  const subjectClass = (scope.subject || '').startsWith('수학') ? ' math' : '';
+  return `
+    <span class="grp-badge" style="${groupStyle}">${escapeExamText(scope.school)}</span>
+    <span class="grp-badge" style="${groupStyle}">${escapeExamText(scope.grade)}</span>
+    <span class="cat-tag${subjectClass}" style="margin:0">${escapeExamText(scope.subject)}</span>
+  `;
 }
 function renderExamScopes() {
   const container = document.getElementById('exam-scopes-container');
@@ -1807,9 +1907,7 @@ function renderExamScopes() {
         <button class="btn-del" onclick="deleteExamScope('${s.id}')">삭제</button>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span class="grp-badge" style="background:#e0e7ff;color:#4f46e5">${s.school}</span>
-        <span class="grp-badge" style="background:#fce7f3;color:#db2777">${s.grade}</span>
-        <span class="grp-badge" style="background:#dcfce7;color:#16a34a">${s.subject}</span>
+        ${renderExamScopeBadges(s)}
         ${currentUser.role === 'admin' ? `<span class="grp-badge" style="background:#fef3c7;color:#d97706">👨‍🏫 ${s.instructorName || '공통'}</span>` : ''}
       </div>
       <div style="font-size:16px; font-weight:800; color:var(--text); margin-top:4px">${s.targetExam} 시험범위</div>
@@ -1817,6 +1915,8 @@ function renderExamScopes() {
         <span style="font-weight:700">교과서:</span> ${s.publisher || '없음'} &nbsp;|&nbsp; 
         <span style="font-weight:700">부교재:</span> ${s.supplements || '없음'}
       </div>
+      ${renderExamUnitSummary('교과서 단원', s.textbookUnits)}
+      ${renderExamUnitSummary('부교재 단원', s.supplementUnits)}
       <div style="margin-top:8px; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.5;">${s.details || '내용 없음'}</div>
     </div>
   `).join('');
@@ -1840,7 +1940,9 @@ function openExamScopeModal() {
   document.getElementById('es-subject').value = '국어';
   document.getElementById('es-target').value = '';
   document.getElementById('es-publisher').value = '';
+  renderExamUnitCards('textbook', []);
   document.getElementById('es-supplements').value = '';
+  renderExamUnitCards('supplement', []);
   document.getElementById('es-details').value = '';
   document.getElementById('examScopeModal').classList.add('open');
 }
@@ -1872,7 +1974,9 @@ function saveExamScopeForm() {
     subject: document.getElementById('es-subject').value,
     targetExam: document.getElementById('es-target').value.trim(),
     publisher: document.getElementById('es-publisher').value.trim(),
+    textbookUnits: collectExamUnits('textbook'),
     supplements: document.getElementById('es-supplements').value.trim(),
+    supplementUnits: collectExamUnits('supplement'),
     details: document.getElementById('es-details').value.trim(),
     instructorId: instructorId,
     instructorName: instructorName,
@@ -1919,7 +2023,9 @@ function editExamScope(id) {
   document.getElementById('es-subject').value = scope.subject || '국어';
   document.getElementById('es-target').value = scope.targetExam;
   document.getElementById('es-publisher').value = scope.publisher || '';
+  renderExamUnitCards('textbook', scope.textbookUnits || []);
   document.getElementById('es-supplements').value = scope.supplements || '';
+  renderExamUnitCards('supplement', scope.supplementUnits || []);
   document.getElementById('es-details').value = scope.details || '';
   document.getElementById('examScopeModal').classList.add('open');
 }
@@ -1931,15 +2037,26 @@ function deleteExamScope(id) {
   renderExamScopes();
 }
 
+function getExamScopeProgressLines(scope) {
+  const textbookLines = Array.isArray(scope.textbookUnits)
+    ? scope.textbookUnits.map(u => String(u || '').trim()).filter(Boolean).map(u => `교과서: ${u}`)
+    : [];
+  const supplementLines = Array.isArray(scope.supplementUnits)
+    ? scope.supplementUnits.map(u => String(u || '').trim()).filter(Boolean).map(u => `부교재: ${u}`)
+    : [];
+  const detailLines = (scope.details || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return [...textbookLines, ...supplementLines, ...detailLines];
+}
+
 function generateProgressFromScope(scopeId, studentId, subject) {
   const scope = getExamScopes().find(x => x.id === scopeId);
   if(!scope) return;
   
   if(!confirm(`[${scope.targetExam}] 시험범위 내용을 진도 항목으로 자동 변환하여 추가하시겠습니까?\n(줄바꿈을 기준으로 각각의 진도 항목이 생성됩니다)`)) return;
 
-  const lines = (scope.details || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines = getExamScopeProgressLines(scope);
   if(!lines.length) {
-    alert("상세 범위 내용이 비어있습니다.");
+    alert("입력된 시험범위 내용이 없습니다.");
     return;
   }
 
@@ -2042,7 +2159,7 @@ function generateProgressFromScope(scopeId, studentId, subject) {
 <script>
 // ── DATA ─────────────────────────────────────────────────
 const DEFAULT_USERS=[
-  {id:'admin',name:'관리자',password:'admin123',role:'admin'},
+  {id:'admin',name:'관리자',password:'1111',role:'admin'},
   {id:'student1',name:'김민준',password:'1234',role:'student'},
   {id:'student2',name:'이서연',password:'1234',role:'student'},
   {id:'student3',name:'박지호',password:'1234',role:'student'},
@@ -2100,6 +2217,15 @@ function migrateHWToClasses() {
   if (changed) saveHomeworks(hws);
 }
 
+function migrateAdminPassword() {
+  const users = getUsers();
+  const idx = users.findIndex(u => u.id === 'admin' && u.role === 'admin');
+  if (idx !== -1 && users[idx].password !== '1111') {
+    users[idx] = { ...users[idx], password: '1111' };
+    saveUsers(users);
+  }
+}
+
 function initData(){
   migrateToNewSubjects();
   migrateHWToClasses();
@@ -2128,6 +2254,7 @@ function initData(){
     ];
     localStorage.setItem('hwapp_completions',JSON.stringify(comps));
   }
+  migrateAdminPassword();
   migrateClassTypes();
 }
 const getUsers=()=>JSON.parse(localStorage.getItem('hwapp_users')||'[]');
@@ -2919,7 +3046,7 @@ function getLinkedProgressHomeworkIds() {
 }
 function getStudentLinkedProgressHomeworkIds(studentId) {
   const myId = String(studentId || '');
-  const students = getUsers().filter(u => u.role === 'student');
+  const students = [...getUsers(), ...getRetiredUsers()].filter(u => u.role === 'student');
   const currentStudent = students.find(u => String(u.id) === myId);
   if (!currentStudent) return new Set();
 
@@ -3163,7 +3290,7 @@ function exportData() {
     'hwapp_users', 'hwapp_categories', 'hwapp_homeworks', 'hwapp_completions',
     'hwapp_student_groups', 'hwapp_retired_users', 'hwapp_classes',
     'hwapp_saved_id', 'hwapp_saved_pw', 'hwapp_progress_topics', 'hwapp_progress_completions',
-    'hwapp_mock_exams', 'hwapp_instructors'
+    'hwapp_mock_exams', 'hwapp_instructors', 'hwapp_exam_scopes', 'hwapp_exam_scopes_backup'
   ];
   const data = {};
   keys.forEach(k => {
@@ -3724,6 +3851,9 @@ function showPanel(who,name){
     currentCalDate = new Date();
     renderAdminClasses();
   }
+  if(who==='a'&&name==='exam') {
+    renderExamScopes();
+  }
   if(who==='a'&&name==='learning') {
     renderLearningManagement();
   }
@@ -3804,8 +3934,10 @@ function renderDashboardHomeworkList(who) {
       return due >= today && due <= weekEnd;
     }).sort((a,b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
   } else {
+    const linkedHwIds = getLinkedProgressHomeworkIds();
     filteredHws = hws.filter(h => {
       if (!h.dueDate || h.dueDate !== selectedDateStr) return false;
+      if (!linkedHwIds.has(String(h.id))) return false;
       return true;
     });
   }
@@ -3872,7 +4004,59 @@ function resetCalendarDate(containerId, isStudent) {
 }
 
 function renderDashboardProgress() {
+  renderDashboardProgressTabs();
   renderProgressContent('a-dashboard-progress-list');
+}
+
+let currentDashboardProgressFilter = '';
+
+function getProgressClassFilterTabs() {
+  const classSeries = getAllClassSeries();
+  const allClassSeriesMap = {};
+  classSeries.forEach(cs => { allClassSeriesMap[cs.id] = cs; });
+
+  const usedEntityIds = [...new Set(getVisibleProgressTopics().map(t => resolveProgressEntityId(t.groupId, classSeries)))];
+  const extraTabs = usedEntityIds
+    .filter(eid => eid && !allClassSeriesMap[eid])
+    .map(eid => {
+      const grp = getStudentGroups().find(g => g.id === eid);
+      return { id: eid, label: grp ? `🏫 ${grp.name}` : `📋 ${String(eid).substring(0, 20)}`, subject: '' };
+    });
+
+  let visibleTabs = classSeries.concat(extraTabs);
+  if (currentUser && currentUser.role === 'instructor') {
+    const instSubjs = (currentUser.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
+    visibleTabs = visibleTabs.filter(cs => {
+      const csSubj = (cs.subject || '').split('(')[0].trim();
+      return instSubjs.includes(csSubj);
+    });
+  }
+
+  const subjectOrder = { '국어': 1, '수학': 2, '영어': 3 };
+  return visibleTabs.sort((a,b) => {
+    const waitA = subjectOrder[a.subject] || 99;
+    const waitB = subjectOrder[b.subject] || 99;
+    if (waitA !== waitB) return waitA - waitB;
+    return (a.title || a.label || '').localeCompare(b.title || b.label || '', 'ko');
+  });
+}
+
+function renderDashboardProgressTabs() {
+  const tabEl = document.getElementById('dashboard-progress-tabs');
+  if (!tabEl) return;
+  const tabs = getProgressClassFilterTabs();
+  tabEl.innerHTML = `<button class="sftab ${currentDashboardProgressFilter === '' ? 'active' : ''}" onclick="filterDashboardProgress('',this)">전체</button>` +
+    tabs.map(cs => {
+      const isActive = currentDashboardProgressFilter === cs.id;
+      const color = getGroupColor(cs.groupIds ? cs.groupIds[0] : cs.id, cs.title || null, cs.colorIndex);
+      const style = `background:${color.bg}; color:${color.color}; border-color:${isActive ? color.color : color.border}; border-width:${isActive ? '3px' : '1px'}; font-weight:${isActive ? '700' : '500'}; box-shadow:${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'}`;
+      return `<button class="sftab ${isActive ? 'active' : ''}" style="${style}" onclick="filterDashboardProgress('${cs.id}',this)">${cs.label}</button>`;
+    }).join('');
+}
+
+function filterDashboardProgress(groupId, btn) {
+  currentDashboardProgressFilter = groupId;
+  renderDashboardProgress();
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
@@ -4181,7 +4365,8 @@ function switchTab(btn,t){
 function renderStudentStats(){renderStatsForStudent(currentUser.id,'stats-content',currentStudentTab);}
 
 function getStudentHWs(sid) {
-  let hws = getHomeworks().filter(h => h.assignedTo.includes(sid));
+  const linkedHwIds = getStudentLinkedProgressHomeworkIds(sid);
+  let hws = getHomeworks().filter(h => linkedHwIds.has(String(h.id)) && (h.assignedTo || []).map(String).includes(String(sid)));
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
     const instSubjs = (currentUser.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
     if (instSubjs.length > 0) {
@@ -4239,7 +4424,7 @@ const getStatCutoffDate = () => {
 };
 function getStatHWs(sid){
   const cutoff = getStatCutoffDate();
-  return getHomeworks().filter(h => h.assignedTo.includes(sid) && h.createdAt <= cutoff);
+  return getStudentHWs(sid).filter(h => h.createdAt <= cutoff);
 }
 
 function calcPeriodStats(sid,period){
@@ -4535,8 +4720,6 @@ function syncStudentGroup(studentId, schoolName, gradeName) {
   return targetGroup.id;
 }
 function renderAdminManage(){
-  const groups=getStudentGroups();
-  
   // 전체 숙제 목록 렌더링
   renderAdminHWList();
   
@@ -4570,8 +4753,14 @@ function renderAdminManage(){
   // 그룹 필터 탭 생성
   const tabEl=document.getElementById('student-group-tabs');
   if (tabEl) {
-    tabEl.innerHTML=`<button class="sftab active" onclick="filterAdminHW('',this)">전체</button>`
-      +groups.map(g=>`<button class="sftab" onclick="filterAdminHW('${g.id}',this)">${g.name}</button>`).join('');
+    const tabs = getAdminHomeworkClassTabs();
+    tabEl.innerHTML=`<button class="sftab ${currentAdminHWFilter === '' ? 'active' : ''}" onclick="filterAdminHW('',this)">전체</button>`
+      +tabs.map(t=>{
+        const color = t.gc || getGroupColor(t.id, t.label);
+        const isActive = currentAdminHWFilter === t.id;
+        const style = `background:${color.bg}; color:${color.color}; border-color:${isActive ? color.color : color.border}; border-width:${isActive ? '3px' : '1px'}; font-weight:${isActive ? '700' : '500'}`;
+        return `<button class="sftab ${isActive ? 'active' : ''}" style="${style}" onclick="filterAdminHW('${t.id}',this)">${t.label}</button>`;
+      }).join('');
   }
 }
 function filterAdminHW(groupId, btn){
@@ -4580,39 +4769,160 @@ function filterAdminHW(groupId, btn){
   btn.classList.add('active');
   renderAdminHWList(); // 필터링된 숙제 목록 갱신
 }
+function resolveProgressEntityId(groupId, classSeries) {
+  let eid = groupId || '';
+  let cs = classSeries.find(c => c.id === eid);
+  if (!cs && eid && eid.startsWith('reg-')) {
+    const parts = eid.split('-');
+    if (parts.length >= 5) {
+      const title = parts[1], start = parts[2], gidsRaw = parts.slice(4).join('-');
+      cs = classSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start &&
+        (c.groupIds || []).slice().sort().join(',') === gidsRaw.replace(/-/g, ','));
+    }
+  }
+  if (!cs && eid && eid.startsWith('single-')) {
+    const parts = eid.split('-');
+    if (parts.length >= 3) {
+      const title = parts[1], start = parts[2], gidsRaw = parts.slice(3).join('-');
+      cs = classSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start &&
+        (c.groupIds || []).slice().sort().join(',') === gidsRaw.replace(/-/g, ','));
+    }
+  }
+  return cs ? cs.id : eid;
+}
+function getAdminHomeworkClassTabs() {
+  const classSeries = getAllClassSeries();
+  const seriesMap = {};
+  classSeries.forEach(cs => {
+    const gc = cs.groupIds && cs.groupIds.length > 0
+      ? getGroupColor(cs.groupIds[0], cs.title, cs.colorIndex)
+      : { bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0' };
+    seriesMap[cs.id] = { id: cs.id, label: cs.label || cs.title, subject: cs.subject || '', title: cs.title || cs.label || '', gc };
+  });
+
+  getVisibleProgressTopics().forEach(t => {
+    if (!t.hwId) return;
+    const eid = resolveProgressEntityId(t.groupId, classSeries);
+    if (!eid || seriesMap[eid]) return;
+    const g = getStudentGroups().find(x => x.id === eid);
+    const gc = g ? getGroupColor(g.id, g.name) : { bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0' };
+    seriesMap[eid] = { id: eid, label: g ? `🏫 ${g.name}` : `📋 ${String(eid).slice(0, 20)}`, subject: t.subject || '', title: g ? g.name : String(eid), gc };
+  });
+
+  const subjectOrder = { '국어': 1, '수학': 2, '영어': 3 };
+  return Object.values(seriesMap).sort((a,b) => {
+    const sa = subjectOrder[a.subject] || 99;
+    const sb = subjectOrder[b.subject] || 99;
+    if (sa !== sb) return sa - sb;
+    return (a.title || a.label || '').localeCompare(b.title || b.label || '', 'ko');
+  });
+}
+function getAdminHomeworkSessions(hws, unlinkedSourceHws = hws) {
+  const hwsById = new Map(hws.map(h => [String(h.id), h]));
+  const classSeries = getAllClassSeries();
+  const allClasses = getClasses();
+  const groups = getStudentGroups();
+  const students = getActiveStudents();
+  const sessionMap = {};
+  const linkedHwIds = new Set();
+
+  getVisibleProgressTopics().forEach(t => {
+    if (!t.hwId) return;
+    const h = hwsById.get(String(t.hwId));
+    if (!h) return;
+    linkedHwIds.add(String(h.id));
+    const entityId = resolveProgressEntityId(t.groupId, classSeries);
+    if (currentAdminHWFilter && entityId !== currentAdminHWFilter) return;
+    const classSeriesItem = classSeries.find(cs => cs.id === entityId);
+    const group = groups.find(g => g.id === entityId);
+    if (!classSeriesItem && !group) return;
+
+    const date = t.targetDate || '날짜 미지정';
+    const key = `${entityId}|||${date}`;
+    if (!sessionMap[key]) {
+      const label = classSeriesItem ? (classSeriesItem.label || classSeriesItem.title) : `🏫 ${group.name}`;
+      const gc = classSeriesItem
+        ? ((classSeriesItem.groupIds && classSeriesItem.groupIds.length > 0) ? getGroupColor(classSeriesItem.groupIds[0], classSeriesItem.title, classSeriesItem.colorIndex) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'})
+        : getGroupColor(group.id, group.name);
+
+      let studentsInEntity = [];
+      if (classSeriesItem) {
+        const classInst = date !== '날짜 미지정'
+          ? allClasses.find(c => {
+              const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
+              const cid = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
+              return cid === entityId && c.date === date;
+            })
+          : null;
+        const assignedSet = new Set((classInst ? classInst.assignedTo : classSeriesItem.assignedTo) || []);
+        studentsInEntity = students.filter(s => assignedSet.has(s.id));
+        if (!studentsInEntity.length && classSeriesItem.groupIds) {
+          studentsInEntity = students.filter(s => classSeriesItem.groupIds.some(gid => {
+            const sg = groups.find(x => x.id === gid);
+            return sg && (sg.studentIds || []).includes(s.id);
+          }));
+        }
+        if (classSeriesItem.subject) studentsInEntity = studentsInEntity.filter(s => s.subject && s.subject.split(',').includes(classSeriesItem.subject));
+        if (date !== '날짜 미지정') studentsInEntity = studentsInEntity.filter(s => isStudentActiveOnDate(s, date));
+      } else {
+        studentsInEntity = (group.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean);
+      }
+
+      sessionMap[key] = { entityId, label, gc, date, sortDate: date === '날짜 미지정' ? '0000-00-01' : date, items: [], studentsInEntity, hwIds: new Set() };
+    }
+    if (!sessionMap[key].hwIds.has(String(h.id))) {
+      sessionMap[key].items.push(h);
+      sessionMap[key].hwIds.add(String(h.id));
+    }
+  });
+
+  const sessions = Object.values(sessionMap).sort((a,b) => b.sortDate.localeCompare(a.sortDate) || a.label.localeCompare(b.label, 'ko'));
+  const unlinked = [];
+  if (unlinked.length) {
+    sessions.push({
+      entityId: '_unlinked',
+      label: '수업 연결 없음',
+      gc: { bg:'#f8fafc', color:'#64748b', border:'#e2e8f0' },
+      date: '',
+      sortDate: '0000-00-00',
+      items: unlinked,
+      studentsInEntity: null
+    });
+  }
+  return sessions;
+}
 function renderAdminHWList(){
-  let hws = getVisibleHomeworks();
+  const visibleHws = getVisibleHomeworks();
+  const hws = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor')
+    ? getHomeworks()
+    : visibleHws;
   const users = getUsers();
-  const studentGroups = getStudentGroups();
-  const subjects = getCategories();
   const comps = getCompletions();
   const el = document.getElementById('admin-hw-list');
   if (!el) return;
-  
-  // 필터링 적용 (currentAdminHWFilter가 있으면 해당 그룹의 숙제만 표시)
-  if (currentAdminHWFilter) {
-    hws = hws.filter(h => h.categoryId === currentAdminHWFilter);
-  }
 
   if (!hws || hws.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>' + (currentAdminHWFilter ? '이 그룹에 등록된 숙제가 없습니다' : '숙제가 없습니다') + '</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>숙제가 없습니다</div></div>';
     return;
   }
 
-  // Group by Category (Subject) or Student Group
-  const hwGroups = buildGroups(hws, studentGroups, subjects);
+  const hwGroups = getAdminHomeworkSessions(hws, visibleHws);
+  if (!hwGroups.length) {
+    el.innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>' + (currentAdminHWFilter ? '이 수업에 등록된 숙제가 없습니다' : '숙제가 없습니다') + '</div></div>';
+    return;
+  }
   
   const html = hwGroups.map(g => {
     const headerStyle = `style="background:${g.gc.bg}; border-left-color:${g.gc.color}; color:${g.gc.color}"`;
     
     const itemsHtml = g.items.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(h => {
-      // 수업진도에서는 대상 표시를 없애고 싶어하셨으므로, 수업별 그룹(class type)일 때 감춤
-      return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: g.type === 'class' });
+      return getAdminHWItemHtml(h, users, comps, { showActions: true, onEdit: 'editHWFromProgress', showStudentList: true, hideTarget: true, dynamicStudents: g.studentsInEntity || null });
     }).join('');
 
+    const dateText = g.date ? `<span style="font-size:12px;font-weight:500;margin-left:10px;opacity:.8">📅 ${g.date}</span>` : '';
     return `
       <div class="hw-group-card">
-        <div class="hw-group-header" ${headerStyle}>${g.labelPrefix}${g.label} <span style="font-size:12px; font-weight:normal; margin-left:8px; opacity:0.8">(${g.items.length})</span></div>
+        <div class="hw-group-header" ${headerStyle}>📋 ${g.label}${dateText} <span style="font-size:12px; font-weight:normal; margin-left:8px; opacity:0.8">(${g.items.length})</span></div>
         <div class="hw-group-body">${itemsHtml}</div>
       </div>
     `;
@@ -7296,7 +7606,7 @@ function renderDailySchedule(containerId, isStudent) {
           <div class="schedule-info">
             <div class="schedule-title" style="color:${gColor.color}; display:flex; align-items:center;">
               ${c.title}
-              ${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 강사</span>` : ''}
+              ${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 선생님</span>` : ''}
             </div>
             <div class="schedule-meta" style="color:#000">
               ${c.subject ? `<span class="subj-badge" style="background:${gColor.color}; color:#fff; padding:1px 6px; border-radius:6px; font-size:10px; margin-right:6px">${c.subject}</span>` : ''}
@@ -7374,7 +7684,7 @@ function renderWeeklySchedule(containerId, isStudent) {
                 <div class="week-class-time" style="color:#000; font-weight:700; font-size:11px; white-space:nowrap">${c.startTime} ~ ${c.endTime}</div>
                 <div class="week-class-title" style="color:${gColor.color}; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
                   ${c.title}
-                  ${c.instructorName ? `<span style="font-size:10px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 4px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 강사</span>` : ''}
+                  ${c.instructorName ? `<span style="font-size:10px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 4px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 선생님</span>` : ''}
                 </div>
                 <div class="week-class-meta" style="color:#000; font-size:10px; font-weight:700">
                   ${c.subject ? `[${c.subject}] ` : ''}${gNames} ${c.assignedTo ? `(${c.assignedTo.length}명)` : ''}
@@ -7825,7 +8135,7 @@ function renderAdminClassList() {
         return `
           <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
             <div class="admin-hw-info">
-              <div class="admin-hw-title" style="color:${gColor.color}; display:flex; align-items:center;">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal; margin-left:4px;"> - (매주 ${c.dayName}요일)</span>${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 강사</span>` : ''}</div>
+              <div class="admin-hw-title" style="color:${gColor.color}; display:flex; align-items:center;">📅 ${c.title} <span style="font-size:11px;color:var(--text-muted);font-weight:normal; margin-left:4px;"> - (매주 ${c.dayName}요일)</span>${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 선생님</span>` : ''}</div>
               <div class="admin-hw-meta" style="color:#000">
                 ${c.dayName}요일 (${c.startTime} ~ ${c.endTime}) 
                 · 대상: <span style="font-weight:700">${c.subject ? `[${c.subject}] ` : ''}${gNames || '전체'}</span>
@@ -7850,7 +8160,7 @@ function renderAdminClassList() {
       return `
         <div class="admin-hw-item" style="background:${gColor.bg}; border-color:${gColor.border}">
           <div class="admin-hw-info">
-            <div class="admin-hw-title" style="color:${gColor.color}; display:flex; align-items:center;">📅 ${c.title}${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 강사</span>` : ''}</div>
+            <div class="admin-hw-title" style="color:${gColor.color}; display:flex; align-items:center;">📅 ${c.title}${c.instructorName ? `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(c.instructorId, c.instructorColorIndex).text}; background:${getInstructorColor(c.instructorId, c.instructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${c.instructorName} 선생님</span>` : ''}</div>
             <div class="admin-hw-meta" style="color:#000">
               ${c.date ? `날짜: ${c.date} ` : (c.dayName ? `${c.dayName}요일 ` : '')}
               (${c.startTime} ~ ${c.endTime}) 
@@ -9205,6 +9515,7 @@ function toggleStudentProgress(topicId) {
 }
 
 function renderProgressContent(targetId) {
+  const activeProgressFilter = targetId === 'a-dashboard-progress-list' ? currentDashboardProgressFilter : currentProgressFilter;
   const topics = getVisibleProgressTopics();
   const comps = getProgressCompletions();
   const groups = getStudentGroups();
@@ -9251,7 +9562,7 @@ function renderProgressContent(targetId) {
   
   allEntityIds.forEach(entityId => {
     // Filter handling
-    if (currentProgressFilter && entityId !== currentProgressFilter) return;
+    if (activeProgressFilter && entityId !== activeProgressFilter) return;
 
     const entityTopics = resolvedTopics.filter(t => t.effectiveEntityId === entityId);
     const classSeries = allClassSeries.find(cs => cs.id === entityId);
@@ -9346,12 +9657,23 @@ function renderProgressContent(targetId) {
 
   let finalSessions = sessions;
   if (targetId === 'a-dashboard-progress-list') {
-    const seenEntities = new Set();
-    finalSessions = sessions.filter(s => {
-      if (seenEntities.has(s.entityId)) return false;
-      seenEntities.add(s.entityId);
-      return true;
-    });
+    if (activeProgressFilter) {
+      const recentStart = new Date(today);
+      recentStart.setDate(recentStart.getDate() - 6);
+      finalSessions = sessions.filter(s => {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.sortDate);
+        if (!match) return false;
+        const sessionDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return sessionDate >= recentStart && sessionDate <= today;
+      });
+    } else {
+      const seenEntities = new Set();
+      finalSessions = sessions.filter(s => {
+        if (seenEntities.has(s.entityId)) return false;
+        seenEntities.add(s.entityId);
+        return true;
+      });
+    }
   }
 
   if (!finalSessions.length) {
@@ -9410,7 +9732,7 @@ function renderProgressContent(targetId) {
         }
       }
       if (instName) {
-        instructorHtml = `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(targetInstructorId, targetInstructorColorIndex).text}; background:${getInstructorColor(targetInstructorId, targetInstructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${instName} 강사</span>`;
+        instructorHtml = `<span style="margin-left:8px; font-size:11px; font-weight:600; color:${getInstructorColor(targetInstructorId, targetInstructorColorIndex).text}; background:${getInstructorColor(targetInstructorId, targetInstructorColorIndex).bg}; padding:2px 6px; border-radius:4px; white-space:nowrap;">🧑‍🏫 ${instName} 선생님</span>`;
       }
     }
 
@@ -10212,7 +10534,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <!-- EXAM SCOPE MODAL -->
   <div class="modal-overlay" id="examScopeModal" onclick="closeExamScopeModal(event)">
-    <div class="modal" style="max-width:500px">
+    <div class="modal" style="max-width:620px">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="exam-scope-modal-title">시험범위 등록/수정</div>
@@ -10244,7 +10566,17 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="form-row"><label>시험 구분</label><input type="text" id="es-target" placeholder="예: 1학기 중간고사"></div>
         <div class="form-row"><label>출판사 (교과서)</label><input type="text" id="es-publisher" placeholder="예: 천재(박)"></div>
+        <div class="form-row">
+          <label>교과서 단원</label>
+          <div id="es-textbook-units" class="exam-unit-list"></div>
+          <button type="button" class="exam-unit-add" onclick="addExamUnit('textbook')">+ 교과서 단원 추가</button>
+        </div>
         <div class="form-row"><label>부교재</label><input type="text" id="es-supplements" placeholder="예: 올림포스 국어"></div>
+        <div class="form-row">
+          <label>부교재 단원</label>
+          <div id="es-supplement-units" class="exam-unit-list"></div>
+          <button type="button" class="exam-unit-add" onclick="addExamUnit('supplement')">+ 부교재 단원 추가</button>
+        </div>
         <div class="form-row"><label>상세 시험범위 내용</label><textarea id="es-details" rows="5" placeholder="상세한 시험범위를 텍스트로 입력하세요"></textarea></div>
         <button class="btn-add" style="width:100%;margin-top:12px" onclick="saveExamScopeForm()">💾 저장하기</button>
       </div>
