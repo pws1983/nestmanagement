@@ -655,6 +655,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .prog-topic-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
   .prog-topic-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
   .prog-topic-pct { font-size: 12px; font-weight: 700; min-width: 36px; text-align: right; }
+  .student-class-topic-badges { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .student-class-topic-badge { display:inline-flex; align-items:center; max-width:100%; padding:3px 8px; border-radius:999px; background:#f3f4f6; color:#000; border:1px solid #d1d5db; font-size:11px; font-weight:700; line-height:1.35; white-space:normal; box-shadow:0 1px 2px rgba(15,23,42,.08); }
+  .student-class-topic-more { background:#f8fafc; color:#000; border-color:#d1d5db; }
   .prog-no-data {
     text-align: center; padding: 40px; color: var(--text-muted);
     font-size: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid var(--border);
@@ -696,6 +699,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .exam-unit-card input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-family:inherit; font-size:13px; outline:none; }
   .exam-unit-card .unit-index { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:var(--primary-bg); color:var(--primary); font-size:12px; font-weight:800; flex-shrink:0; }
   .exam-unit-add { width:100%; margin-top:8px; padding:8px 10px; border:1px dashed var(--primary); border-radius:8px; background:#fff; color:var(--primary); font-size:12px; font-weight:800; cursor:pointer; }
+  .exam-sel-group { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .exam-sel-btn { padding:7px 16px; border-radius:20px; border:2px solid var(--border-strong); background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:var(--text-muted); cursor:pointer; transition:all .18s; }
+  .exam-sel-btn:hover { border-color:var(--primary-light); color:var(--primary); }
+  .exam-sel-btn.selected { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .exam-unit-summary { margin-top:6px; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+  .exam-unit-summary-title { font-size:12px; font-weight:800; color:var(--text-muted); }
+  .exam-unit-summary-list { display:flex; flex-direction:column; gap:5px; width:100%; }
+  .exam-unit-summary-item { display:block; width:fit-content; max-width:100%; white-space:normal; line-height:1.45; }
   /* COLOR PICKER */
   .color-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
   .color-chip { 
@@ -762,15 +773,15 @@ body.is-instructor button[onclick="importData()"] {
     </div>
     <nav class="sidebar-nav">
       <div class="nav-item" onclick="showPanel('s', 'dashboard')" id="snav-dashboard"><span>🏠</span> 대시보드</div>
+      <div class="nav-item" onclick="showPanel('s', 'exam')" id="snav-exam"><span>🎯</span> 시험범위</div>
       <div class="nav-item" onclick="showPanel('s', 'homework')" id="snav-homework"><span>📝</span> 내 숙제</div>
       <div class="nav-item" onclick="showPanel('s', 'myclasses')" id="snav-myclasses"><span>📚</span> 내 수업</div>
       <div class="nav-item" onclick="showPanel('s', 'progress')" id="snav-progress"><span>📖</span> 수업 진도</div>
       <div class="nav-item" onclick="showPanel('s', 'classes')" id="snav-classes"><span>📅</span> 수업 일정</div>
       <div class="nav-item" onclick="showPanel('s', 'stats')" id="snav-stats"><span>📊</span> 달성 통계</div>
+      <div class="nav-item" onclick="showPanel('s', 'account')" id="snav-account"><span>⚙️</span> 계정정보</div>
     </nav>
   <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
-    <button class="logout-btn" style="background:var(--secondary); color:#3b82f6; border:none; margin-bottom:4px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
-    <button class="logout-btn" style="background:var(--border-strong); color:#ef4444; border:none; margin-bottom:4px; font-weight:800; white-space:nowrap" onclick="importData()">📂 데이터 복원</button>
     <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
   </div>
   </div>
@@ -822,6 +833,11 @@ body.is-instructor button[onclick="importData()"] {
       <div class="panel-sub">내가 속한 수업의 진도 현황과 연관된 숙제를 확인하세요.</div>
       <div id="s-progress-content"></div>
     </div>
+    <div class="panel" id="s-panel-exam">
+      <div class="panel-title">🎯 시험범위</div>
+      <div class="panel-sub">내 학교와 학년에 등록된 시험범위를 확인합니다</div>
+      <div id="s-exam-scopes-container" style="display:grid; grid-template-columns:1fr; gap:12px;"></div>
+    </div>
     <div class="panel" id="s-panel-stats">
       <div class="panel-title">숙제 달성 통계</div>
       <div class="panel-sub">기간별 숙제 완료율을 확인하세요</div>
@@ -835,6 +851,16 @@ body.is-instructor button[onclick="importData()"] {
         <button class="tab-btn" onclick="switchTab(this,'total')">전체 기간</button>
       </div>
       <div id="stats-content"></div>
+    </div>
+    <div class="panel" id="s-panel-account">
+      <div class="panel-title">계정정보</div>
+      <div class="panel-sub">비밀번호를 변경합니다</div>
+      <div class="card" style="max-width:420px">
+        <div class="section-title">🔑 비밀번호 변경</div>
+        <div class="form-row"><label>새 비밀번호</label><input id="s-new-pw" type="password" placeholder="새 비밀번호 입력"></div>
+        <div class="form-row"><label>새 비밀번호 확인</label><input id="s-new-pw2" type="password" placeholder="새 비밀번호 재입력"></div>
+        <button class="btn btn-primary" style="margin-top:16px;width:auto;padding:12px 32px" onclick="changePassword('s')">변경하기</button>
+      </div>
     </div>
   </div>
 </div>
@@ -858,6 +884,7 @@ body.is-instructor button[onclick="importData()"] {
       <div class="nav-item" onclick="showPanel('a','instructors')" id="anav-instructors"><span>🧑‍🏫</span> 강사 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
+      <div class="nav-item" onclick="showPanel('a','account')" id="anav-account"><span>⚙️</span> 계정정보</div>
     </nav>
   <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
     <button class="logout-btn" style="background:var(--secondary); color:#3b82f6; border:none; margin-bottom:4px; font-weight:800" onclick="exportData()">💾 데이터 저장</button>
@@ -1435,6 +1462,16 @@ body.is-instructor button[onclick="importData()"] {
       </div>
       <div id="progress-content"></div>
     </div>
+    <div class="panel" id="a-panel-account">
+      <div class="panel-title">계정정보</div>
+      <div class="panel-sub">비밀번호를 변경합니다</div>
+      <div class="card" style="max-width:420px">
+        <div class="section-title">🔑 비밀번호 변경</div>
+        <div class="form-row"><label>새 비밀번호</label><input id="a-new-pw" type="password" placeholder="새 비밀번호 입력"></div>
+        <div class="form-row"><label>새 비밀번호 확인</label><input id="a-new-pw2" type="password" placeholder="새 비밀번호 재입력"></div>
+        <button class="btn btn-primary" style="margin-top:16px;width:auto;padding:12px 32px" onclick="changePassword('a')">변경하기</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1853,9 +1890,11 @@ function renderExamUnitSummary(title, units) {
   const cleanUnits = Array.isArray(units) ? units.map(x => String(x || '').trim()).filter(Boolean) : [];
   if (!cleanUnits.length) return '';
   return `
-    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center">
-      <span style="font-size:12px;font-weight:800;color:var(--text-muted)">${title}</span>
-      ${cleanUnits.map((unit, idx) => `<span class="grp-badge" style="background:#f8fafc;color:var(--text);border:1px solid var(--border)">${idx + 1}. ${escapeExamText(unit)}</span>`).join('')}
+    <div class="exam-unit-summary">
+      <div class="exam-unit-summary-title">${title}</div>
+      <div class="exam-unit-summary-list">
+        ${cleanUnits.map((unit, idx) => `<span class="grp-badge exam-unit-summary-item" style="background:#f8fafc;color:var(--text);border:1px solid var(--border)">${idx + 1}. ${escapeExamText(unit)}</span>`).join('')}
+      </div>
     </div>
   `;
 }
@@ -1923,9 +1962,102 @@ function renderExamScopes() {
   `).join('');
 }
 
+function getStudentExamScopeContext(student = currentUser) {
+  if (!student) return { school: '', grade: '', subjects: [] };
+  const group = getStudentGroupOf(student.id);
+  let school = (student.school || '').trim();
+  let grade = (student.grade || '').trim();
+  if ((!school || !grade) && group) {
+    const parsed = parseGroupName(group.name || '');
+    if (!school) school = parsed.school || '';
+    if (!grade) grade = parsed.grade || '';
+  }
+  const subjects = (student.subject || '')
+    .split(',')
+    .map(x => x.split('(')[0].trim())
+    .filter(Boolean);
+  return { school, grade, subjects };
+}
+
+function isExamScopeForStudent(scope, context) {
+  const scopeSchool = String(scope.school || '').trim();
+  const scopeGrade = String(scope.grade || '').trim();
+  const scopeSubject = String(scope.subject || '').split('(')[0].trim();
+  const schoolMatch = context.school && scopeSchool &&
+    (context.school === scopeSchool || context.school.includes(scopeSchool) || scopeSchool.includes(context.school));
+  const gradeMatch = !context.grade || !scopeGrade || scopeGrade === context.grade;
+  const subjectMatch = !context.subjects.length || !scopeSubject || context.subjects.includes(scopeSubject);
+  return schoolMatch && gradeMatch && subjectMatch;
+}
+
+function renderStudentExamScopeCard(s) {
+  return `
+    <div class="card" style="position:relative; display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${renderExamScopeBadges(s)}
+        ${s.instructorName ? `<span class="grp-badge" style="background:#fef3c7;color:#d97706">${escapeExamText(s.instructorName)}</span>` : ''}
+      </div>
+      <div style="font-size:16px; font-weight:800; color:var(--text); margin-top:4px">${escapeExamText(s.targetExam)} 시험범위</div>
+      <div style="font-size:13px; color:var(--text-muted);">
+        <span style="font-weight:700">교과서:</span> ${escapeExamText(s.publisher || '없음')} &nbsp;|&nbsp;
+        <span style="font-weight:700">부교재:</span> ${escapeExamText(s.supplements || '없음')}
+      </div>
+      ${renderExamUnitSummary('교과서 단원', s.textbookUnits)}
+      ${renderExamUnitSummary('부교재 단원', s.supplementUnits)}
+      <div style="margin-top:8px; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeExamText(s.details || '내용 없음')}</div>
+    </div>
+  `;
+}
+
+function renderStudentExamScopes() {
+  const container = document.getElementById('s-exam-scopes-container');
+  if (!container) return;
+  const context = getStudentExamScopeContext();
+  const scopes = getExamScopes()
+    .filter(s => isExamScopeForStudent(s, context))
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  if (!scopes.length) {
+    container.innerHTML = '<div class="empty-state"><div class="ei">🎯</div><div>표시할 시험범위가 없습니다</div></div>';
+    return;
+  }
+
+  container.innerHTML = scopes.map(renderStudentExamScopeCard).join('');
+}
+
+function selectExamPart(btn) {
+  const group = btn.dataset.group;
+  document.querySelectorAll(`.exam-sel-btn[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateExamTarget();
+}
+function updateExamTarget() {
+  const year     = document.querySelector('.exam-sel-btn[data-group="year"].selected')?.dataset.val || '';
+  const semester = document.querySelector('.exam-sel-btn[data-group="semester"].selected')?.dataset.val || '';
+  const examtype = document.querySelector('.exam-sel-btn[data-group="examtype"].selected')?.dataset.val || '';
+  const val = [year, semester, examtype].filter(Boolean).join(' ');
+  document.getElementById('es-target').value = val;
+  const preview = document.getElementById('es-target-preview');
+  if (preview) preview.textContent = val ? `▶ ${val}` : '';
+}
+function resetExamSelectors(targetExam) {
+  document.querySelectorAll('.exam-sel-btn').forEach(b => b.classList.remove('selected'));
+  if (targetExam) {
+    targetExam.split(' ').forEach(part => {
+      const btn = document.querySelector(`.exam-sel-btn[data-val="${part}"]`);
+      if (btn) btn.classList.add('selected');
+    });
+  } else {
+    const thisYear = String(new Date().getFullYear());
+    const yBtn = document.querySelector(`.exam-sel-btn[data-group="year"][data-val="${thisYear}"]`);
+    if (yBtn) yBtn.classList.add('selected');
+  }
+  updateExamTarget();
+}
+
 function openExamScopeModal() {
   document.getElementById('es-id').value = '';
-  
+
   const instRow = document.getElementById('es-instructor-row');
   const instSel = document.getElementById('es-instructor');
   if (currentUser.role === 'admin') {
@@ -1939,7 +2071,7 @@ function openExamScopeModal() {
   document.getElementById('es-school').value = '';
   document.getElementById('es-grade').value = '고1';
   document.getElementById('es-subject').value = '국어';
-  document.getElementById('es-target').value = '';
+  resetExamSelectors(null);
   document.getElementById('es-publisher').value = '';
   renderExamUnitCards('textbook', []);
   document.getElementById('es-supplements').value = '';
@@ -2022,7 +2154,7 @@ function editExamScope(id) {
   document.getElementById('es-school').value = scope.school;
   document.getElementById('es-grade').value = scope.grade;
   document.getElementById('es-subject').value = scope.subject || '국어';
-  document.getElementById('es-target').value = scope.targetExam;
+  resetExamSelectors(scope.targetExam);
   document.getElementById('es-publisher').value = scope.publisher || '';
   renderExamUnitCards('textbook', scope.textbookUnits || []);
   document.getElementById('es-supplements').value = scope.supplements || '';
@@ -2277,6 +2409,17 @@ const saveUsers=d=>{localStorage.setItem('hwapp_users',JSON.stringify(d));syncTo
 const getInstructors=()=>JSON.parse(localStorage.getItem('hwapp_instructors')||'[]');
 const saveInstructors=d=>{localStorage.setItem('hwapp_instructors',JSON.stringify(d));syncToServer();}
 
+function isClassForInstructor(c, instructor = currentUser) {
+  if (!c || !instructor || instructor.role !== 'instructor') return false;
+  const instId = String(instructor.id || '');
+  const instName = String(instructor.name || instructor.loginId || '').trim();
+  const classInstId = String(c.instructorId || '');
+  const classInstName = String(c.instructorName || '').trim();
+  if (instId && classInstId && instId === classInstId) return true;
+  if (instName && classInstName && instName === classInstName) return true;
+  return false;
+}
+
 function getActiveStudents() {
   const all = getUsers().filter(u => u.role === 'student');
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
@@ -2320,6 +2463,7 @@ function getActiveRetiredStudents() {
 function getVisibleClasses() {
   const all = getClasses();
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+    return all.filter(c => isClassForInstructor(c, currentUser));
     const instStudentIds = currentUser.studentIds || [];
     const iSubjs = (currentUser.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
     return all.filter(c => {
@@ -3639,6 +3783,33 @@ function doLogin(){
 }
 document.getElementById('loginId').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPw').focus();});
 document.getElementById('loginPw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function changePassword(who) {
+  const pwId  = who === 's' ? 's-new-pw'  : 'a-new-pw';
+  const pw2Id = who === 's' ? 's-new-pw2' : 'a-new-pw2';
+  const pw  = document.getElementById(pwId).value.trim();
+  const pw2 = document.getElementById(pw2Id).value.trim();
+  if (!pw)       { showToast('새 비밀번호를 입력하세요.', 'error'); return; }
+  if (pw !== pw2){ showToast('비밀번호가 일치하지 않습니다.', 'error'); return; }
+  if (!currentUser) return;
+  if (currentUser.role === 'instructor') {
+    const insts = getInstructors();
+    const idx = insts.findIndex(i => i.id === currentUser.id);
+    if (idx === -1) { showToast('계정 정보를 찾을 수 없습니다.', 'error'); return; }
+    insts[idx].password = pw;
+    saveInstructors(insts);
+  } else {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if (idx === -1) { showToast('계정 정보를 찾을 수 없습니다.', 'error'); return; }
+    users[idx].password = pw;
+    saveUsers(users);
+  }
+  currentUser.password = pw;
+  if (localStorage.getItem('hwapp_saved_pw')) localStorage.setItem('hwapp_saved_pw', pw);
+  document.getElementById(pwId).value = '';
+  document.getElementById(pw2Id).value = '';
+  showToast('비밀번호가 변경되었습니다.');
+}
 function doLogout(){
   currentUser=null;pendingChecks={};showPage('login');
   // 저장된 자격증명이 있으면 다시 채워두기
@@ -3870,6 +4041,9 @@ function showPanel(who,name){
   }
   if(who==='s'&&name==='progress') {
     renderStudentProgress();
+  }
+  if(who==='s'&&name==='exam') {
+    renderStudentExamScopes();
   }
 }
 
@@ -4300,9 +4474,15 @@ function renderStudentMyClasses(){
       const dObj = new Date(session.date);
       const dayName = isNaN(dObj.getTime()) ? '' : ['일','월','화','수','목','금','토'][dObj.getDay()];
       const month = getMonthVisual(session.date);
-      const topicPreview = session.topics.slice(0, 3).map(t => t.topic).join(', ');
       const badgeClass = sessionPct === 100 ? 'badge-done' : 'badge-pending';
       const badgeText = sessionPct === 100 ? '완료' : sessionPct + '%';
+      const topicBadgeStyle = `border-color:${month.color}`;
+      const topicBadges = session.topics.slice(0, 3)
+        .map(t => `<span class="student-class-topic-badge" style="${topicBadgeStyle}">${escapeExamText(t.topic || '')}</span>`)
+        .join('');
+      const moreTopicBadge = session.topics.length > 3
+        ? `<span class="student-class-topic-badge student-class-topic-more" style="${topicBadgeStyle}">외 ${session.topics.length - 3}개</span>`
+        : '';
 
       return `
         <div class="detail-hw-item" style="padding:0; overflow:hidden; align-items:stretch; cursor:default; margin-bottom:8px;">
@@ -4314,7 +4494,7 @@ function renderStudentMyClasses(){
                 ${subjects.map(sub => '<span class="cat-tag' + (sub.startsWith('수학') ? ' math' : '') + '" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">' + sub + '</span>').join('')}
                 수업일: ${dateLabel}${dayName ? ' (' + dayName + ')' : ''} · 진도 ${session.topics.length}개
               </div>
-              <div class="detail-hw-meta" style="margin-top:4px; color:${month.color}">${topicPreview}${session.topics.length > 3 ? ' 외 ' + (session.topics.length - 3) + '개' : ''}</div>
+              <div class="student-class-topic-badges">${topicBadges}${moreTopicBadge}</div>
             </div>
             <div class="detail-pct-wrap">
               <span class="detail-status hw-badge ${badgeClass}">${badgeText}</span>
@@ -5286,7 +5466,15 @@ function renderAdminStudents(){
   const bodyEl = document.getElementById('student-stat-body');
   if(!bodyEl) return;
 
-  bodyEl.innerHTML=students.map(s=>{
+  const _now = new Date();
+  const _thisMonth = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+  const _thisMonthRetired = getActiveRetiredStudents()
+    .filter(s => s.retiredAt && s.retiredAt.slice(0,7) === _thisMonth)
+    .map(s => ({...s, _retiredThisMonth: true}));
+  const studentsToRender = [...students, ..._thisMonthRetired];
+
+  bodyEl.innerHTML=studentsToRender.map(s=>{
+    const isRetired = !!s._retiredThisMonth;
     const hws=getStudentHWs(s.id),done=hws.filter(h=>isDoneFor(h.id,s.id)).length,total=hws.length,pct=total?Math.round(done/total*100):0;
     const initials=s.name.slice(0,1);
     const grp=getStudentGroupOf(s.id);
@@ -5294,7 +5482,7 @@ function renderAdminStudents(){
     const grpBadge=grp?`<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>`:''
     const loginId=s.loginId||s.id;
     const safeName=s.name.replace(/'/g,'\u2019');
-    return`<tr onclick="openStudentDetail('${s.id}')">
+    return`<tr onclick="openStudentDetail('${s.id}')" style="${isRetired?'background:#fee2e2':''}">
       <td>
         <div class="student-name-cell" style="display:flex; align-items:center; gap:8px;">
           <div class="student-avatar" style="flex-shrink:0;">${initials}</div>
@@ -5307,8 +5495,10 @@ function renderAdminStudents(){
       <td><span class="pct-cell">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%"></div></div></td>
       <td style="white-space:nowrap">
         <span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
-        <button class="btn-del" style="margin-left:8px;background:#f59e0b;color:#fff;border:none" onclick="event.stopPropagation();retireStudent('${s.id}','${safeName}')">퇴원</button>
-        <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>
+        ${isRetired
+          ? `<span style="margin-left:8px;font-size:11px;font-weight:700;color:#dc2626">🚪 퇴원(${s.retiredAt})</span>`
+          : `<button class="btn-del" style="margin-left:8px;background:#f59e0b;color:#fff;border:none" onclick="event.stopPropagation();retireStudent('${s.id}','${safeName}')">퇴원</button>
+        <button class="btn-del" style="margin-left:8px" onclick="event.stopPropagation();deleteStudent('${s.id}','${safeName}')">탈퇴</button>`}
       </td>
     </tr>`;
   }).join('');
@@ -6354,7 +6544,7 @@ function renderDetailedStudentList() {
     const safeName = s.name.replace(/'/g, '\u2019');
 
     return `
-      <tr style="cursor:default">
+      <tr style="cursor:default${s.status === '퇴원' ? ';background:#fee2e2' : ''}">
         <td><div class="student-name-cell"><div class="student-avatar" style="width:24px;height:24px;font-size:11px">${initials}</div>${s.name}</div></td>
         <td style="font-size:13px;color:var(--text-muted)">${s.loginId || s.id}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
@@ -8248,7 +8438,7 @@ function renderProgressPanel() {
     classSeries.forEach(cs => { allClassSeriesMap[cs.id] = cs; });
 
     // 실제 진도 항목에서 사용 중인 groupId도 탭에 추가 (수업이 삭제된 경우도 표시)
-    const topics = getProgressTopics();
+    const topics = getVisibleProgressTopics();
     const usedEntityIds = [...new Set(topics.map(t => {
       let eid = t.groupId;
       // 현재 시리즈에 있으면 그 id 사용
@@ -8302,7 +8492,8 @@ function renderProgressPanel() {
     if (window.currentProgSubjectFilter) {
       visibleTabs = visibleTabs.filter(t => t.subject === window.currentProgSubjectFilter);
     }
-    if (isInstTab) {
+    if (isInstTab) visibleTabs = visibleTabs.filter(cs => isClassForInstructor(cs, currentUser) || (!cs.instructorId && !cs.instructorName));
+    if (false) {
       const instSubjs = (currentUser.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
       visibleTabs = allTabs.filter(cs => {
         // 담당 과목과 수업 과목이 일치하는 것만 표시
@@ -9621,6 +9812,7 @@ function renderProgressContent(targetId) {
     }
 
     if (entityTopics.length === 0) {
+      return;
       sessions.push({
         entityId, label, gc, date: '최근 내역 없음', topics: [], studentsInEntity,
         sortDate: '0000-00-00', isClass: !!classSeries
@@ -10609,7 +10801,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             </select>
           </div>
         </div>
-        <div class="form-row"><label>시험 구분</label><input type="text" id="es-target" placeholder="예: 1학기 중간고사"></div>
+        <div class="form-row">
+          <label>시험 구분</label>
+          <input type="hidden" id="es-target">
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+            <div>
+              <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:6px">연도</div>
+              <div class="exam-sel-group" id="es-year-group">
+                <button type="button" class="exam-sel-btn" data-group="year" data-val="2024" onclick="selectExamPart(this)">2024</button>
+                <button type="button" class="exam-sel-btn" data-group="year" data-val="2025" onclick="selectExamPart(this)">2025</button>
+                <button type="button" class="exam-sel-btn" data-group="year" data-val="2026" onclick="selectExamPart(this)">2026</button>
+                <button type="button" class="exam-sel-btn" data-group="year" data-val="2027" onclick="selectExamPart(this)">2027</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:6px">학기</div>
+              <div class="exam-sel-group">
+                <button type="button" class="exam-sel-btn" data-group="semester" data-val="1학기" onclick="selectExamPart(this)">1학기</button>
+                <button type="button" class="exam-sel-btn" data-group="semester" data-val="2학기" onclick="selectExamPart(this)">2학기</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:6px">시험 종류</div>
+              <div class="exam-sel-group">
+                <button type="button" class="exam-sel-btn" data-group="examtype" data-val="중간고사" onclick="selectExamPart(this)">중간고사</button>
+                <button type="button" class="exam-sel-btn" data-group="examtype" data-val="기말고사" onclick="selectExamPart(this)">기말고사</button>
+              </div>
+            </div>
+            <div id="es-target-preview" style="font-size:13px;color:var(--primary);font-weight:700;min-height:18px"></div>
+          </div>
+        </div>
         <div class="form-row"><label>출판사 (교과서)</label><input type="text" id="es-publisher" placeholder="예: 천재(박)"></div>
         <div class="form-row">
           <label>교과서 단원</label>
