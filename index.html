@@ -293,6 +293,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .grp-card-name{font-size:14px;font-weight:700;color:var(--primary);}
 .grp-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;
   background:rgba(6,182,212,0.1);color:var(--accent);margin-left:6px;}
+.student-status-new{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;
+  background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:11px;font-weight:800;
+  line-height:1.2;white-space:nowrap;}
 .student-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
 .sftab{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface);
   font-family:inherit;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
@@ -694,6 +697,17 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .modal-form-row input[type="text"], .modal-form-row select, .modal-form-row textarea {
     width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-family: inherit; font-size: 14px; outline: none;
   }
+  .salary-adjustment-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .salary-adjustment-row{display:grid;grid-template-columns:96px minmax(0,1fr) 34px;gap:6px;align-items:center}
+  .salary-adjustment-row select,.salary-adjustment-row input{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;background:#f8fafc}
+  .salary-adjustment-row button{height:34px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-weight:800;cursor:pointer}
+  .salary-adjustment-add{margin-top:8px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--primary);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}
+  .instructor-paid-auto{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;cursor:default;position:relative;vertical-align:middle}
+  .instructor-paid-auto:disabled{opacity:1}
+  .instructor-paid-auto:checked{background:#16a34a;border-color:#16a34a}
+  .instructor-paid-auto:checked::after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .instructor-salary-align-row{display:grid;grid-template-columns:120px 100px 100px 130px 130px 80px 160px 120px 100px 60px 130px 90px minmax(120px,1fr);min-width:1000px}
+  .instructor-monthly-salary-pill{display:none;grid-column:8;align-items:center;justify-content:center;width:max-content;margin:0 14px;padding:4px 10px;border-radius:999px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap}
   .exam-unit-list { display:flex; flex-direction:column; gap:8px; }
   .exam-unit-card { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
   .exam-unit-card input { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-family:inherit; font-size:13px; outline:none; }
@@ -882,7 +896,7 @@ body.is-instructor button[onclick="importData()"] {
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학교 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
       <div class="nav-item" onclick="showPanel('a','instructors')" id="anav-instructors"><span>🧑‍🏫</span> 강사 현황</div>
-      <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원 현황</div>
+      <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원/신규</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
       <div class="nav-item" onclick="showPanel('a','account')" id="anav-account"><span>⚙️</span> 계정정보</div>
     </nav>
@@ -1038,7 +1052,7 @@ body.is-instructor button[onclick="importData()"] {
         </div>
       </div>
       <div class="card" style="margin-top:20px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; position:relative; min-height:28px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="section-title" style="margin-bottom:0">📋 전체 학생 현황 <span style="font-weight:normal; font-size:12px; color:var(--text-muted); margin-left:10px;">(모든 등록 정보 포함)</span></div>
             <div id="subject-filter-btns" style="display:flex; gap:6px;">
@@ -1046,6 +1060,9 @@ body.is-instructor button[onclick="importData()"] {
               <button id="subj-btn-국어" onclick="filterStudentBySubject('국어')" style="padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer;">국어</button>
               <button id="subj-btn-수학" onclick="filterStudentBySubject('수학')" style="padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer;">수학</button>
             </div>
+          </div>
+          <div class="instructor-salary-align-row" style="position:absolute;left:0;top:50%;transform:translateY(-50%);pointer-events:none">
+            <div id="instructor-student-salary-pill" class="instructor-monthly-salary-pill" style="pointer-events:auto"></div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 내역 기준월:</label>
@@ -1134,7 +1151,7 @@ body.is-instructor button[onclick="importData()"] {
       <div class="card" style="margin-top:20px">
         <div class="section-title" style="margin-bottom:16px">📋 전체 강사 현황</div>
         <div style="overflow-x:auto">
-          <table class="student-stat-table" style="min-width:1000px">
+          <table class="student-stat-table" style="min-width:1100px">
             <thead>
               <tr>
                 <th style="width:110px">강사명</th>
@@ -1145,7 +1162,8 @@ body.is-instructor button[onclick="importData()"] {
                 <th style="width:110px">과목</th>
                 <th style="width:96px">담당학생수</th>
                 <th style="width:108px">총매출</th>
-                <th style="width:60px">수금</th>
+                <th style="width:78px">수금완료</th>
+                <th style="width:108px">이번달 급여</th>
                 <th style="width:168px">담당 학교</th>
                 <th style="width:90px">입사일</th>
                 <th>관리</th>
@@ -1159,11 +1177,11 @@ body.is-instructor button[onclick="importData()"] {
 
     <!-- Retired Students -->
     <div class="panel" id="a-panel-retired">
-      <div class="panel-title">퇴원 현황</div>
+      <div class="panel-title">퇴원/신규</div>
       <div class="panel-sub">퇴원한 학생 목록을 확인합니다</div>
       <div class="card">
         <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>😢 퇴원 학생 목록 <span id="retired-count-badge" class="grp-badge" style="background:var(--primary);color:#fff"></span></span>
+          <span>😢 퇴원 학생 목록 <span id="retired-count-badge" class="grp-badge" style="background:#dc2626;color:#fff"></span></span>
           <div style="display:flex;align-items:center;gap:8px">
             <button id="retired-all-btn" class="tab-btn" onclick="changeRetiredMonth('all')" style="font-size:12px;padding:4px 12px">전체기간</button>
             <div style="display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:8px;padding:2px 8px;background:#f8fafc">
@@ -1176,6 +1194,15 @@ body.is-instructor button[onclick="importData()"] {
         <table class="student-stat-table">
           <thead><tr><th>학생</th><th>전체</th><th>완료</th><th>달성률</th><th></th></tr></thead>
           <tbody id="retired-stat-body"></tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>🌱 신규 학생 목록 <span id="new-student-count-badge" class="grp-badge" style="background:#16a34a;color:#fff"></span></span>
+        </div>
+        <table class="student-stat-table">
+          <thead><tr><th>학생</th><th>과목</th><th>학원비</th><th>입학일</th><th></th></tr></thead>
+          <tbody id="new-student-stat-body"></tbody>
         </table>
       </div>
     </div>
@@ -1778,6 +1805,15 @@ body.is-instructor button[onclick="importData()"] {
       <div class="form-row"><label>뱃지 고정 색상 지정</label>
         <div id="inst-edit-color-picker" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
         <input type="hidden" id="inst-edit-color-index" value="">
+      </div>
+      <div class="form-row" id="inst-edit-salary-section">
+        <label>급여 계산</label>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center">
+          <input id="inst-edit-salary-percent" type="text" inputmode="decimal" placeholder="담당학생 총 수강료 대비 급여% 예) 50" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box">
+          <span style="font-size:13px;font-weight:800;color:var(--text-muted)">%</span>
+        </div>
+        <div id="inst-edit-salary-adjustments" class="salary-adjustment-list"></div>
+        <button type="button" class="salary-adjustment-add" onclick="addInstructorSalaryAdjustment('inst-edit-salary-adjustments')">+ 급여 조정 추가</button>
       </div>
       <div class="form-row"><label>뱃지 고정 색상 지정</label>
         <div id="inst-edit-color-picker" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
@@ -2710,6 +2746,11 @@ function openInstructorEditModal(id){
   document.getElementById('inst-edit-entered').value = inst.enteredAt||'';
   document.getElementById('inst-edit-color-index').value = inst.colorIndex||'';
   renderColorPicker('inst-edit-color-picker', 'inst-edit-color-index', inst.colorIndex||'', 'instructor');
+  const salarySection = document.getElementById('inst-edit-salary-section');
+  if (salarySection) salarySection.style.display = (currentUser && currentUser.role === 'instructor') ? 'none' : '';
+  const salaryPercentInput = document.getElementById('inst-edit-salary-percent');
+  if (salaryPercentInput) salaryPercentInput.value = inst.salaryPercent === 0 || inst.salaryPercent ? inst.salaryPercent : '';
+  renderInstructorSalaryAdjustments('inst-edit-salary-adjustments', inst.salaryAdjustments || []);
   // 과목
   renderSubjectCheckboxes('inst-edit-subject-wrap','inst-edit-subj',(inst.subjects||'').split(',').filter(x=>x),true);
   // 학교/학년 칩 생성 후 기저장값 선택
@@ -2806,13 +2847,120 @@ function submitInstructorEdit(){
   const instructors=getInstructors();
   const idx=instructors.findIndex(i=>i.id===id);
   if(idx<0) return;
-  instructors[idx]={...instructors[idx],name,hp,enteredAt,subjects,schools,studentIds,colorIndex};
+  const salaryPercentInput = document.getElementById('inst-edit-salary-percent');
+  const salarySection = document.getElementById('inst-edit-salary-section');
+  const canEditSalary = !salarySection || salarySection.style.display !== 'none';
+  const salaryUpdates = canEditSalary ? {
+    salaryPercent: salaryPercentInput && salaryPercentInput.value.trim() !== '' ? parseSalaryNumber(salaryPercentInput.value) : '',
+    salaryAdjustments: collectInstructorSalaryAdjustments('inst-edit-salary-adjustments')
+  } : {};
+  instructors[idx]={...instructors[idx],name,hp,enteredAt,subjects,schools,studentIds,colorIndex,...salaryUpdates};
   if(pw) instructors[idx].password=pw;
   saveInstructors(instructors);
   closeInstructorEditModalDirect();
   renderInstructorList();
   renderInstructorPaymentSummary();
   showToast('"'+name+'" 강사 정보가 수정되었습니다.');
+}
+
+function parseSalaryNumber(value) {
+  const n = parseFloat(String(value || '').replace(/,/g, '').trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getInstructorSalaryAdjustmentRowHtml(adj = {}) {
+  const op = adj.op || 'add';
+  const amount = adj.amount === 0 || adj.amount ? adj.amount : '';
+  return `<div class="salary-adjustment-row">
+    <select class="inst-salary-op">
+      <option value="add"${op === 'add' ? ' selected' : ''}>더하기</option>
+      <option value="subtract"${op === 'subtract' ? ' selected' : ''}>빼기</option>
+      <option value="multiply"${op === 'multiply' ? ' selected' : ''}>곱하기</option>
+    </select>
+    <input class="inst-salary-amount" type="text" inputmode="decimal" value="${amount}" placeholder="더하기/빼기: 금액, 곱하기: 배수 예) 1.1">
+    <button type="button" onclick="removeInstructorSalaryAdjustment(this)">×</button>
+  </div>`;
+}
+
+function renderInstructorSalaryAdjustments(containerId, adjustments = []) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const rows = Array.isArray(adjustments) && adjustments.length ? adjustments : [{op:'add', amount:''}];
+  wrap.innerHTML = rows.map(adj => getInstructorSalaryAdjustmentRowHtml(adj)).join('');
+}
+
+function addInstructorSalaryAdjustment(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', getInstructorSalaryAdjustmentRowHtml({op:'add', amount:''}));
+}
+
+function removeInstructorSalaryAdjustment(btn) {
+  const row = btn.closest('.salary-adjustment-row');
+  const wrap = row ? row.parentElement : null;
+  if (row) row.remove();
+  if (wrap && !wrap.querySelector('.salary-adjustment-row')) {
+    wrap.innerHTML = getInstructorSalaryAdjustmentRowHtml({op:'add', amount:''});
+  }
+}
+
+function collectInstructorSalaryAdjustments(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll('.salary-adjustment-row')).map(row => {
+    const input = row.querySelector('.inst-salary-amount');
+    const raw = input ? input.value.trim() : '';
+    if (raw === '') return null;
+    const opEl = row.querySelector('.inst-salary-op');
+    return { op: opEl ? opEl.value : 'add', amount: parseSalaryNumber(raw) };
+  }).filter(Boolean);
+}
+
+function hasInstructorSalaryConfig(inst) {
+  return inst && (inst.salaryPercent !== undefined && inst.salaryPercent !== '' || (Array.isArray(inst.salaryAdjustments) && inst.salaryAdjustments.length > 0));
+}
+
+function calculateInstructorSalary(inst, totalSales) {
+  let salary = (totalSales || 0) * (parseSalaryNumber(inst && inst.salaryPercent) / 100);
+  const adjustments = Array.isArray(inst && inst.salaryAdjustments) ? inst.salaryAdjustments : [];
+  adjustments.forEach(adj => {
+    const amount = parseSalaryNumber(adj.amount);
+    if (adj.op === 'subtract') salary -= amount;
+    else if (adj.op === 'multiply') salary *= amount;
+    else salary += amount;
+  });
+  return Math.round(salary);
+}
+
+function getInstructorMonthlySales(inst, month) {
+  if (!inst) return 0;
+  const studentIds = (inst.studentIds || []).map(String);
+  return getUsers()
+    .filter(u => u.role === 'student' && studentIds.includes(String(u.id)))
+    .reduce((sum, s) => sum + getStudentFeeForInstructor(s, inst, month), 0);
+}
+
+function renderInstructorStudentSalaryPill() {
+  const els = [
+    document.getElementById('instructor-student-salary-pill'),
+    document.getElementById('instructor-payment-salary-pill')
+  ].filter(Boolean);
+  if (!els.length) return;
+  if (!currentUser || currentUser.role !== 'instructor') {
+    els.forEach(el => {
+      el.style.display = 'none';
+      el.textContent = '';
+    });
+    return;
+  }
+  const inst = getInstructors().find(i => i.id === currentUser.id) || currentUser;
+  const totalSales = getInstructorMonthlySales(inst, currentPaymentMonth);
+  const salary = calculateInstructorSalary(inst, totalSales);
+  const label = '이번달 급여 : ' + (hasInstructorSalaryConfig(inst) ? salary.toLocaleString() + '원' : '-');
+  els.forEach(el => {
+    el.textContent = label;
+    el.style.display = 'inline-flex';
+  });
 }
 function getStudentFeeForInstructor(s, inst, month) {
   month = month || currentInstructorMonth;
@@ -2874,7 +3022,7 @@ function renderInstructorList(){
   if(!el) return;
   const instructors = getInstructors();
   if(!instructors.length){
-    el.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:24px">등록된 강사가 없습니다.</td></tr>';
+    el.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--text-muted);padding:24px">등록된 강사가 없습니다.</td></tr>';
     return;
   }
   const allStudents = getUsers().filter(u=>u.role==='student');
@@ -2884,9 +3032,12 @@ function renderInstructorList(){
     const subjectTags = (inst.subjects||'').split(',').filter(x=>x).map(sub=>'<span class="cat-tag'+(sub.startsWith('수학')?' math':'')+'" style="margin:0">'+sub+'</span>').join('')||'-';
     // 총매출: 담당 학생들의 담당 과목 월 수강료 합산
     const myStudents = allStudents.filter(s=>(inst.studentIds||[]).includes(s.id));
-    const totalSales = myStudents.reduce((sum,s)=>sum+getStudentFeeForInstructor(s,inst,currentInstructorMonth),0);
-    // 수금 완료 여부
-    const isPaid = (inst.paidMonths||[]).includes(currentInstructorMonth);
+    const totalSales = getInstructorMonthlySales(inst, currentInstructorMonth);
+    const calculatedSalary = calculateInstructorSalary(inst, totalSales);
+    const salaryDisplay = hasInstructorSalaryConfig(inst) ? calculatedSalary.toLocaleString()+'원' : '-';
+    // 담당 학생들의 해당 월 수금 완료 여부
+    const payableStudents = myStudents.filter(s => getStudentFeeForInstructor(s, inst, currentInstructorMonth) > 0);
+    const isPaid = payableStudents.length > 0 && payableStudents.every(s => isPaidForMonth(s, currentInstructorMonth));
     // 담당 학교: schools 필드에서 학교명만 추출
     const schoolSet = new Set((inst.schools||'').split(',').filter(x=>x).map(k=>k.split('|||')[0]));
     const schoolDisplay = schoolSet.size ? [...schoolSet].join(', ') : '-';
@@ -2937,7 +3088,8 @@ function renderInstructorList(){
       +'<td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">'+subjectTags+'</div></td>'
       +'<td style="text-align:center;font-size:13px;font-weight:700;color:var(--primary)">'+myStudents.length+'명</td>'
       +'<td style="font-size:13px;font-weight:700;color:var(--primary)">'+(totalSales?totalSales.toLocaleString()+'원':'-')+'</td>'
-      +'<td style="text-align:center"><input type="checkbox"'+(isPaid?' checked':'')+' onchange="event.stopPropagation();toggleInstructorPayment(\''+inst.id+'\')" style="cursor:pointer;width:18px;height:18px;"' + (isInst ? ' disabled' : '') + '></td>'
+      +'<td style="text-align:center"><input class="instructor-paid-auto" type="checkbox"'+(isPaid?' checked':'')+' disabled title="담당 학생 수금 상태에 따라 자동 표시됩니다"></td>'
+      +'<td style="font-size:13px;font-weight:800;color:#0f172a">'+salaryDisplay+'</td>'
       +'<td style="font-size:12px;color:var(--text-muted)">'+schoolDisplay+'</td>'
       +'<td style="font-size:12px;color:var(--text-muted)">'+(inst.enteredAt||'-')+'</td>'
       +'<td style="white-space:nowrap">'+manageBtns+'</td>'
@@ -3526,6 +3678,7 @@ function filterStudentBySubject(subject) {
   // 테이블 + 수금 현황 위젯 재렌더링
   if (typeof renderDetailedStudentList === 'function') renderDetailedStudentList();
   if (typeof renderPaymentSummary === 'function') renderPaymentSummary();
+  if (typeof renderInstructorStudentSalaryPill === 'function') renderInstructorStudentSalaryPill();
 }
 
 // 그룹 색상 팔레트
@@ -5423,6 +5576,18 @@ function editHWFromProgress(hwId) {
 }
 
 // ── ADMIN STUDENTS ────────────────────────────────────────
+function getStudentStatusMonthKey(month) {
+  return month || currentPaymentMonth || formatDateLocal(new Date()).slice(0, 7);
+}
+
+function isStudentEnteredThisMonth(student, month) {
+  return !!(student && typeof student.enteredAt === 'string' && student.enteredAt.slice(0, 7) === getStudentStatusMonthKey(month));
+}
+
+function renderNewStudentBadge(student, month) {
+  return isStudentEnteredThisMonth(student, month) ? '<span class="student-status-new">신규</span>' : '';
+}
+
 function renderAdminStudents(){
   // 학교 input 초기화 (더 이상 select가 아님)
   // 별도 초기화 필요 없음
@@ -5482,11 +5647,13 @@ function renderAdminStudents(){
     const grpBadge=grp?`<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>`:''
     const loginId=s.loginId||s.id;
     const safeName=s.name.replace(/'/g,'\u2019');
+    const newBadge=renderNewStudentBadge(s, currentPaymentMonth);
     return`<tr onclick="openStudentDetail('${s.id}')" style="${isRetired?'background:#fee2e2':''}">
       <td>
         <div class="student-name-cell" style="display:flex; align-items:center; gap:8px;">
           <div class="student-avatar" style="flex-shrink:0;">${initials}</div>
           <div style="width:60px; flex-shrink:0; font-weight:600;">${s.name}</div>
+          ${newBadge}
           <div style="width:80px; flex-shrink:0; font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">[${loginId}]</div>
           <div style="width:100px; flex-shrink:0; display:flex; align-items:center;">${grpBadge}</div>
         </div>
@@ -5930,6 +6097,40 @@ function renderRetiredStudents(){
               <button class="btn-del" style="margin-left:4px;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();deleteRetiredStudent('${s.id}','${safeName}')">탈퇴</button>
             `}
           </td>
+        </tr>`;
+      }).join('');
+  renderNewStudentsList();
+}
+
+function renderNewStudentsList(){
+  const body = document.getElementById('new-student-stat-body');
+  if (!body) return;
+  const badge = document.getElementById('new-student-count-badge');
+  const visibleMap = new Map();
+  [...getActiveStudents(), ...getActiveRetiredStudents()].forEach(s => {
+    if (s && s.id && !visibleMap.has(s.id)) visibleMap.set(s.id, s);
+  });
+  const filtered = [...visibleMap.values()]
+    .filter(s => s.enteredAt && (currentRetiredMonth === 'all' || s.enteredAt.slice(0, 7) === currentRetiredMonth))
+    .sort((a, b) => (b.enteredAt || '').localeCompare(a.enteredAt || ''));
+  if (badge) badge.textContent = `${filtered.length}명`;
+  body.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">해당 기간 신규 학생이 없습니다.</td></tr>`
+    : filtered.map(s => {
+        const initials = s.name.slice(0, 1);
+        const loginId = s.loginId || s.id;
+        const grp = getStudentGroupOf(s.id);
+        const grpColor = grp ? getGroupColor(grp.id) : null;
+        const grpBadge = grp ? `<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '';
+        const subjectTags = (s.subject || '').split(',').filter(Boolean).map(sub => `<span class="cat-tag${sub.startsWith('수학') ? ' math' : ''}" style="margin:0">${sub}</span>`).join('') || '-';
+        const feeMonth = s.enteredAt ? s.enteredAt.slice(0, 7) : currentPaymentMonth;
+        const fee = getStudentTotalFee(s, feeMonth);
+        return `<tr onclick="openStudentDetail('${s.id}')" style="background:#f0fdf4">
+          <td><div class="student-name-cell"><div class="student-avatar" style="background:#dcfce7;color:#166534">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${s.enteredAt} 입학</span>${grpBadge}</div></td>
+          <td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${subjectTags}</div></td>
+          <td style="font-size:13px;font-weight:700;color:var(--primary)">${fee ? fee.toLocaleString() + '원' : '-'}</td>
+          <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt}</td>
+          <td style="white-space:nowrap;text-align:right"><span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 보기</span></td>
         </tr>`;
       }).join('');
 }
@@ -6414,7 +6615,10 @@ function renderPaymentSummary() {
 
       <!-- 학원전체 수금 현황 -->
       <div class="pay-detail-section">
-        <div class="pay-detail-section-title">${isInstructor ? '💳 전체 수금 현황' : '🏫 학원전체 수금 현황'}</div>
+        <div class="pay-detail-section-title" style="justify-content:space-between">
+          <span>${isInstructor ? '💳 전체 수금 현황' : '🏫 학원전체 수금 현황'}</span>
+          ${isInstructor ? '<span id="instructor-payment-salary-pill" class="instructor-monthly-salary-pill" style="display:inline-flex;margin:0"></span>' : ''}
+        </div>
         <div class="pay-detail-total-box">
           <div class="pay-detail-row">
             <span class="pay-detail-label">총 수금 예정액</span>
@@ -6443,6 +6647,7 @@ function renderPaymentSummary() {
       </div>
     </div>
   `;
+  renderInstructorStudentSalaryPill();
 }
 
 function confirmPayment(sid) {
@@ -6542,18 +6747,23 @@ function renderDetailedStudentList() {
     
     const initials = s.name.slice(0, 1);
     const safeName = s.name.replace(/'/g, '\u2019');
+    const isNewActiveStudent = s.status === '재원' && isStudentEnteredThisMonth(s, currentPaymentMonth);
+    const statusBadge = isNewActiveStudent
+      ? renderNewStudentBadge(s, currentPaymentMonth)
+      : `<span style="padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; background:${s.status === '재원' ? 'var(--success-bg)' : '#fef2f2'}; color:${s.status === '재원' ? 'var(--success)' : '#dc2626'}; border:1px solid ${s.status === '재원' ? 'rgba(34,197,94,0.1)' : 'rgba(220,38,38,0.1)'}">${s.status}</span>`;
+    const rowBg = s.status === '퇴원' ? '#fee2e2' : (isNewActiveStudent ? '#f0fdf4' : '');
 
     return `
-      <tr style="cursor:default${s.status === '퇴원' ? ';background:#fee2e2' : ''}">
+      <tr style="cursor:default${rowBg ? ';background:' + rowBg : ''}">
         <td><div class="student-name-cell"><div class="student-avatar" style="width:24px;height:24px;font-size:11px">${initials}</div>${s.name}</div></td>
         <td style="font-size:13px;color:var(--text-muted)">${s.loginId || s.id}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
         <td style="font-size:13px">${formatPhone(s.parentHp)}</td>
         <td style="font-size:13px">${formatPhone(s.studentHp)}</td>
         <td style="font-size:13px">
-          <span style="padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; background:${s.status === '재원' ? 'var(--success-bg)' : '#fef2f2'}; color:${s.status === '재원' ? 'var(--success)' : '#dc2626'}; border:1px solid ${s.status === '재원' ? 'rgba(34,197,94,0.1)' : 'rgba(220,38,38,0.1)'}">
-            ${s.status}
-          </span>
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            ${statusBadge}
+          </div>
         </td>
         <td style="font-size:13px;"><div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">${subjectTags}</div></td>
         <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
@@ -6577,6 +6787,7 @@ function renderDetailedStudentList() {
       </tr>
     `;
   }).join('');
+  renderInstructorStudentSalaryPill();
   renderPaymentSummary();
 }
 
@@ -6867,6 +7078,7 @@ function changeStudentMonth(monthStr) {
   
   renderDetailedStudentList();
   renderPaymentSummary();
+  renderInstructorStudentSalaryPill();
 }
 
 function shiftStudentMonth(delta) {
