@@ -771,8 +771,7 @@ body.is-instructor button[onclick="importData()"] {
     </div>
     <button class="btn btn-primary" style="margin-top:8px" onclick="doLogin()">로그인</button>
     <div class="login-hint">
-      <p><strong>관리자:</strong> admin / 1111</p>
-      <p><strong>학생 예시:</strong> 김민준, 이서연, 박지호 / 1234</p>
+      <p><strong>학생 예시:</strong> 아이디 : 학생명, 비밀번호 : 1111</p>
     </div>
   </div>
 </div>
@@ -3349,6 +3348,7 @@ function getStudentLinkedProgressHomeworkIds(studentId) {
 
   const studentGroups = getStudentGroups();
   const allClassSeries = getAllClassSeries();
+  const allClasses = getClasses();
   const myGroups = studentGroups.filter(g => (g.studentIds || []).map(String).includes(myId));
   const myGroupIds = myGroups.map(g => String(g.id));
   const myClassSeries = allClassSeries.filter(cs =>
@@ -3378,15 +3378,13 @@ function getStudentLinkedProgressHomeworkIds(studentId) {
     return cs ? String(cs.id) : eid;
   };
 
-  const sSubjects = (currentStudent.subject || '').split(',').map(x => x.trim()).filter(Boolean);
   const linkedHwIds = new Set();
   getProgressTopics().forEach(t => {
     if (!t || !t.hwId) return;
     const entityId = resolveEntityId(t);
     if (!myEntityIds.has(entityId)) return;
-    if (t.assignedTo && t.assignedTo.length > 0 && !t.assignedTo.map(String).includes(myId)) return;
-    if (t.subject && sSubjects.length > 0 && !sSubjects.includes(t.subject.trim())) return;
-    if (t.grade && currentStudent.grade && currentStudent.grade.trim() !== t.grade.trim()) return;
+    const classSeries = allClassSeries.find(cs => String(cs.id) === entityId);
+    if (!isProgressTopicVisibleForStudent(t, currentStudent, classSeries, studentGroups, allClasses)) return;
     linkedHwIds.add(String(t.hwId));
   });
   return linkedHwIds;
@@ -4497,6 +4495,7 @@ function renderStudentMyClasses(){
   const myGroups = studentGroups.filter(g => (g.studentIds || []).map(String).includes(myId));
   const myGroupIds = myGroups.map(g => String(g.id));
   const allClassSeries = getAllClassSeries();
+  const allClasses = getClasses();
   const topics = getProgressTopics();
 
   if (!currentStudent) {
@@ -4545,13 +4544,7 @@ function renderStudentMyClasses(){
 
     Object.keys(datesMap).forEach(date => {
       const filteredTopics = datesMap[date].filter(t => {
-        if (t.assignedTo && t.assignedTo.length > 0) return t.assignedTo.map(String).includes(myId);
-        if (t.subject) {
-          const sSubjs = (currentStudent.subject || '').split(',').map(x => x.trim()).filter(Boolean);
-          if (sSubjs.length > 0 && !sSubjs.includes(t.subject.trim())) return false;
-        }
-        if (t.grade && currentStudent.grade && currentStudent.grade.trim() !== t.grade.trim()) return false;
-        return true;
+        return isProgressTopicVisibleForStudent(t, currentStudent, cs, studentGroups, allClasses);
       });
 
       if (filteredTopics.length > 0) {
@@ -5190,16 +5183,15 @@ function getAdminHomeworkSessions(hws, unlinkedSourceHws = hws) {
               return cid === entityId && c.date === date;
             })
           : null;
-        const assignedSet = new Set((classInst ? classInst.assignedTo : classSeriesItem.assignedTo) || []);
-        studentsInEntity = students.filter(s => assignedSet.has(s.id));
-        if (!studentsInEntity.length && classSeriesItem.groupIds) {
-          studentsInEntity = students.filter(s => classSeriesItem.groupIds.some(gid => {
-            const sg = groups.find(x => x.id === gid);
-            return sg && (sg.studentIds || []).includes(s.id);
-          }));
-        }
-        if (classSeriesItem.subject) studentsInEntity = studentsInEntity.filter(s => s.subject && s.subject.split(',').includes(classSeriesItem.subject));
-        if (date !== '날짜 미지정') studentsInEntity = studentsInEntity.filter(s => isStudentActiveOnDate(s, date));
+        studentsInEntity = getProgressTargetStudents({
+          classSeries: classSeriesItem,
+          classInstance: classInst,
+          targetDate: date === '날짜 미지정' ? '' : date,
+          subject: t.subject || classSeriesItem.subject || '',
+          grade: t.grade || '',
+          students,
+          groups
+        });
       } else {
         studentsInEntity = (group.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean);
       }
@@ -5339,29 +5331,25 @@ function syncHWStudentsFromTopic(hwId) {
   const sampleClass = classes.find(c => {
     const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
     const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
-    return key === t.groupId;
+    return key === t.groupId && (!t.targetDate || c.date === t.targetDate);
   });
+  const classSeries = getAllClassSeries().find(c => c.id === t.groupId);
 
-  if (!sampleClass) {
+  if (!sampleClass && !classSeries) {
     showToast('연결된 수업 정보를 찾을 수 없습니다.', 'warn');
     return;
   }
 
-  let studentIds = sampleClass.assignedTo || [];
-  if (studentIds.length === 0 && sampleClass.groupIds && sampleClass.groupIds.length > 0) {
-    const allStudents = allUsers.filter(u => u.role === 'student');
-    studentIds = allStudents.filter(s => sampleClass.groupIds.some(gid => {
-      const g = groups.find(sg => sg.id === gid);
-      return g && g.studentIds && g.studentIds.includes(s.id);
-    })).map(s => s.id);
-    
-    if (sampleClass.subject) {
-      studentIds = studentIds.filter(sid => {
-        const s = allStudents.find(u => u.id === sid);
-        return s && s.subject && s.subject.split(',').includes(sampleClass.subject);
-      });
-    }
-  }
+  const allStudents = allUsers.filter(u => u.role === 'student');
+  let studentIds = getProgressTargetStudents({
+    classSeries,
+    classInstance: sampleClass,
+    targetDate: t.targetDate,
+    subject: t.subject,
+    grade: t.grade,
+    students: allStudents,
+    groups
+  }).map(s => s.id);
 
   if (studentIds.length === 0) {
     showToast('동기화할 대상 학생이 없습니다.', 'warn');
@@ -5411,33 +5399,15 @@ function getHWTargetStudents(hw) {
     sampleClass = beforeOrOn[0] || [...seriesClasses].sort((a,b) => b.date.localeCompare(a.date))[0];
   }
 
-  // 가장 최근 수업 인스턴스 (신규 멤버 보충용)
-  const mostRecentClass = [...seriesClasses].sort((a,b) => b.date.localeCompare(a.date))[0];
-
-  const assignedSet = new Set(sampleClass ? (sampleClass.assignedTo || []) : []);
-  const mostRecentAssignedSet = new Set(mostRecentClass ? (mostRecentClass.assignedTo || []) : []);
-
-  // 4. 그룹 소속 + assignedTo 스냅샷 or 최근 수업에 명시적으로 추가된 신규생 보충
-  // (enteredAt 기준 대신 mostRecentAssignedTo 기준 → 다른 요일반 학생 오염 방지)
-  let pool = users.filter(s => {
-    const inGroup = (cs.groupIds || []).some(gid => {
-      const g = groups.find(sg => sg.id === gid);
-      return g && g.studentIds && g.studentIds.includes(s.id);
-    });
-    if (!inGroup) return false;
-    return assignedSet.has(s.id) || mostRecentAssignedSet.has(s.id);
+  return getProgressTargetStudents({
+    classSeries: cs,
+    classInstance: sampleClass,
+    targetDate,
+    subject: hw.subject,
+    grade: hw.grade,
+    students: users,
+    groups
   });
-
-  // 4. 과목 필터 (hw.subject = 진도 추가 시 selectedSubject)
-  if (hw.subject) pool = pool.filter(s => s.subject && s.subject.split(',').includes(hw.subject));
-
-  // 4-1. 학년 필터 (hw.grade = 진도 추가 시 selectedGrade)
-  if (hw.grade) pool = pool.filter(s => (s.grade || '').trim() === hw.grade.trim());
-
-  // 5. 재원 여부 확인
-  if (targetDate) pool = pool.filter(s => isStudentActiveOnDate(s, targetDate));
-
-  return pool;
 }
 
 function renderHWStudentList(hwId){
@@ -5913,6 +5883,76 @@ function isStudentActiveOnDate(s, date) {
     // 퇴원 이후: 복귀일이 있고 date >= returnedAt이면 재원
     if (!s.returnedAt || date < s.returnedAt) return false; // 공백 기간
   }
+  return true;
+}
+
+function getProgressTargetStudents({ classSeries, classInstance, targetDate, subject, grade, students, groups }) {
+  if (!classSeries) return [];
+  const explicitAssignedTo = (classInstance ? classInstance.assignedTo : classSeries.assignedTo) || [];
+  const hasExplicitAssignedTo = explicitAssignedTo.length > 0;
+  const assignedSet = new Set(explicitAssignedTo);
+  const groupIds = (classSeries.groupIds && classSeries.groupIds.length > 0)
+    ? classSeries.groupIds
+    : (classSeries.groupId ? [classSeries.groupId] : []);
+  const targetSubject = subject !== undefined ? subject : (classSeries.subject || '');
+  const targetGrade = (grade || '').trim();
+  const result = [];
+  const seen = new Set();
+
+  (students || []).forEach(s => {
+    const assigned = assignedSet.has(s.id);
+    const inGroup = groupIds.some(gid => {
+      const g = (groups || []).find(sg => sg.id === gid);
+      return g && (g.studentIds || []).includes(s.id);
+    });
+    if (hasExplicitAssignedTo ? !assigned : !inGroup) return;
+    if (targetSubject && (!s.subject || !s.subject.split(',').includes(targetSubject))) return;
+    if (targetGrade && (s.grade || '').trim() !== targetGrade) return;
+    if (targetDate && !isStudentActiveOnDate(s, targetDate)) return;
+    if (!seen.has(s.id)) {
+      seen.add(s.id);
+      result.push(s);
+    }
+  });
+
+  return result;
+}
+
+function getClassInstanceForProgress(classSeries, targetDate, classes) {
+  if (!classSeries || !targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return null;
+  return (classes || getClasses()).find(c => {
+    const groupIds = (c.groupIds && c.groupIds.length > 0) ? c.groupIds : (c.groupId ? [c.groupId] : []);
+    const gIds = groupIds.slice().sort().join(',');
+    const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
+    return key === classSeries.id && c.date === targetDate;
+  }) || null;
+}
+
+function isProgressTopicVisibleForStudent(topic, student, classSeries, groups, classes) {
+  if (!topic || !student) return false;
+  const myId = String(student.id);
+  const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(topic.targetDate || '') ? topic.targetDate : '';
+
+  if (classSeries) {
+    const classInstance = getClassInstanceForProgress(classSeries, safeDate, classes);
+    return getProgressTargetStudents({
+      classSeries,
+      classInstance,
+      targetDate: safeDate,
+      subject: topic.subject,
+      grade: topic.grade,
+      students: [student],
+      groups
+    }).some(s => String(s.id) === myId);
+  }
+
+  if (topic.assignedTo && topic.assignedTo.length > 0 && !topic.assignedTo.map(String).includes(myId)) return false;
+  if (topic.subject) {
+    const studentSubjects = (student.subject || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (studentSubjects.length > 0 && !studentSubjects.includes(topic.subject.trim())) return false;
+  }
+  if (topic.grade && student.grade && student.grade.trim() !== topic.grade.trim()) return false;
+  if (safeDate && !isStudentActiveOnDate(student, safeDate)) return false;
   return true;
 }
 
@@ -8842,43 +8882,25 @@ function addProgressTopic() {
     sampleClass = beforeOrOnDate[0] || [...seriesClassesForProg].sort((a, b) => b.date.localeCompare(a.date))[0];
   }
 
-  // 가장 최근 수업 인스턴스 (신규 멤버 보충용)
+  // 수업 인스턴스가 전혀 없을 때의 마지막 fallback
   const mostRecentClassForProg = [...seriesClassesForProg].sort((a, b) => b.date.localeCompare(a.date))[0];
 
   const selectedSubject = document.getElementById('prog-subject').value;
   const selectedGrade = document.getElementById('prog-grade').value;
 
-  // 요일반 구분을 위해 sampleClass.assignedTo 스냅샷 기준 사용
-  // 신규 멤버 보충은 enteredAt 대신 mostRecentClass.assignedTo 기준 → 다른 요일반 오염 방지
+  // 진도 날짜 기준으로 해당 수업/그룹/과목/학년에 속하고 재원 중인 학생 산정
   const allClassSeries = getAllClassSeries();
   const cs = allClassSeries.find(c => c.id === groupId);
   const activeStudents = getUsers().filter(u => u.role === 'student');
-  const assignedSet = new Set(sampleClass ? (sampleClass.assignedTo || []) : []);
-  const mostRecentAssignedSetForProg = new Set(mostRecentClassForProg ? (mostRecentClassForProg.assignedTo || []) : []);
-
-  let membersForHW = cs
-    ? activeStudents.filter(s => {
-        const inGroup = (cs.groupIds || []).some(gid => {
-          const g = groups.find(sg => sg.id === gid);
-          return g && g.studentIds && g.studentIds.includes(s.id);
-        });
-        if (!inGroup) return false;
-        return assignedSet.has(s.id) || mostRecentAssignedSetForProg.has(s.id);
-      })
-    : [];
-
-  // 과목 필터
-  if (selectedSubject) {
-    membersForHW = membersForHW.filter(s => s.subject && s.subject.split(',').includes(selectedSubject));
-  }
-  // 학년 필터
-  if (selectedGrade) {
-    membersForHW = membersForHW.filter(s => (s.grade || '').trim() === selectedGrade.trim());
-  }
-  // 진도 날짜 기준 재원 여부 확인
-  if (targetDate) {
-    membersForHW = membersForHW.filter(s => isStudentActiveOnDate(s, targetDate));
-  }
+  let membersForHW = getProgressTargetStudents({
+    classSeries: cs,
+    classInstance: sampleClass || mostRecentClassForProg,
+    targetDate,
+    subject: selectedSubject,
+    grade: selectedGrade,
+    students: activeStudents,
+    groups
+  });
 
   let studentIds = membersForHW.map(s => s.id);
 
@@ -9127,7 +9149,29 @@ function editProgressSession(idsStr, label) {
   let firstT = topics.find(t => t.id === ids[0]);
   if (!firstT) return;
   
-  let baseStudents = getProgressCompletions().filter(c => c.topicId === firstT.id).map(c => c.studentId);
+  const editClassSeries = getAllClassSeries().find(c => c.id === (firstT.groupId || firstT.entityId));
+  const editGroups = getStudentGroups();
+  const editClassInst = editClassSeries && firstT.targetDate
+    ? getClasses().find(c => {
+        const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
+        const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
+        return key === editClassSeries.id && c.date === firstT.targetDate;
+      })
+    : null;
+  let baseStudents = editClassSeries
+    ? getProgressTargetStudents({
+        classSeries: editClassSeries,
+        classInstance: editClassInst,
+        targetDate: firstT.targetDate,
+        subject: firstT.subject,
+        grade: firstT.grade,
+        students: getUsers().filter(u => u.role === 'student'),
+        groups: editGroups
+      }).map(s => s.id)
+    : [];
+  if (!baseStudents.length) {
+    baseStudents = getProgressCompletions().filter(c => c.topicId === firstT.id).map(c => c.studentId);
+  }
   if (!baseStudents.length && firstT.hwId) {
       const hw = hwItems.find(h => h.id === firstT.hwId);
       if (hw && hw.assignedTo) baseStudents = hw.assignedTo;
@@ -9458,7 +9502,6 @@ function renderProgStudentList(topicId) {
   const activeStudents = getUsers().filter(u => u.role === 'student');
   const allClassSeries = getAllClassSeries();
 
-  // assignedTo 스냅샷 + 신규 그룹 멤버 보충 (요일반 구분)
   const cs = allClassSeries.find(c => c.id === t.groupId);
   const groups = getStudentGroups();
   const allClassesForProg = getClasses();
@@ -9472,24 +9515,15 @@ function renderProgStudentList(topicId) {
           return key === t.groupId && c.date === t.targetDate;
         })
       : null;
-    const assignedSet = new Set(classInst ? (classInst.assignedTo || []) : (cs.assignedTo || []));
-    const classDate = classInst ? classInst.date : cs.dateSample;
-    targetStudents = activeStudents.filter(s => {
-      const inGroup = (cs.groupIds || []).some(gid => {
-        const g = groups.find(sg => sg.id === gid);
-        return g && g.studentIds && g.studentIds.includes(s.id);
-      });
-      if (!inGroup) return false;
-      return assignedSet.has(s.id) || (s.enteredAt && classDate && s.enteredAt > classDate);
+    targetStudents = getProgressTargetStudents({
+      classSeries: cs,
+      classInstance: classInst,
+      targetDate: t.targetDate,
+      subject: t.subject,
+      grade: t.grade,
+      students: activeStudents,
+      groups
     });
-    if (cs.subject) {
-      targetStudents = targetStudents.filter(s =>
-        s.subject && s.subject.split(',').includes(cs.subject)
-      );
-    }
-    if (t.targetDate) {
-      targetStudents = targetStudents.filter(s => isStudentActiveOnDate(s, t.targetDate));
-    }
   } else {
     targetStudents = [];
   }
@@ -9661,6 +9695,7 @@ function renderStudentProgressContent(targetId) {
     const hwComps = getCompletions();
     const students = getUsers().filter(u => u.role === 'student');
     const allClassSeries = getAllClassSeries();
+    const allClasses = getClasses();
     const myId = currentUser ? String(currentUser.id) : null;
 
     if (!myId) {
@@ -9689,7 +9724,8 @@ function renderStudentProgressContent(targetId) {
     });
 
     // 2. Student assignments
-    const myGroups = getStudentGroups().filter(g => g.studentIds && g.studentIds.map(String).includes(myId));
+    const studentGroups = getStudentGroups();
+    const myGroups = studentGroups.filter(g => g.studentIds && g.studentIds.map(String).includes(myId));
     const myGroupIds = myGroups.map(g => String(g.id));
     const myClassSeries = allClassSeries.filter(cs => 
       (cs.assignedTo && cs.assignedTo.map(String).includes(myId)) || 
@@ -9703,7 +9739,7 @@ function renderStudentProgressContent(targetId) {
       if (!entityTopics.length) return;
 
       const cs = allClassSeries.find(c => String(c.id) === entityId);
-      const grp = getStudentGroups().find(g => String(g.id) === entityId);
+      const grp = studentGroups.find(g => String(g.id) === entityId);
       const label = cs ? (cs.label || cs.title) : (grp ? grp.name : '소속 반');
       
       const manualIdx = cs && cs.colorIndex !== undefined && cs.colorIndex !== null && cs.colorIndex !== '' ? cs.colorIndex : null;
@@ -9719,15 +9755,7 @@ function renderStudentProgressContent(targetId) {
 
       Object.keys(datesMap).forEach(date => {
         const filteredTopics = datesMap[date].filter(t => {
-          if (t.assignedTo && t.assignedTo.length > 0) return t.assignedTo.map(String).includes(myId);
-          if (t.subject) {
-            const sSubjs = (currentStudent.subject || "").split(',').map(x => x.trim()).filter(Boolean);
-            if (sSubjs.length > 0 && !sSubjs.includes(t.subject.trim())) return false;
-          }
-          if (t.grade && currentStudent.grade) {
-            if (currentStudent.grade.trim() !== t.grade.trim()) return false;
-          }
-          return true;
+          return isProgressTopicVisibleForStudent(t, currentStudent, cs, studentGroups, allClasses);
         });
 
         if (filteredTopics.length > 0) {
@@ -9981,42 +10009,26 @@ function renderProgressContent(targetId) {
       ? ((classSeries.groupIds && classSeries.groupIds.length > 0) ? getGroupColor(classSeries.groupIds[0], classSeries.title, classSeries.colorIndex) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'})
       : (group ? getGroupColor(group.id, group.name) : {bg:'#f1f5f9', color:'#64748b', border:'#e2e8f0'});
     
-    // 이 시리즈의 가장 최근 수업 인스턴스 (신규 멤버 보충용 - enteredAt 대신 사용)
-    const mostRecentSeriesClass = classSeries
-      ? [...allClasses].filter(c => {
-          const gIds = (c.groupIds || (c.groupId ? [c.groupId] : [])).sort().join(',');
-          const key = `${c.type}|${c.title}|${c.startTime}|${c.endTime}|${gIds}|${c.subject || ''}`;
-          return key === entityId;
-        }).sort((a, b) => b.date.localeCompare(a.date))[0]
-      : null;
-    const mostRecentSeriesAssignedSet = new Set(mostRecentSeriesClass ? (mostRecentSeriesClass.assignedTo || []) : []);
-
-    // 그룹 내 이 classSeries에 속하는 학생 풀 (요일반 구분용)
-    // assignedTo 스냅샷 기준 + 최근 수업에 명시적 추가된 신규생 보충 (다른 요일반 오염 방지)
-    const getSeriesStudents = (assignedTo, targetDate) => {
+    // 그룹 내 이 classSeries에 속하고 해당 진도일에 재원 중인 학생 풀
+    const getSeriesStudents = (classInstance, targetDate, sessionTopicsForDate = []) => {
       if (!classSeries) return [];
-      const assignedSet = new Set(assignedTo || []);
-      let pool = students.filter(s => {
-        if (assignedSet.has(s.id) || mostRecentSeriesAssignedSet.has(s.id)) return true;
-        const inGroup = (classSeries.groupIds || []).some(gid => {
-          const g = groups.find(sg => sg.id === gid);
-          return g && g.studentIds && g.studentIds.includes(s.id);
-        });
-        if (!inGroup) return false;
-        return false;
+      const topicWithSubject = sessionTopicsForDate.find(t => t.subject);
+      const topicWithGrade = sessionTopicsForDate.find(t => t.grade);
+      const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(targetDate || '') ? targetDate : '';
+      return getProgressTargetStudents({
+        classSeries,
+        classInstance,
+        targetDate: safeDate,
+        subject: (topicWithSubject && topicWithSubject.subject) || classSeries.subject || '',
+        grade: (topicWithGrade && topicWithGrade.grade) || '',
+        students,
+        groups
       });
-      if (classSeries.subject) {
-        pool = pool.filter(s => s.subject && s.subject.split(',').includes(classSeries.subject));
-      }
-      if (targetDate && targetDate !== '날짜 미지정') {
-        pool = pool.filter(s => isStudentActiveOnDate(s, targetDate));
-      }
-      return pool;
     };
 
     let studentsInEntity;
     if (classSeries) {
-      studentsInEntity = getSeriesStudents(classSeries.assignedTo, null);
+      studentsInEntity = getSeriesStudents(null, '');
     } else if (group) {
       studentsInEntity = (group.studentIds || []).map(sid => students.find(s => s.id === sid)).filter(Boolean);
     } else {
@@ -10047,8 +10059,9 @@ function renderProgressContent(targetId) {
           : null;
         const sessionStudents = classSeries
           ? getSeriesStudents(
-              classInst ? classInst.assignedTo : classSeries.assignedTo,
-              date
+              classInst || null,
+              date,
+              datesMap[date]
             )
           : studentsInEntity.filter(s => isStudentActiveOnDate(s, date));
         sessions.push({
