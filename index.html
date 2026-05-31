@@ -1082,6 +1082,7 @@ body.is-instructor button[onclick="importData()"] {
             <thead>
               <tr>
                 <th style="width:120px">학생명</th>
+                <th style="width:130px">학교</th>
                 <th style="width:100px">아이디</th>
                 <th style="width:100px">비밀번호</th>
                 <th style="width:130px">학부모 HP</th>
@@ -1092,7 +1093,6 @@ body.is-instructor button[onclick="importData()"] {
                 <th style="width:120px">학원비</th>
                 <th style="width:100px">수금일</th>
                 <th style="width:60px">수금</th>
-                <th style="width:130px">학교</th>
                 <th style="width:110px">입학일</th>
                 <th>관리</th>
               </tr>
@@ -1206,7 +1206,7 @@ body.is-instructor button[onclick="importData()"] {
           <span>🌱 신규 학생 목록 <span id="new-student-count-badge" class="grp-badge" style="background:#16a34a;color:#fff"></span></span>
         </div>
         <table class="student-stat-table">
-          <thead><tr><th>학생</th><th>과목</th><th>학원비</th><th>입학일</th><th></th></tr></thead>
+          <thead><tr><th>학생</th><th>학부모 HP</th><th>학생 HP</th><th>과목</th><th>담당강사</th><th>학원비</th><th>수금일</th><th>수금</th><th>관리</th></tr></thead>
           <tbody id="new-student-stat-body"></tbody>
         </table>
       </div>
@@ -2537,7 +2537,7 @@ function getActiveRetiredStudents() {
     const activeSharedButRetiredHere = getUsers().filter(u => u.role === 'student' && instRetiredIds.includes(u.id))
       .map(u => {
         const rInfo = instRetired.find(x => x.id === u.id);
-        return { ...u, retiredAt: rInfo ? rInfo.retiredAt : (u.retiredAt || '') };
+        return { ...u, retiredAt: rInfo ? rInfo.retiredAt : (u.retiredAt || ''), retiredSubjects: rInfo ? (rInfo.retiredSubjects || []) : (u.retiredSubjects || []) };
       });
       
     const merged = [...globallyRetired, ...activeSharedButRetiredHere];
@@ -6089,7 +6089,18 @@ function cleanupStudentData(sid){
   saveHomeworks(hws);
   const groups=getStudentGroups().map(g=>({...g,studentIds:(g.studentIds||[]).filter(id=>id!==sid)}));
   saveStudentGroups(groups);
+  saveRetiredUsers(getRetiredUsers().filter(u => u.id !== sid));
+  const classes = getClasses().map(c => Array.isArray(c.assignedTo) ? { ...c, assignedTo: c.assignedTo.filter(id => id !== sid) } : c);
+  saveClasses(classes);
+  const topics = getProgressTopics().map(t => Array.isArray(t.assignedTo) ? { ...t, assignedTo: t.assignedTo.filter(id => id !== sid) } : t);
+  saveProgressTopics(topics);
   saveProgressCompletions(getProgressCompletions().filter(c => c.studentId !== sid));
+  const instructors = getInstructors().map(inst => ({
+    ...inst,
+    studentIds: (inst.studentIds || []).filter(id => id !== sid),
+    retiredStudents: (inst.retiredStudents || []).filter(x => x.id !== sid)
+  }));
+  saveInstructors(instructors);
 }
 
 // 특정 학생이 현재 로그인한 강사 외에 타 강사에게도 배정되어 있는지 확인
@@ -6193,9 +6204,381 @@ function getActiveStudentForMonth(s, month) {
   return { ...s, status: '재원' };                                  // 복귀 이후
 }
 
-function retireStudent(id,name, existingDate = null){
+function getStudentSubjectList(student) {
+  return (student && student.subject ? student.subject : '').split(',').map(x => x.trim()).filter(Boolean);
+}
+
+function getSubjectBase(subject) {
+  return String(subject || '').split('(')[0].trim();
+}
+
+function chooseRetirementSubjects(student, name) {
+  const subjects = getStudentSubjectList(student);
+  if (!subjects.length) return [];
+  const msg = `"${name}" 학생의 퇴원 과목을 선택하세요.\n\n` +
+    subjects.map((sub, idx) => `${idx + 1}. ${sub}`).join('\n') +
+    `\n\n복수 선택은 쉼표로 입력하세요. 예) 1,3\n전체 퇴원은 전체 또는 all 입력`;
+  const raw = prompt(msg, subjects.map((_, idx) => idx + 1).join(','));
+  if (!raw) return null;
+  const value = raw.trim();
+  if (value === '전체' || value.toLowerCase() === 'all') return subjects;
+  const selected = [];
+  value.split(',').map(x => x.trim()).filter(Boolean).forEach(part => {
+    const n = parseInt(part, 10);
+    if (Number.isFinite(n) && subjects[n - 1]) selected.push(subjects[n - 1]);
+    else {
+      const matched = subjects.find(sub => sub === part || getSubjectBase(sub) === getSubjectBase(part));
+      if (matched) selected.push(matched);
+    }
+  });
+  return [...new Set(selected)];
+}
+
+function renderRetiredSubjectTags(subjects) {
+  const items = Array.isArray(subjects) ? subjects.filter(Boolean) : [];
+  if (!items.length) return '';
+  return `<span style="display:inline-flex;gap:4px;align-items:center;margin-left:6px">${items.map(sub => `<span class="cat-tag${getSubjectBase(sub) === '수학' ? ' math' : ''}" style="margin:0;padding:1px 5px;font-size:10px">${sub}</span>`).join('')}</span>`;
+}
+
+function ensureRetireStudentModal() {
+  if (document.getElementById('retireStudentModal')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="retireStudentModal" onclick="closeRetireStudentModal(event)">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">퇴원 처리</div>
+            <div class="modal-sub" id="retire-student-subtitle">퇴원 과목과 퇴원일을 선택합니다.</div>
+          </div>
+          <button class="modal-close" onclick="closeRetireStudentModalDirect()">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="retire-student-id">
+          <input type="hidden" id="retire-student-name">
+          <div class="form-row">
+            <label>퇴원 과목</label>
+            <div id="retire-subject-wrap" class="subject-chip-group"></div>
+          </div>
+          <div class="form-row">
+            <label>퇴원일</label>
+            <input type="date" id="retire-date" onclick="this.showPicker && this.showPicker()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button type="button" class="btn-cancel" onclick="closeRetireStudentModalDirect()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700">취소</button>
+            <button type="button" class="btn-add" onclick="confirmRetireStudentModal()" style="flex:2">퇴원 처리</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function openRetireStudentModal(id, name, defaultDate) {
+  ensureRetireStudentModal();
+  const student = getUsers().find(u => u.id === id) || getRetiredUsers().find(u => u.id === id);
+  if (!student) return;
+  const subjects = getStudentSubjectList(student);
+  if (!subjects.length) {
+    showToast('퇴원 처리할 과목이 없습니다.', 'warn');
+    return;
+  }
+  document.getElementById('retire-student-id').value = id;
+  document.getElementById('retire-student-name').value = name;
+  document.getElementById('retire-date').value = defaultDate || formatDateLocal(new Date());
+  const subtitle = document.getElementById('retire-student-subtitle');
+  if (subtitle) subtitle.textContent = `"${name}" 학생의 퇴원 과목과 퇴원일을 선택합니다.`;
+  document.getElementById('retire-subject-wrap').innerHTML = subjects.map(sub =>
+    `<label class="subject-chip"><input type="checkbox" name="retire-subject" value="${escapeExamText(sub)}" onchange="toggleSubjectChip(this)"> ${escapeExamText(sub)}</label>`
+  ).join('');
+  document.getElementById('retireStudentModal').classList.add('open');
+}
+
+function closeRetireStudentModal(e) {
+  if (e.target === document.getElementById('retireStudentModal')) closeRetireStudentModalDirect();
+}
+
+function closeRetireStudentModalDirect() {
+  const modal = document.getElementById('retireStudentModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function confirmRetireStudentModal() {
+  const id = document.getElementById('retire-student-id').value;
+  const name = document.getElementById('retire-student-name').value;
+  const rDate = document.getElementById('retire-date').value;
+  const selectedSubjects = Array.from(document.querySelectorAll('#retire-subject-wrap input:checked')).map(input => input.value);
+  if (!selectedSubjects.length) { showToast('퇴원 과목을 선택해주세요.', 'warn'); return; }
+  if (!rDate) { showToast('퇴원일을 선택해주세요.', 'warn'); return; }
+  closeRetireStudentModalDirect();
+  retireStudent(id, name, rDate, selectedSubjects);
+}
+
+function getRetirementRecordSubjects(record, fallbackStudent) {
+  const subjects = Array.isArray(record && record.subjects) ? record.subjects : [];
+  if (subjects.length) return subjects.filter(Boolean);
+  const retiredSubjects = Array.isArray(record && record.retiredSubjects) ? record.retiredSubjects : [];
+  if (retiredSubjects.length) return retiredSubjects.filter(Boolean);
+  return getStudentSubjectList(fallbackStudent);
+}
+
+function getStudentRetirementRecords(student) {
+  if (!student) return [];
+  if (Array.isArray(student.retiredSubjectRecords) && student.retiredSubjectRecords.length) {
+    return student.retiredSubjectRecords
+      .map(record => ({
+        retiredAt: record.retiredAt || student.retiredAt || '',
+        returnedAt: record.returnedAt || '',
+        subjects: getRetirementRecordSubjects(record, student)
+      }))
+      .filter(record => record.subjects.length);
+  }
+  const subjects = Array.isArray(student.retiredSubjects) && student.retiredSubjects.length
+    ? student.retiredSubjects.filter(Boolean)
+    : getStudentSubjectList(student);
+  return subjects.length ? [{ retiredAt: student.retiredAt || '', returnedAt: student.returnedAt || '', subjects }] : [];
+}
+
+function mergeRetirementRecords(records) {
+  const merged = new Map();
+  records.forEach(record => {
+    const retiredAt = record.retiredAt || '';
+    const subjects = (record.subjects || []).filter(Boolean);
+    if (!subjects.length) return;
+    if (!merged.has(retiredAt)) merged.set(retiredAt, []);
+    const list = merged.get(retiredAt);
+    subjects.forEach(sub => {
+      if (!list.some(x => x === sub)) list.push(sub);
+    });
+  });
+  return Array.from(merged.entries()).map(([retiredAt, subjects]) => ({ retiredAt, subjects }));
+}
+
+function splitRetirementRecordsBySelection(records, selectedItems, newDate) {
+  const selectedKeys = new Set(selectedItems.map(item => `${item.recordIndex}::${item.subject}`));
+  const next = [];
+  records.forEach((record, idx) => {
+    const subjects = (record.subjects || []).filter(Boolean);
+    const unchanged = subjects.filter(sub => !selectedKeys.has(`${idx}::${sub}`));
+    const changed = subjects.filter(sub => selectedKeys.has(`${idx}::${sub}`));
+    if (unchanged.length) next.push({ ...record, subjects: unchanged });
+    if (changed.length) next.push({ ...record, retiredAt: newDate, subjects: changed });
+  });
+  return mergeRetirementRecords(next);
+}
+
+function getRetirementDateEditContext(id) {
+  const activeStudent = getUsers().find(u => u.id === id);
+  const retiredStudent = getRetiredUsers().find(u => u.id === id);
+  const student = activeStudent || retiredStudent;
+  const items = [];
+
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+    (currentUser.retiredStudents || []).forEach((record, idx) => {
+      if (record.id !== id) return;
+      const fallbackStudent = student || { subject: currentUser.subjects || '' };
+      let subjects = getRetirementRecordSubjects(record, fallbackStudent);
+      if (!subjects.length) subjects = (currentUser.subjects || '').split(',').filter(Boolean);
+      subjects.forEach(subject => {
+        items.push({ source: 'instructor', recordIndex: idx, subject, retiredAt: record.retiredAt || '' });
+      });
+    });
+  }
+
+  if (!items.length) {
+    if (retiredStudent) {
+      getStudentRetirementRecords(retiredStudent).forEach((record, idx) => {
+        record.subjects.forEach(subject => {
+          items.push({ source: 'retired', recordIndex: idx, subject, retiredAt: record.retiredAt || '' });
+        });
+      });
+    } else if (activeStudent && Array.isArray(activeStudent.retiredSubjectRecords)) {
+      activeStudent.retiredSubjectRecords.forEach((record, idx) => {
+        getRetirementRecordSubjects(record, activeStudent).forEach(subject => {
+          items.push({ source: 'active', recordIndex: idx, subject, retiredAt: record.retiredAt || '' });
+        });
+      });
+    }
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  items.forEach(item => {
+    const key = `${item.source}::${item.recordIndex}::${item.subject}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    deduped.push(item);
+  });
+  return { student, items: deduped };
+}
+
+function ensureRetirementDateModal() {
+  if (document.getElementById('retirementDateModal')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="retirementDateModal" onclick="closeRetirementDateModal(event)">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">퇴원일 수정</div>
+            <div class="modal-sub" id="retirement-date-subtitle">수정할 과목과 새 퇴원일을 선택합니다.</div>
+          </div>
+          <button class="modal-close" onclick="closeRetirementDateModalDirect()">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="retirement-date-student-id">
+          <div class="form-row">
+            <label>퇴원 과목</label>
+            <div id="retirement-date-subject-wrap" class="subject-chip-group"></div>
+          </div>
+          <div class="form-row">
+            <label>퇴원일</label>
+            <input type="date" id="retirement-new-date" onclick="this.showPicker && this.showPicker()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button type="button" class="btn-cancel" onclick="closeRetirementDateModalDirect()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700">취소</button>
+            <button type="button" class="btn-add" onclick="confirmRetirementDateModal()" style="flex:2">퇴원일 수정</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function openRetirementDateModal(id) {
+  ensureRetirementDateModal();
+  const context = getRetirementDateEditContext(id);
+  if (!context.student || !context.items.length) {
+    showToast('수정할 퇴원 과목이 없습니다.', 'warn');
+    return;
+  }
+  const latestDate = context.items
+    .map(item => item.retiredAt || '')
+    .filter(Boolean)
+    .sort((a, b) => b.localeCompare(a))[0] || formatDateLocal(new Date());
+  document.getElementById('retirement-date-student-id').value = id;
+  document.getElementById('retirement-new-date').value = latestDate;
+  const subtitle = document.getElementById('retirement-date-subtitle');
+  if (subtitle) subtitle.textContent = `"${context.student.name}" 학생의 수정할 퇴원 과목과 새 퇴원일을 선택합니다.`;
+  document.getElementById('retirement-date-subject-wrap').innerHTML = context.items.map(item => `
+    <label class="subject-chip">
+      <input type="checkbox" name="retirement-date-subject"
+        data-source="${escapeExamText(item.source)}"
+        data-record-index="${item.recordIndex}"
+        data-subject="${escapeExamText(item.subject)}"
+        onchange="toggleSubjectChip(this)">
+      ${escapeExamText(item.subject)}
+      <span style="font-size:11px;opacity:.72;margin-left:4px">${escapeExamText(item.retiredAt || '날짜미상')}</span>
+    </label>
+  `).join('');
+  document.getElementById('retirementDateModal').classList.add('open');
+}
+
+function closeRetirementDateModal(e) {
+  if (e.target === document.getElementById('retirementDateModal')) closeRetirementDateModalDirect();
+}
+
+function closeRetirementDateModalDirect() {
+  const modal = document.getElementById('retirementDateModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function syncInstructorRetirementDates(id, selectedItems, newDate) {
+  const selectedSubjects = selectedItems.map(item => item.subject);
+  const selectedBases = selectedSubjects.map(getSubjectBase);
+  let instructors = getInstructors();
+  let changed = false;
+  instructors = instructors.map(inst => {
+    const records = Array.isArray(inst.retiredStudents) ? inst.retiredStudents : [];
+    if (!records.some(record => record.id === id)) return inst;
+    const nextRecords = [];
+    records.forEach(record => {
+      if (record.id !== id) {
+        nextRecords.push(record);
+        return;
+      }
+      const subjects = getRetirementRecordSubjects(record, null);
+      if (!subjects.length) {
+        nextRecords.push({ ...record, retiredAt: newDate });
+        changed = true;
+        return;
+      }
+      const matched = subjects.filter(sub => selectedBases.includes(getSubjectBase(sub)));
+      const unmatched = subjects.filter(sub => !selectedBases.includes(getSubjectBase(sub)));
+      if (unmatched.length) nextRecords.push({ ...record, retiredSubjects: unmatched });
+      if (matched.length) {
+        nextRecords.push({ ...record, retiredAt: newDate, retiredSubjects: matched });
+        changed = true;
+      }
+    });
+    return { ...inst, retiredStudents: nextRecords };
+  });
+  if (changed) {
+    saveInstructors(instructors);
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+      const fresh = instructors.find(inst => inst.id === currentUser.id);
+      if (fresh) currentUser.retiredStudents = fresh.retiredStudents || [];
+    }
+  }
+}
+
+function confirmRetirementDateModal() {
+  const id = document.getElementById('retirement-date-student-id').value;
+  const newDate = document.getElementById('retirement-new-date').value;
+  const selectedItems = Array.from(document.querySelectorAll('#retirement-date-subject-wrap input:checked')).map(input => ({
+    source: input.dataset.source,
+    recordIndex: parseInt(input.dataset.recordIndex, 10),
+    subject: input.dataset.subject
+  }));
+  if (!selectedItems.length) { showToast('수정할 퇴원 과목을 선택해주세요.', 'warn'); return; }
+  if (!newDate) { showToast('퇴원일을 선택해주세요.', 'warn'); return; }
+
+  let updated = false;
+  const retired = getRetiredUsers();
+  const retiredIdx = retired.findIndex(s => s.id === id);
+  if (retiredIdx > -1) {
+    const records = getStudentRetirementRecords(retired[retiredIdx]);
+    const selectedForRetired = selectedItems.filter(item => item.source === 'retired');
+    if (selectedForRetired.length) {
+      const nextRecords = splitRetirementRecordsBySelection(records, selectedForRetired, newDate);
+      retired[retiredIdx].retiredSubjectRecords = nextRecords;
+      retired[retiredIdx].retiredSubjects = nextRecords.flatMap(record => record.subjects);
+      retired[retiredIdx].retiredAt = nextRecords.map(record => record.retiredAt || '').filter(Boolean).sort((a, b) => b.localeCompare(a))[0] || newDate;
+      saveRetiredUsers(retired);
+      updated = true;
+    }
+  }
+
+  const users = getUsers();
+  const userIdx = users.findIndex(u => u.id === id);
+  if (userIdx > -1 && Array.isArray(users[userIdx].retiredSubjectRecords)) {
+    const selectedForActive = selectedItems.filter(item => item.source === 'active');
+    if (selectedForActive.length) {
+      users[userIdx].retiredSubjectRecords = splitRetirementRecordsBySelection(users[userIdx].retiredSubjectRecords, selectedForActive, newDate);
+      saveUsers(users);
+      updated = true;
+    }
+  }
+
+  const selectedForInstructor = selectedItems.filter(item => item.source === 'instructor');
+  if (selectedForInstructor.length) {
+    syncInstructorRetirementDates(id, selectedForInstructor, newDate);
+    updated = true;
+  } else if (updated) {
+    syncInstructorRetirementDates(id, selectedItems, newDate);
+  }
+
+  if (!updated) return;
+  closeRetirementDateModalDirect();
+  renderRetiredStudents();renderPaymentSummary();renderDetailedStudentList();
+  showToast('퇴원일이 수정되었습니다.');
+}
+
+function retireStudent(id,name, existingDate = null, preselectedSubjects = null){
   const defaultDate = existingDate || formatDateLocal(new Date());
-  const rDate = prompt(`⚠️ "${name}" 학생을 퇴원 처리하시겠습니까? (퇴원일: YYYY-MM-DD)`, defaultDate);
+  if (!Array.isArray(preselectedSubjects)) {
+    openRetireStudentModal(id, name, defaultDate);
+    return;
+  }
+  const rDate = existingDate || defaultDate;
   if(!rDate) return;
 
   const users=getUsers();
@@ -6204,15 +6587,48 @@ function retireStudent(id,name, existingDate = null){
   
   if(studentIdx > -1){
     const st = users[studentIdx];
+    const selectedSubjects = preselectedSubjects;
+    if (!selectedSubjects.length) { showToast('퇴원 과목을 선택해주세요.', 'warn'); return; }
+    const selectedBases = selectedSubjects.map(getSubjectBase);
+    const currentSubjs = getStudentSubjectList(st);
+    const remainingSubjs = currentSubjs.filter(sub => !selectedBases.includes(getSubjectBase(sub)));
+    const isFullRetirement = currentSubjs.length > 0 && remainingSubjs.length === 0;
     
-    if (isSharedStudentWithOtherInstructors(id)) {
+    if (!isFullRetirement) {
+      st.subject = remainingSubjs.join(',');
+      if (!Array.isArray(st.retiredSubjectRecords)) st.retiredSubjectRecords = [];
+      st.retiredSubjectRecords.push({ retiredAt: rDate, subjects: selectedSubjects });
+      saveUsers(users);
+
+      let instructors = getInstructors();
+      instructors = instructors.map(inst => {
+        const instSubjects = (inst.subjects || '').split(',').filter(Boolean).map(getSubjectBase);
+        const shouldRemove = selectedBases.some(base => instSubjects.includes(base)) && (inst.studentIds || []).includes(id);
+        if (!shouldRemove) return inst;
+        const retiredStudents = Array.isArray(inst.retiredStudents) ? inst.retiredStudents : [];
+        return {
+          ...inst,
+          studentIds: (inst.studentIds || []).filter(sid => sid !== id),
+          retiredStudents: [...retiredStudents, { id, retiredAt: rDate, retiredSubjects: selectedSubjects }]
+        };
+      });
+      saveInstructors(instructors);
+      if (currentUser && currentUser.role === 'instructor') {
+        const freshInst = instructors.find(i => i.id === currentUser.id);
+        if (freshInst) {
+          currentUser.studentIds = freshInst.studentIds || [];
+          currentUser.retiredStudents = freshInst.retiredStudents || [];
+        }
+      }
+      showToast(`😢 "${name}" 학생의 ${selectedSubjects.join(', ')} 과목을 퇴원 처리했습니다.`);
+    } else if (isSharedStudentWithOtherInstructors(id)) {
       // 타 강사 공유 학생 -> 강사 개인 명단에서만 퇴원 처리
       let instructors = getInstructors();
       const instIdx = instructors.findIndex(i => i.id === currentUser.id);
       if (instIdx > -1) {
         instructors[instIdx].studentIds = (instructors[instIdx].studentIds || []).filter(sid => sid !== id);
         if (!instructors[instIdx].retiredStudents) instructors[instIdx].retiredStudents = [];
-        instructors[instIdx].retiredStudents.push({ id, retiredAt: rDate });
+        instructors[instIdx].retiredStudents.push({ id, retiredAt: rDate, retiredSubjects: selectedSubjects });
         saveInstructors(instructors);
         
         currentUser.studentIds = instructors[instIdx].studentIds;
@@ -6220,10 +6636,8 @@ function retireStudent(id,name, existingDate = null){
       }
       
       // 해당 강사의 과목만 학생의 subject에서 제거
-      let currentSubjs = (st.subject || '').split(',').filter(Boolean);
       let instSubjs = (currentUser.subjects || '').split(',').filter(Boolean).map(x => x.split('(')[0].trim());
-      let remainingSubjs = currentSubjs.filter(s => !instSubjs.includes(s.split('(')[0].trim()));
-      st.subject = remainingSubjs.join(',');
+      st.subject = currentSubjs.filter(s => !instSubjs.includes(s.split('(')[0].trim())).join(',');
       saveUsers(users);
       
       showToast(`😢 "${name}" 학생이 강사님의 과목에서만 퇴원 처리되었습니다.`);
@@ -6231,7 +6645,7 @@ function retireStudent(id,name, existingDate = null){
     } else {
       // 단독 학생 -> 전체 학원 퇴원 처리
       const removedSt = users.splice(studentIdx,1)[0];
-      retired.push({...removedSt, retiredAt:rDate});
+      retired.push({...removedSt, retiredAt:rDate, retiredSubjects:selectedSubjects});
       saveUsers(users);
       saveRetiredUsers(retired);
       
@@ -6240,7 +6654,7 @@ function retireStudent(id,name, existingDate = null){
         const instIdx = instructors.findIndex(i => i.id === currentUser.id);
         if (instIdx > -1) {
           if (!instructors[instIdx].retiredStudents) instructors[instIdx].retiredStudents = [];
-          instructors[instIdx].retiredStudents.push({ id, retiredAt: rDate });
+          instructors[instIdx].retiredStudents.push({ id, retiredAt: rDate, retiredSubjects: selectedSubjects });
           saveInstructors(instructors);
           currentUser.retiredStudents = instructors[instIdx].retiredStudents;
         }
@@ -6253,42 +6667,533 @@ function retireStudent(id,name, existingDate = null){
 }
 
 function updateRetirementDate(id) {
-  let isLocal = false;
-  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
-    const inst = currentUser;
-    const rInfo = (inst.retiredStudents || []).find(x => x.id === id);
-    if (rInfo) {
-      const studentName = getUsers().find(u => u.id === id)?.name || getRetiredUsers().find(u => u.id === id)?.name || id;
-      const newDate = prompt(`"${studentName}" 학생의 새로운 퇴원일을 입력하세요 (YYYY-MM-DD):`, rInfo.retiredAt);
-      if (!newDate) return;
-      
-      let instructors = getInstructors();
-      const instIdx = instructors.findIndex(i => i.id === currentUser.id);
-      if (instIdx > -1) {
-        let localR = instructors[instIdx].retiredStudents.find(x => x.id === id);
-        if (localR) localR.retiredAt = newDate;
-        saveInstructors(instructors);
-        currentUser.retiredStudents = instructors[instIdx].retiredStudents;
-      }
-      isLocal = true;
-    }
+  openRetirementDateModal(id);
+}
+
+function getPartialRetirementItems(id) {
+  const activeStudent = getUsers().find(u => u.id === id);
+  const retiredStudent = getRetiredUsers().find(u => u.id === id);
+  const student = activeStudent || retiredStudent;
+  const items = [];
+
+  if (activeStudent && Array.isArray(activeStudent.retiredSubjectRecords)) {
+    activeStudent.retiredSubjectRecords.forEach((record, recordIndex) => {
+      if (record.returnedAt) return;
+      getRetirementRecordSubjects(record, activeStudent).forEach(subject => {
+        items.push({ source: 'active', recordIndex, subject, retiredAt: record.retiredAt || '' });
+      });
+    });
   }
 
-  if (!isLocal) {
+  if (!items.length && retiredStudent) {
+    getStudentRetirementRecords(retiredStudent).forEach((record, recordIndex) => {
+      if (record.returnedAt) return;
+      record.subjects.forEach(subject => {
+        items.push({ source: 'retired', recordIndex, subject, retiredAt: record.retiredAt || retiredStudent.retiredAt || '' });
+      });
+    });
+  }
+
+  if (!items.length && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+    (currentUser.retiredStudents || []).forEach((record, recordIndex) => {
+      if (record.id !== id) return;
+      if (record.returnedAt) return;
+      const fallbackStudent = student || { subject: currentUser.subjects || '' };
+      let subjects = getRetirementRecordSubjects(record, fallbackStudent);
+      if (!subjects.length) subjects = (currentUser.subjects || '').split(',').filter(Boolean);
+      subjects.forEach(subject => {
+        items.push({ source: 'instructor', recordIndex, subject, retiredAt: record.retiredAt || '' });
+      });
+    });
+  }
+
+  return { student, items };
+}
+
+function restoreRetiredStudentSubjects(id, selectedItems, returnDate) {
+  const retired = getRetiredUsers();
+  const retiredIdx = retired.findIndex(u => u.id === id);
+  if (retiredIdx < 0) return { restoredSubjects: [], restoredStudent: null };
+
+  const retiredStudent = retired[retiredIdx];
+  const records = getStudentRetirementRecords(retiredStudent);
+  const selectedKeys = new Set(selectedItems.map(item => `${item.recordIndex}::${getSubjectBase(item.subject)}`));
+  const restoredSubjects = [];
+  const nextRecords = [];
+
+  records.forEach((record, recordIndex) => {
+    const restored = (record.subjects || []).filter(subject => selectedKeys.has(`${recordIndex}::${getSubjectBase(subject)}`));
+    const remaining = (record.subjects || []).filter(subject => !selectedKeys.has(`${recordIndex}::${getSubjectBase(subject)}`));
+    restoredSubjects.push(...restored);
+    if (restored.length) nextRecords.push({ ...record, subjects: restored, returnedAt: returnDate });
+    if (remaining.length) nextRecords.push({ ...record, subjects: remaining });
+  });
+
+  if (!restoredSubjects.length) return { restoredSubjects: [], restoredStudent: null };
+
+  const users = getUsers();
+  const activeStudent = {
+    ...retiredStudent,
+    status: '재원',
+    returnedAt: returnDate,
+    subject: restoredSubjects.join(',')
+  };
+  delete activeStudent.retiredAt;
+  delete activeStudent.retiredSubjects;
+  delete activeStudent.retiredSubjectRecords;
+  if (nextRecords.length) activeStudent.retiredSubjectRecords = nextRecords;
+
+  const userIdx = users.findIndex(u => u.id === id);
+  if (userIdx > -1) {
+    const existingSubjects = getStudentSubjectList(users[userIdx]);
+    restoredSubjects.forEach(subject => {
+      if (!existingSubjects.some(current => getSubjectBase(current) === getSubjectBase(subject))) existingSubjects.push(subject);
+    });
+    users[userIdx] = { ...users[userIdx], ...activeStudent, subject: existingSubjects.join(',') };
+  } else {
+    users.push(activeStudent);
+  }
+
+  retired.splice(retiredIdx, 1);
+
+  saveUsers(users);
+  saveRetiredUsers(retired);
+  return { restoredSubjects, restoredStudent: activeStudent };
+}
+
+function removeSubjectsFromRetirementRecords(records, selectedItems) {
+  const selectedKeys = new Set(selectedItems.map(item => `${item.recordIndex}::${getSubjectBase(item.subject)}`));
+  return (Array.isArray(records) ? records : [])
+    .map((record, recordIndex) => {
+      const remainingSubjects = getRetirementRecordSubjects(record, null)
+        .filter(subject => !selectedKeys.has(`${recordIndex}::${getSubjectBase(subject)}`));
+      return { ...record, subjects: remainingSubjects };
+    })
+    .filter(record => (record.subjects || []).length);
+}
+
+function markSubjectsReturnedInRetirementRecords(records, selectedItems, returnDate) {
+  const selectedKeys = new Set(selectedItems.map(item => `${item.recordIndex}::${getSubjectBase(item.subject)}`));
+  return (Array.isArray(records) ? records : []).flatMap((record, recordIndex) => {
+    const subjects = getRetirementRecordSubjects(record, null);
+    const restored = subjects.filter(subject => selectedKeys.has(`${recordIndex}::${getSubjectBase(subject)}`));
+    const remaining = subjects.filter(subject => !selectedKeys.has(`${recordIndex}::${getSubjectBase(subject)}`));
+    const next = [];
+    if (restored.length) next.push({ ...record, subjects: restored, returnedAt: returnDate });
+    if (remaining.length) next.push({ ...record, subjects: remaining });
+    return next;
+  });
+}
+
+function getReturnedSubjectRecords(student) {
+  if (!student || !Array.isArray(student.retiredSubjectRecords)) return [];
+  return student.retiredSubjectRecords
+    .map((record, recordIndex) => ({
+      ...record,
+      recordIndex,
+      subjects: getRetirementRecordSubjects(record, student)
+    }))
+    .filter(record => record.returnedAt && record.subjects.length);
+}
+
+function renderReturnedSubjectBadges(student) {
+  if (!student || !student.returnedAt) return '';
+  const records = getReturnedSubjectRecords(student);
+  const subjects = records.length
+    ? records.flatMap(record => record.subjects || [])
+    : getStudentSubjectList(student);
+  const uniqueSubjects = [];
+  subjects.filter(Boolean).forEach(subject => {
+    if (!uniqueSubjects.some(existing => getSubjectBase(existing) === getSubjectBase(subject))) uniqueSubjects.push(subject);
+  });
+  return uniqueSubjects.map(subject =>
+    `<span class="cat-tag${getSubjectBase(subject) === '수학' ? ' math' : ''}" style="margin-left:4px;padding:1px 5px;font-size:10px">${escapeExamText(subject)}</span>`
+  ).join('');
+}
+
+function cancelReturn(id, name) {
+  const users = getUsers();
+  const userIdx = users.findIndex(u => u.id === id);
+  if (userIdx < 0) return;
+  const student = users[userIdx];
+  const returnedRecords = getReturnedSubjectRecords(student);
+  if (!returnedRecords.length && !student.returnedAt) {
+    showToast('취소할 복귀 기록이 없습니다.', 'warn');
+    return;
+  }
+
+  if (!confirm(`"${name}" 학생의 복귀 처리를 취소하시겠습니까?`)) return;
+
+  const restoredSubjects = returnedRecords.flatMap(record => record.subjects || []);
+  const restoredBases = restoredSubjects.map(getSubjectBase);
+
+  if (returnedRecords.length) {
+    const activeSubjects = getStudentSubjectList(student)
+      .filter(subject => !restoredBases.includes(getSubjectBase(subject)));
+    student.subject = activeSubjects.join(',');
+    student.retiredSubjectRecords = (student.retiredSubjectRecords || []).map(record => {
+      if (!record.returnedAt) return record;
+      const subjects = getRetirementRecordSubjects(record, student);
+      const isTarget = subjects.some(subject => restoredBases.includes(getSubjectBase(subject)));
+      return isTarget ? { ...record, returnedAt: '' } : record;
+    });
+
+    let instructors = getInstructors();
+    instructors = instructors.map(inst => {
+      const instBases = (inst.subjects || '').split(',').filter(Boolean).map(getSubjectBase);
+      if (!restoredBases.some(base => instBases.includes(base))) return inst;
+      const studentIds = (inst.studentIds || []).filter(sid => sid !== id);
+      const retiredStudents = Array.isArray(inst.retiredStudents) ? inst.retiredStudents : [];
+      const hasRetiredRecord = retiredStudents.some(record => record.id === id);
+      const matchedSubjects = restoredSubjects.filter(subject => instBases.includes(getSubjectBase(subject)));
+      return {
+        ...inst,
+        studentIds,
+        retiredStudents: hasRetiredRecord
+          ? retiredStudents
+          : [...retiredStudents, { id, retiredAt: returnedRecords[0].retiredAt || student.retiredAt || '', retiredSubjects: matchedSubjects }]
+      };
+    });
+    saveInstructors(instructors);
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+      const fresh = instructors.find(inst => inst.id === currentUser.id);
+      if (fresh) {
+        currentUser.studentIds = fresh.studentIds || [];
+        currentUser.retiredStudents = fresh.retiredStudents || [];
+      }
+    }
+
+    if (!activeSubjects.length) {
+      const retired = getRetiredUsers();
+      const retiredStudent = { ...student };
+      retiredStudent.status = '퇴원';
+      retiredStudent.retiredAt = returnedRecords.map(record => record.retiredAt || '').filter(Boolean).sort((a, b) => b.localeCompare(a))[0] || student.retiredAt || '';
+      retiredStudent.retiredSubjects = restoredSubjects;
+      retiredStudent.subject = restoredSubjects.join(',');
+      retiredStudent.retiredSubjectRecords = (student.retiredSubjectRecords || []).map(record => {
+        const copy = { ...record };
+        delete copy.returnedAt;
+        return copy;
+      });
+      delete retiredStudent.returnedAt;
+      users.splice(userIdx, 1);
+      const retiredIdx = retired.findIndex(s => s.id === id);
+      if (retiredIdx > -1) retired[retiredIdx] = retiredStudent;
+      else retired.push(retiredStudent);
+      saveRetiredUsers(retired);
+    } else {
+      student.retiredSubjectRecords = student.retiredSubjectRecords.map(record => {
+        const copy = { ...record };
+        if (!copy.returnedAt) delete copy.returnedAt;
+        return copy;
+      });
+      delete student.returnedAt;
+    }
+  } else {
     const retired = getRetiredUsers();
-    const student = retired.find(s => s.id === id);
-    if (!student) return;
-    
-    const newDate = prompt(`"${student.name}" 학생의 새로운 퇴원일을 입력하세요 (YYYY-MM-DD):`, student.retiredAt);
-    if (!newDate) return;
-    
-    student.retiredAt = newDate;
+    const retiredStudent = { ...student, status: '퇴원', retiredAt: student.retiredAt || student.returnedAt || '' };
+    delete retiredStudent.returnedAt;
+    users.splice(userIdx, 1);
+    const retiredIdx = retired.findIndex(s => s.id === id);
+    if (retiredIdx > -1) retired[retiredIdx] = retiredStudent;
+    else retired.push(retiredStudent);
     saveRetiredUsers(retired);
   }
 
-  renderRetiredStudents();renderPaymentSummary();renderDetailedStudentList();
-  showToast("퇴원일이 수정되었습니다.");
+  saveUsers(users);
+  renderRetiredStudents();renderNewStudentsList();renderDetailedStudentList();renderPaymentSummary();renderAdminStats();
+  showToast(`"${name}" 학생의 복귀 처리를 취소했습니다.`);
 }
+
+function syncInstructorRestoredSubjects(id, selectedSubjects) {
+  const selectedBases = selectedSubjects.map(getSubjectBase);
+  let instructors = getInstructors();
+  let changed = false;
+  instructors = instructors.map(inst => {
+    const instBases = (inst.subjects || '').split(',').filter(Boolean).map(getSubjectBase);
+    const handlesSelected = selectedBases.some(base => instBases.includes(base));
+    if (!handlesSelected) return inst;
+    const studentIds = Array.isArray(inst.studentIds) ? inst.studentIds : [];
+    if (!studentIds.includes(id)) changed = true;
+    const nextRetired = (inst.retiredStudents || []).flatMap(record => {
+      if (record.id !== id) return [record];
+      const subjects = getRetirementRecordSubjects(record, null);
+      if (!subjects.length) {
+        changed = true;
+        return [];
+      }
+      const remaining = subjects.filter(subject => !selectedBases.includes(getSubjectBase(subject)));
+      if (remaining.length === subjects.length) return [record];
+      changed = true;
+      return remaining.length ? [{ ...record, retiredSubjects: remaining, subjects: remaining }] : [];
+    });
+    return {
+      ...inst,
+      studentIds: studentIds.includes(id) ? studentIds : [...studentIds, id],
+      retiredStudents: nextRetired
+    };
+  });
+  if (changed) {
+    saveInstructors(instructors);
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+      const fresh = instructors.find(inst => inst.id === currentUser.id);
+      if (fresh) {
+        currentUser.studentIds = fresh.studentIds || [];
+        currentUser.retiredStudents = fresh.retiredStudents || [];
+      }
+    }
+  }
+}
+
+function ensurePartialRestoreModal() {
+  if (document.getElementById('partialRestoreModal')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="partialRestoreModal" onclick="closePartialRestoreModal(event)">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">복귀 처리</div>
+            <div class="modal-sub" id="partial-restore-subtitle">복귀할 과목과 복귀일을 선택합니다.</div>
+          </div>
+          <button class="modal-close" onclick="closePartialRestoreModalDirect()">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="partial-restore-student-id">
+          <input type="hidden" id="partial-restore-student-name">
+          <div class="form-row">
+            <label>복귀 과목</label>
+            <div id="partial-restore-subject-wrap" class="subject-chip-group"></div>
+          </div>
+          <div class="form-row">
+            <label>복귀일</label>
+            <input type="date" id="partial-restore-date" onclick="this.showPicker && this.showPicker()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button type="button" class="btn-cancel" onclick="closePartialRestoreModalDirect()" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700">취소</button>
+            <button type="button" class="btn-add" onclick="confirmPartialRestoreModal()" style="flex:2">복귀 처리</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function openPartialRestoreModal(id, name) {
+  ensurePartialRestoreModal();
+  const { student, items } = getPartialRetirementItems(id);
+  if (!student || !items.length) {
+    showToast('복귀 처리할 퇴원 과목이 없습니다.', 'warn');
+    return;
+  }
+  document.getElementById('partial-restore-student-id').value = id;
+  document.getElementById('partial-restore-student-name').value = name;
+  document.getElementById('partial-restore-date').value = formatDateLocal(new Date());
+  const subtitle = document.getElementById('partial-restore-subtitle');
+  if (subtitle) subtitle.textContent = `"${name}" 학생의 복귀 과목과 복귀일을 선택합니다.`;
+  document.getElementById('partial-restore-subject-wrap').innerHTML = items.map(item => `
+    <label class="subject-chip">
+      <input type="checkbox" name="partial-restore-subject"
+        data-source="${escapeExamText(item.source || 'active')}"
+        data-record-index="${item.recordIndex}"
+        data-subject="${escapeExamText(item.subject)}"
+        onchange="toggleSubjectChip(this)">
+      ${escapeExamText(item.subject)}
+      <span style="font-size:11px;opacity:.72;margin-left:4px">${escapeExamText(item.retiredAt || '날짜미상')}</span>
+    </label>
+  `).join('');
+  document.getElementById('partialRestoreModal').classList.add('open');
+}
+
+function closePartialRestoreModal(e) {
+  if (e.target === document.getElementById('partialRestoreModal')) closePartialRestoreModalDirect();
+}
+
+function closePartialRestoreModalDirect() {
+  const modal = document.getElementById('partialRestoreModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function confirmPartialRestoreModal() {
+  const id = document.getElementById('partial-restore-student-id').value;
+  const name = document.getElementById('partial-restore-student-name').value;
+  const returnDate = document.getElementById('partial-restore-date').value;
+  const selectedItems = Array.from(document.querySelectorAll('#partial-restore-subject-wrap input:checked')).map(input => ({
+    source: input.dataset.source || 'active',
+    recordIndex: parseInt(input.dataset.recordIndex, 10),
+    subject: input.dataset.subject
+  }));
+  if (!selectedItems.length) { showToast('복귀 과목을 선택해주세요.', 'warn'); return; }
+  if (!returnDate) { showToast('복귀일을 선택해주세요.', 'warn'); return; }
+
+  const retiredSelected = selectedItems.filter(item => item.source === 'retired');
+  if (retiredSelected.length) {
+    const { restoredSubjects } = restoreRetiredStudentSubjects(id, retiredSelected, returnDate);
+    if (!restoredSubjects.length) {
+      showToast('복귀 처리할 퇴원 과목이 없습니다.', 'warn');
+      return;
+    }
+    syncInstructorRestoredSubjects(id, restoredSubjects);
+    closePartialRestoreModalDirect();
+    renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();renderAdminStats();
+    showToast(`"${name}" 학생의 ${restoredSubjects.join(', ')} 과목을 ${returnDate} 복귀 처리했습니다.`);
+    return;
+  }
+
+  const users = getUsers();
+  const userIdx = users.findIndex(u => u.id === id);
+  if (userIdx < 0) {
+    showToast('복귀 처리할 퇴원 과목이 없습니다.', 'warn');
+    return;
+  }
+
+  const selectedSubjects = selectedItems.map(item => item.subject);
+  const existingSubjects = getStudentSubjectList(users[userIdx]);
+  selectedSubjects.forEach(subject => {
+    if (!existingSubjects.some(current => getSubjectBase(current) === getSubjectBase(subject))) existingSubjects.push(subject);
+  });
+  users[userIdx].subject = existingSubjects.join(',');
+  if (Array.isArray(users[userIdx].retiredSubjectRecords)) {
+    users[userIdx].retiredSubjectRecords = markSubjectsReturnedInRetirementRecords(users[userIdx].retiredSubjectRecords, selectedItems.filter(item => item.source === 'active'), returnDate);
+  }
+  users[userIdx].returnedAt = returnDate;
+  saveUsers(users);
+  syncInstructorRestoredSubjects(id, selectedSubjects);
+
+  closePartialRestoreModalDirect();
+  renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();renderAdminStats();
+  showToast(`"${name}" 학생의 ${selectedSubjects.join(', ')} 과목을 ${returnDate} 복귀 처리했습니다.`);
+}
+
+function deleteRetiredSubjectRecord(id, name, retiredAt, encodedSubjects) {
+  const subjects = JSON.parse(decodeURIComponent(encodedSubjects || '%5B%5D'));
+  if (!subjects.length) return;
+  if (!confirm(`"${name}" 학생의 ${subjects.join(', ')} 퇴원 기록을 탈퇴 처리하시겠습니까?`)) return;
+
+  const selectedBases = subjects.map(getSubjectBase);
+  const users = getUsers();
+  const userIdx = users.findIndex(u => u.id === id);
+  if (userIdx > -1 && Array.isArray(users[userIdx].retiredSubjectRecords)) {
+    users[userIdx].retiredSubjectRecords = users[userIdx].retiredSubjectRecords
+      .map(record => {
+        if ((record.retiredAt || '') !== (retiredAt || '')) return record;
+        const remaining = getRetirementRecordSubjects(record, users[userIdx])
+          .filter(subject => !selectedBases.includes(getSubjectBase(subject)));
+        return { ...record, subjects: remaining };
+      })
+      .filter(record => (record.subjects || []).length);
+    if (!users[userIdx].retiredSubjectRecords.length) delete users[userIdx].retiredSubjectRecords;
+    saveUsers(users);
+  }
+
+  let instructors = getInstructors();
+  instructors = instructors.map(inst => ({
+    ...inst,
+    retiredStudents: (inst.retiredStudents || []).flatMap(record => {
+      if (record.id !== id || (record.retiredAt || '') !== (retiredAt || '')) return [record];
+      const remaining = getRetirementRecordSubjects(record, null)
+        .filter(subject => !selectedBases.includes(getSubjectBase(subject)));
+      return remaining.length ? [{ ...record, retiredSubjects: remaining, subjects: remaining }] : [];
+    })
+  }));
+  saveInstructors(instructors);
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+    const fresh = instructors.find(inst => inst.id === currentUser.id);
+    if (fresh) currentUser.retiredStudents = fresh.retiredStudents || [];
+  }
+
+  renderRetiredStudents();renderDetailedStudentList();renderPaymentSummary();renderAdminStats();
+  showToast(`"${name}" 학생의 ${subjects.join(', ')} 퇴원 기록을 탈퇴 처리했습니다.`);
+}
+
+function cancelRetirement(id, name) {
+  if (!confirm(`"${name}" 학생의 퇴원 처리를 취소하시겠습니까?\n복귀 기록 없이 재원 상태로 되돌립니다.`)) return;
+
+  let handledLocal = false;
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
+    let instructors = getInstructors();
+    const instIdx = instructors.findIndex(i => i.id === currentUser.id);
+    if (instIdx > -1) {
+      const inst = instructors[instIdx];
+      const hadLocalRetirement = (inst.retiredStudents || []).some(x => x.id === id);
+      if (hadLocalRetirement) {
+        inst.retiredStudents = (inst.retiredStudents || []).filter(x => x.id !== id);
+        if (!inst.studentIds) inst.studentIds = [];
+        if (!inst.studentIds.includes(id)) inst.studentIds.push(id);
+        saveInstructors(instructors);
+        currentUser.retiredStudents = inst.retiredStudents;
+        currentUser.studentIds = inst.studentIds;
+
+        const users = getUsers();
+        const uIdx = users.findIndex(u => u.id === id);
+        if (uIdx > -1) {
+          const instSubjects = (inst.subjects || '').split(',').filter(Boolean);
+          const existingSubjects = (users[uIdx].subject || '').split(',').filter(Boolean);
+          instSubjects.forEach(sub => {
+            if (!existingSubjects.some(x => x.split('(')[0].trim() === sub.split('(')[0].trim())) existingSubjects.push(sub);
+          });
+          users[uIdx].subject = existingSubjects.join(',');
+          saveUsers(users);
+        }
+        handledLocal = true;
+      }
+    }
+  }
+
+  if (!handledLocal) {
+    const retired = getRetiredUsers();
+    const rIdx = retired.findIndex(u => u.id === id);
+    if (rIdx > -1) {
+      const student = retired.splice(rIdx, 1)[0];
+      delete student.retiredAt;
+      delete student.returnedAt;
+      const users = getUsers();
+      const uIdx = users.findIndex(u => u.id === id);
+      if (uIdx > -1) users[uIdx] = { ...users[uIdx], ...student };
+      else users.push(student);
+      saveUsers(users);
+      saveRetiredUsers(retired);
+    } else {
+      const users = getUsers();
+      const uIdx = users.findIndex(u => u.id === id);
+      if (uIdx > -1) {
+        const records = Array.isArray(users[uIdx].retiredSubjectRecords) ? users[uIdx].retiredSubjectRecords : [];
+        if (records.length) {
+          const restoredSubjects = records.flatMap(record => record.subjects || []);
+          const existingSubjects = getStudentSubjectList(users[uIdx]);
+          restoredSubjects.forEach(sub => {
+            if (!existingSubjects.some(x => getSubjectBase(x) === getSubjectBase(sub))) existingSubjects.push(sub);
+          });
+          users[uIdx].subject = existingSubjects.join(',');
+          delete users[uIdx].retiredSubjectRecords;
+
+          let instructors = getInstructors();
+          const restoredBases = restoredSubjects.map(getSubjectBase);
+          instructors = instructors.map(inst => {
+            const instSubjects = (inst.subjects || '').split(',').filter(Boolean).map(getSubjectBase);
+            if (!restoredBases.some(base => instSubjects.includes(base))) return inst;
+            const studentIds = Array.isArray(inst.studentIds) ? inst.studentIds : [];
+            return {
+              ...inst,
+              studentIds: studentIds.includes(id) ? studentIds : [...studentIds, id],
+              retiredStudents: (inst.retiredStudents || []).filter(x => x.id !== id)
+            };
+          });
+          saveInstructors(instructors);
+        }
+        delete users[uIdx].retiredAt;
+        delete users[uIdx].returnedAt;
+        saveUsers(users);
+      }
+    }
+  }
+
+  renderRetiredStudents();
+  renderDetailedStudentList();
+  renderPaymentSummary();
+  renderAdminStats();
+  showToast(`"${name}" 학생의 퇴원 처리를 취소했습니다.`);
+}
+
 function changeRetiredMonth(val) {
   currentRetiredMonth = val;
   const input = document.getElementById('retired-month-filter');
@@ -6312,7 +7217,26 @@ function shiftRetiredMonth(delta) {
 
 function renderRetiredStudents(){
   // 퇴원 학생: 현재 퇴원 상태인 학생만 표시하고, 복귀자는 신규 학생 목록으로 보낸다.
-  const retiredOnly = getActiveRetiredStudents();
+  const fullyRetired = getActiveRetiredStudents().flatMap(s => {
+    const records = getStudentRetirementRecords(s);
+    if (!Array.isArray(s.retiredSubjectRecords) || !records.length) return [s];
+    return records.map(record => ({
+      ...s,
+      retiredAt: record.retiredAt,
+      returnedAt: record.returnedAt || s.returnedAt || '',
+      retiredSubjects: record.subjects || []
+    }));
+  });
+  const subjectRetired = getActiveStudents().flatMap(s =>
+    (Array.isArray(s.retiredSubjectRecords) ? s.retiredSubjectRecords : []).map(record => ({
+      ...s,
+      retiredAt: record.retiredAt,
+      returnedAt: record.returnedAt || '',
+      retiredSubjects: record.subjects || [],
+      _subjectRetired: true
+    }))
+  );
+  const retiredOnly = [...fullyRetired, ...subjectRetired];
 
   // 월 필터
   const filtered = currentRetiredMonth === 'all'
@@ -6343,17 +7267,33 @@ function renderRetiredStudents(){
         const statusBadge = returned
           ? `<span class="grp-badge" style="background:#d1fae5;color:#059669;border:1px solid #a7f3d0;margin-left:6px">복귀</span>`
           : '';
-        const retiredInfo = s.retiredAt ? `${s.retiredAt} 퇴원` + (s.returnedAt ? ` / ${s.returnedAt} 복귀` : '') : '날짜미상';
+        const retiredSubjects = Array.isArray(s.retiredSubjects) && s.retiredSubjects.length ? s.retiredSubjects : getStudentSubjectList(s);
+        const encodedRetiredSubjects = encodeURIComponent(JSON.stringify(retiredSubjects));
+        const retiredSubjectItems = retiredSubjects.length
+          ? retiredSubjects.map(sub => `
+            <span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;margin-left:6px">
+              <span class="cat-tag${getSubjectBase(sub) === '수학' ? ' math' : ''}" style="margin:0;padding:1px 5px;font-size:10px">${sub}</span>
+              <span style="font-size:11px;color:var(--text-muted)">[${loginId}] - ${entered} 입학 / ${s.retiredAt || '날짜미상'} 퇴원${s.returnedAt ? ` / ${s.returnedAt} 복귀` : ''}</span>
+            </span>
+          `).join('')
+          : `<span style="font-size:11px;color:var(--text-muted);margin-left:6px">[${loginId}] - ${entered} 입학 / ${s.retiredAt || '날짜미상'} 퇴원${s.returnedAt ? ` / ${s.returnedAt} 복귀` : ''}</span>`;
         return`<tr onclick="openStudentDetail('${s.id}')">
-          <td><div class="student-name-cell"><div class="student-avatar" style="background:#cbd5e1">${initials}</div>${s.name}${statusBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${entered} 입학 / ${retiredInfo}</span>${grpBadge}</div></td>
+          <td><div class="student-name-cell" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap"><div class="student-avatar" style="background:#cbd5e1">${initials}</div><span style="font-weight:700">${s.name}</span>${grpBadge}${statusBadge}${retiredSubjectItems}</div></td>
           <td>${total}</td><td>${done}</td>
           <td><span class="pct-cell" style="color:#94a3b8">${pct}%</span><div class="progress-bar-wrap" style="width:80px;margin-top:4px"><div class="progress-bar" style="width:${pct}%;background:#94a3b8"></div></div></td>
           <td style="white-space:nowrap;text-align:right">
             <span style="font-size:12px;color:var(--text-muted);cursor:pointer;margin-right:12px" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 →</span>
-            ${returned ? `
+            ${s._subjectRetired ? `
               <button class="btn-submit" style="margin-left:0;background:var(--primary);border:none;color:#fff;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();updateRetirementDate('${s.id}')">퇴원일 수정</button>
+              <button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelRetirement('${s.id}','${safeName}')">퇴원취소</button>
+              <button class="btn-check-pay" style="margin-left:4px;background:var(--success);color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();openPartialRestoreModal('${s.id}','${safeName}')">✅ 복귀</button>
+              <button class="btn-del" style="margin-left:4px;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();deleteRetiredSubjectRecord('${s.id}','${safeName}','${s.retiredAt || ''}','${encodedRetiredSubjects}')">탈퇴</button>
+            ` : returned ? `
+              <button class="btn-submit" style="margin-left:0;background:var(--primary);border:none;color:#fff;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();updateRetirementDate('${s.id}')">퇴원일 수정</button>
+              <button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelRetirement('${s.id}','${safeName}')">퇴원취소</button>
             ` : `
               <button class="btn-submit" style="margin-left:0;background:var(--primary);border:none;color:#fff;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();updateRetirementDate('${s.id}')">퇴원일 수정</button>
+              <button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelRetirement('${s.id}','${safeName}')">퇴원취소</button>
               <button class="btn-check-pay" style="margin-left:4px;background:var(--success);color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
               <button class="btn-del" style="margin-left:4px;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();deleteRetiredStudent('${s.id}','${safeName}')">탈퇴</button>
             `}
@@ -6379,30 +7319,53 @@ function renderNewStudentsList(){
     .sort((a, b) => ((b.returnedAt || b.enteredAt || '').localeCompare(a.returnedAt || a.enteredAt || '')));
   if (badge) badge.textContent = `${filtered.length}명`;
   body.innerHTML = filtered.length === 0
-    ? `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">해당 기간 신규 학생이 없습니다.</td></tr>`
+    ? `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px">해당 기간 신규 학생이 없습니다.</td></tr>`
     : filtered.map(s => {
         const initials = s.name.slice(0, 1);
         const loginId = s.loginId || s.id;
+        const safeName = s.name.replace(/'/g, '\u2019');
         const grp = getStudentGroupOf(s.id);
         const grpColor = grp ? getGroupColor(grp.id) : null;
         const grpBadge = grp ? `<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '';
-        const subjectTags = (s.subject || '').split(',').filter(Boolean).map(sub => `<span class="cat-tag${sub.startsWith('수학') ? ' math' : ''}" style="margin:0">${sub}</span>`).join('') || '-';
         const isReturnedStudent = !!s.returnedAt;
+        const subjectInstructorRows = renderStudentSubjectInstructorRows(s);
+        const returnedSubjectBadges = isReturnedStudent ? renderReturnedSubjectBadges(s) : '';
         const listDate = s.returnedAt || s.enteredAt;
         const listLabel = isReturnedStudent ? '복귀' : '입학';
         const statusBadge = isReturnedStudent ? '<span class="grp-badge" style="background:#dbeafe;color:#2563eb;border:1px solid #bfdbfe;margin-left:6px">복귀</span>' : '';
         const feeMonth = listDate ? listDate.slice(0, 7) : currentPaymentMonth;
         const feeDisplay = formatStudentFeeDisplay(s, feeMonth);
+        const isRetiredRow = s.status === '퇴원';
+        const manageButtons = isRetiredRow
+          ? `<button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelRetirement('${s.id}','${safeName}')">퇴원취소</button>
+             <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
+             <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteRetiredStudent('${s.id}','${safeName}')">삭제</button>`
+          : isReturnedStudent
+          ? `<button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelReturn('${s.id}','${safeName}')">복귀취소</button>
+             <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
+             <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>`
+          : `<button class="btn-del" onclick="event.stopPropagation(); retireStudent('${s.id}','${safeName}')" style="background:#f59e0b;color:#fff;border:none">퇴원</button>
+             <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
+             <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>`;
         return `<tr onclick="openStudentDetail('${s.id}')" style="background:#f0fdf4">
-          <td><div class="student-name-cell"><div class="student-avatar" style="background:#dcfce7;color:#166534">${initials}</div>${s.name}${statusBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${listDate} ${listLabel}</span>${grpBadge}</div></td>
-          <td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${subjectTags}</div></td>
+          <td><div class="student-name-cell"><div class="student-avatar" style="background:#dcfce7;color:#166534">${initials}</div>${s.name}${statusBadge}${returnedSubjectBadges}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${listDate} ${listLabel}</span>${grpBadge}</div></td>
+          <td style="font-size:13px">${formatPhone(s.parentHp)}</td>
+          <td style="font-size:13px">${formatPhone(s.studentHp)}</td>
+          <td><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">${subjectInstructorRows.subjectHtml}</div></td>
+          <td><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">${subjectInstructorRows.instructorHtml}</div></td>
           <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
-          <td style="font-size:13px;color:var(--text-muted)">${listDate}</td>
-          <td style="white-space:nowrap;text-align:right"><span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 보기</span></td>
+          <td style="font-size:13px;color:var(--text-muted)">${getPaymentDateForMonth(s, feeMonth)}</td>
+          <td><input type="checkbox" ${isPaidForMonth(s, feeMonth) ? 'checked' : ''} onchange="event.stopPropagation(); currentPaymentMonth='${feeMonth}'; togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;"></td>
+          <td style="white-space:nowrap;text-align:right">${manageButtons}</td>
         </tr>`;
       }).join('');
 }
 function restoreStudent(id,name){
+  const partial = getPartialRetirementItems(id);
+  if (partial.student && partial.items.length) {
+    openPartialRestoreModal(id, name);
+    return;
+  }
   const defaultDate = formatDateLocal(new Date());
   const returnDate = prompt(`✅ "${name}" 학생의 복귀일을 입력하세요 (YYYY-MM-DD):`, defaultDate);
   if(!returnDate) return;
@@ -6922,6 +7885,48 @@ function confirmPayment(sid) {
   togglePaymentStatus(sid, true);
 }
 
+function getSubjectInstructorsForStudent(studentId, subject) {
+  const subjectBase = getSubjectBase(subject);
+  return getInstructors()
+    .filter(inst => {
+      const assigned = (inst.studentIds || []).map(String).includes(String(studentId));
+      if (!assigned) return false;
+      const instSubjects = (inst.subjects || '').split(',').filter(Boolean).map(getSubjectBase);
+      return instSubjects.includes(subjectBase);
+    })
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+}
+
+function renderInstructorBadgesForSubject(studentId, subject) {
+  const matched = getSubjectInstructorsForStudent(studentId, subject);
+  if (!matched.length) return '<span style="color:#cbd5e1">-</span>';
+  return matched.map(inst => {
+    const color = getInstructorColor(inst.id, inst.colorIndex);
+    return `<span class="grp-badge" style="background:${color.bg};color:${color.text};border:1px solid ${color.bg};margin:0">${escapeExamText(inst.name || '')}</span>`;
+  }).join('');
+}
+
+function renderStudentSubjectInstructorRows(student) {
+  const subjects = getStudentSubjectList(student);
+  if (!subjects.length) {
+    return {
+      subjectHtml: '<div style="min-height:22px;display:flex;align-items:center;color:#cbd5e1">-</div>',
+      instructorHtml: '<div style="min-height:22px;display:flex;align-items:center;color:#cbd5e1">-</div>'
+    };
+  }
+  const subjectHtml = subjects.map(sub => `
+    <div style="min-height:22px;display:flex;align-items:center">
+      <span class="cat-tag${getSubjectBase(sub) === '수학' ? ' math' : ''}" style="margin:0;width:max-content">${escapeExamText(sub)}</span>
+    </div>
+  `).join('');
+  const instructorHtml = subjects.map(sub => `
+    <div style="min-height:22px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+      ${renderInstructorBadgesForSubject(student.id, sub)}
+    </div>
+  `).join('');
+  return { subjectHtml, instructorHtml };
+}
+
 
 
 function renderStudentInstructorBadges(studentId) {
@@ -7025,6 +8030,7 @@ function renderDetailedStudentList() {
     return `
       <tr style="cursor:default${rowBg ? ';background:' + rowBg : ''}">
         <td><div class="student-name-cell"><div class="student-avatar" style="width:24px;height:24px;font-size:11px">${initials}</div>${s.name}</div></td>
+        <td>${grpBadge}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.loginId || s.id}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.password || '-'}</td>
         <td style="font-size:13px">${formatPhone(s.parentHp)}</td>
@@ -7041,7 +8047,6 @@ function renderDetailedStudentList() {
         <td>
           <input type="checkbox" ${isPaidForMonth(s, currentPaymentMonth) ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
         </td>
-        <td>${grpBadge}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt || '-'}</td>
         <td style="white-space:nowrap">
           ${s.status === '재원' ? `
@@ -7049,7 +8054,7 @@ function renderDetailedStudentList() {
             <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
             <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteStudent('${s.id}','${safeName}')">삭제</button>
           ` : `
-            <button class="btn-del" style="background:var(--primary);color:#fff;border:none" onclick="event.stopPropagation(); restoreStudent('${s.id}','${safeName}')">✅ 복귀</button>
+            <button class="btn-check-pay" style="margin-left:4px;background:#64748b;color:#fff;border:none;font-size:11px;padding:4px 8px" onclick="event.stopPropagation();cancelRetirement('${s.id}','${safeName}')">퇴원취소</button>
             <button class="btn-del" style="margin-left:4px;background:var(--success);color:#fff;border:none" onclick="event.stopPropagation(); openStudentEditModal('${s.id}')">수정</button>
             <button class="btn-del" style="margin-left:4px" onclick="event.stopPropagation(); deleteRetiredStudent('${s.id}','${safeName}')">삭제</button>
           `}
@@ -8052,9 +9057,6 @@ function showToast(msg,type){
 }
 
 // ── INIT ──────────────────────────────────────────────────
-initData();
-loadSavedCredentials();
-
 // ── CLASS MANAGEMENT ──────────────────────────────────────
 let currentClassManualExclusions = [];
 let currentModalManualExclusions = [];
