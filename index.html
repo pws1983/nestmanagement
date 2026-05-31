@@ -302,6 +302,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .sftab:hover{border-color:var(--primary-light);color:var(--primary);}
 .sftab.active{background:var(--primary-bg);border-color:var(--primary-light);color:var(--primary);font-weight:600;}
 #prog-filter-tabs .sftab.active{border-width:3px !important;}
+.prog-filter-row{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+#prog-subject-tabs,#prog-filter-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+#prog-subject-tabs{padding-right:8px;margin-right:2px;border-right:1px solid var(--border);}
+#prog-filter-tabs{flex:1;min-width:220px;}
+.prog-filter-empty{font-size:12px;color:var(--text-muted);padding:6px 2px;}
 
 
 /* PERIOD TABS */
@@ -1073,7 +1078,7 @@ body.is-instructor button[onclick="importData()"] {
           </div>
         </div>
         <div style="overflow-x:auto">
-          <table class="student-stat-table" style="min-width:1000px">
+          <table class="student-stat-table" style="min-width:1130px">
             <thead>
               <tr>
                 <th style="width:120px">학생명</th>
@@ -1082,7 +1087,8 @@ body.is-instructor button[onclick="importData()"] {
                 <th style="width:130px">학부모 HP</th>
                 <th style="width:130px">학생 HP</th>
                 <th style="width:80px">상태</th>
-                <th style="width:160px">과목</th>
+                <th style="width:130px">과목</th>
+                <th style="width:130px">담당강사</th>
                 <th style="width:120px">학원비</th>
                 <th style="width:100px">수금일</th>
                 <th style="width:60px">수금</th>
@@ -1484,6 +1490,7 @@ body.is-instructor button[onclick="importData()"] {
       </div>
       <div class="prog-filter-row">
         <span style="font-size:13px;font-weight:700;color:var(--text)">📋 수업별 보기:</span>
+        <div id="prog-subject-tabs"></div>
         <div id="prog-filter-tabs"></div>
       </div>
       <div id="progress-content"></div>
@@ -1860,6 +1867,7 @@ function normalizeExamScope(scope) {
     ...scope,
     textbookUnits: Array.isArray(scope.textbookUnits) ? scope.textbookUnits : [],
     supplementUnits: Array.isArray(scope.supplementUnits) ? scope.supplementUnits : [],
+    printUnits: Array.isArray(scope.printUnits) ? scope.printUnits : [],
     createdAt: scope.createdAt || scope.updatedAt || new Date().toISOString(),
     updatedAt: scope.updatedAt || scope.createdAt || new Date().toISOString()
   };
@@ -1893,15 +1901,40 @@ function escapeExamText(value) {
     "'": '&#39;'
   }[ch]));
 }
+function getExamGradeRank(grade) {
+  const match = String(grade || '').match(/\d+/);
+  return match ? parseInt(match[0], 10) : -1;
+}
+function compareExamScopesBySchoolGrade(a, b) {
+  const schoolCompare = String(a.school || '').localeCompare(String(b.school || ''), 'ko');
+  if (schoolCompare) return schoolCompare;
+  const gradeCompare = getExamGradeRank(b.grade) - getExamGradeRank(a.grade);
+  if (gradeCompare) return gradeCompare;
+  const subjectCompare = String(a.subject || '').localeCompare(String(b.subject || ''), 'ko');
+  if (subjectCompare) return subjectCompare;
+  const examCompare = String(b.targetExam || '').localeCompare(String(a.targetExam || ''), 'ko');
+  if (examCompare) return examCompare;
+  return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+}
 function collectExamUnits(type, includeEmpty = false) {
   return Array.from(document.querySelectorAll(`[data-exam-unit="${type}"]`))
     .map(input => input.value.trim())
     .filter(value => includeEmpty || value);
 }
 function renderExamUnitCards(type, units = []) {
-  const container = document.getElementById(type === 'textbook' ? 'es-textbook-units' : 'es-supplement-units');
+  const containerIds = {
+    textbook: 'es-textbook-units',
+    supplement: 'es-supplement-units',
+    print: 'es-print-units'
+  };
+  const container = document.getElementById(containerIds[type]);
   if (!container) return;
-  const label = type === 'textbook' ? '교과서 단원' : '부교재 단원';
+  const labels = {
+    textbook: '교과서 단원',
+    supplement: '부교재 단원',
+    print: '프린트/기타'
+  };
+  const label = labels[type] || '단원';
   const values = Array.isArray(units) && units.length ? units : [''];
   container.innerHTML = values.map((unit, idx) => `
     <div class="exam-unit-card">
@@ -1928,7 +1961,7 @@ function renderExamUnitSummary(title, units) {
     <div class="exam-unit-summary">
       <div class="exam-unit-summary-title">${title}</div>
       <div class="exam-unit-summary-list">
-        ${cleanUnits.map((unit, idx) => `<span class="grp-badge exam-unit-summary-item" style="background:#f8fafc;color:var(--text);border:1px solid var(--border)">${idx + 1}. ${escapeExamText(unit)}</span>`).join('')}
+        ${cleanUnits.map(unit => `<span class="grp-badge exam-unit-summary-item" style="background:#f8fafc;color:var(--text);border:1px solid var(--border)">${escapeExamText(unit)}</span>`).join('')}
       </div>
     </div>
   `;
@@ -1955,13 +1988,21 @@ function renderExamScopeBadges(scope) {
     <span class="cat-tag${subjectClass}" style="margin:0">${escapeExamText(scope.subject)}</span>
   `;
 }
+
+function renderExamInstructorBadge(scope, showCommon = false) {
+  if (!scope.instructorName && !showCommon) return '';
+  const color = getInstructorColor(scope.instructorId || '');
+  const label = scope.instructorName || '공통';
+  return `<span class="grp-badge" style="background:${color.bg};color:${color.text};border:1px solid ${color.bg};margin:0">👨‍🏫 ${escapeExamText(label)}</span>`;
+}
+
 function renderExamScopes() {
   const container = document.getElementById('exam-scopes-container');
   if(!container) return;
   const filterSchool = document.getElementById('exam-search-school').value.trim().toLowerCase();
   const filterGrade = document.getElementById('exam-search-grade').value;
   
-  let scopes = getExamScopes().sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+  let scopes = getExamScopes();
   
   if (currentUser && currentUser.role === 'instructor') {
     scopes = scopes.filter(s => s.instructorId === currentUser.id);
@@ -1969,6 +2010,7 @@ function renderExamScopes() {
   
   if (filterSchool) scopes = scopes.filter(s => s.school && s.school.toLowerCase().includes(filterSchool));
   if (filterGrade) scopes = scopes.filter(s => s.grade === filterGrade);
+  scopes.sort(compareExamScopesBySchoolGrade);
 
   if(!scopes.length) {
     container.innerHTML = '<div class="empty-state"><div class="ei">🎯</div><div>등록된 시험범위가 없습니다</div></div>';
@@ -1983,7 +2025,7 @@ function renderExamScopes() {
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         ${renderExamScopeBadges(s)}
-        ${currentUser.role === 'admin' ? `<span class="grp-badge" style="background:#fef3c7;color:#d97706">👨‍🏫 ${s.instructorName || '공통'}</span>` : ''}
+        ${currentUser.role === 'admin' ? renderExamInstructorBadge(s, true) : ''}
       </div>
       <div style="font-size:16px; font-weight:800; color:var(--text); margin-top:4px">${s.targetExam} 시험범위</div>
       <div style="font-size:13px; color:var(--text-muted);">
@@ -1992,6 +2034,7 @@ function renderExamScopes() {
       </div>
       ${renderExamUnitSummary('교과서 단원', s.textbookUnits)}
       ${renderExamUnitSummary('부교재 단원', s.supplementUnits)}
+      ${renderExamUnitSummary('프린트/기타', s.printUnits)}
       <div style="margin-top:8px; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.5;">${s.details || '내용 없음'}</div>
     </div>
   `).join('');
@@ -2030,7 +2073,7 @@ function renderStudentExamScopeCard(s) {
     <div class="card" style="position:relative; display:flex; flex-direction:column; gap:8px;">
       <div style="display:flex; align-items:center; gap:8px;">
         ${renderExamScopeBadges(s)}
-        ${s.instructorName ? `<span class="grp-badge" style="background:#fef3c7;color:#d97706">${escapeExamText(s.instructorName)}</span>` : ''}
+        ${renderExamInstructorBadge(s)}
       </div>
       <div style="font-size:16px; font-weight:800; color:var(--text); margin-top:4px">${escapeExamText(s.targetExam)} 시험범위</div>
       <div style="font-size:13px; color:var(--text-muted);">
@@ -2039,6 +2082,7 @@ function renderStudentExamScopeCard(s) {
       </div>
       ${renderExamUnitSummary('교과서 단원', s.textbookUnits)}
       ${renderExamUnitSummary('부교재 단원', s.supplementUnits)}
+      ${renderExamUnitSummary('프린트/기타', s.printUnits)}
       <div style="margin-top:8px; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px; white-space:pre-wrap; line-height:1.5;">${escapeExamText(s.details || '내용 없음')}</div>
     </div>
   `;
@@ -2111,6 +2155,7 @@ function openExamScopeModal() {
   renderExamUnitCards('textbook', []);
   document.getElementById('es-supplements').value = '';
   renderExamUnitCards('supplement', []);
+  renderExamUnitCards('print', []);
   document.getElementById('es-details').value = '';
   document.getElementById('examScopeModal').classList.add('open');
 }
@@ -2145,6 +2190,7 @@ function saveExamScopeForm() {
     textbookUnits: collectExamUnits('textbook'),
     supplements: document.getElementById('es-supplements').value.trim(),
     supplementUnits: collectExamUnits('supplement'),
+    printUnits: collectExamUnits('print'),
     details: document.getElementById('es-details').value.trim(),
     instructorId: instructorId,
     instructorName: instructorName,
@@ -2194,6 +2240,7 @@ function editExamScope(id) {
   renderExamUnitCards('textbook', scope.textbookUnits || []);
   document.getElementById('es-supplements').value = scope.supplements || '';
   renderExamUnitCards('supplement', scope.supplementUnits || []);
+  renderExamUnitCards('print', scope.printUnits || []);
   document.getElementById('es-details').value = scope.details || '';
   document.getElementById('examScopeModal').classList.add('open');
 }
@@ -2212,8 +2259,11 @@ function getExamScopeProgressLines(scope) {
   const supplementLines = Array.isArray(scope.supplementUnits)
     ? scope.supplementUnits.map(u => String(u || '').trim()).filter(Boolean).map(u => `부교재: ${u}`)
     : [];
+  const printLines = Array.isArray(scope.printUnits)
+    ? scope.printUnits.map(u => String(u || '').trim()).filter(Boolean).map(u => `프린트/기타: ${u}`)
+    : [];
   const detailLines = (scope.details || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  return [...textbookLines, ...supplementLines, ...detailLines];
+  return [...textbookLines, ...supplementLines, ...printLines, ...detailLines];
 }
 
 function generateProgressFromScope(scopeId, studentId, subject) {
@@ -2753,7 +2803,12 @@ function openInstructorEditModal(id){
   // 과목
   renderSubjectCheckboxes('inst-edit-subject-wrap','inst-edit-subj',(inst.subjects||'').split(',').filter(x=>x),true);
   // 학교/학년 칩 생성 후 기저장값 선택
-  renderInstructorEditSchoolChips((inst.schools||'').split(',').filter(x=>x));
+  const selectedSchoolKeys = (inst.schools||'').split(',').filter(x=>x);
+  const assignedSchoolKeys = getUsers()
+    .filter(s => (inst.studentIds||[]).includes(s.id))
+    .map(s => ((s.school||'').trim() && (s.grade||'').trim()) ? (s.school.trim()+'|||'+s.grade.trim()) : '')
+    .filter(Boolean);
+  renderInstructorEditSchoolChips([...new Set([...selectedSchoolKeys, ...assignedSchoolKeys])]);
   // 담당 학생
   setTimeout(()=>{
     updateInstructorEditStudentChips();
@@ -2813,19 +2868,23 @@ function updateInstructorEditStudentChips(){
   const studentRow=document.getElementById('inst-edit-student-row');
   const studentWrap=document.getElementById('inst-edit-student-wrap');
   if(!studentRow||!studentWrap) return;
+  const editingId=document.getElementById('inst-edit-id')?.value||'';
+  const editingInst=getInstructors().find(i=>i.id===editingId);
+  const assignedIds=new Set(((editingInst&&editingInst.studentIds)||[]).map(String));
   const selSubjs=Array.from(document.querySelectorAll('#inst-edit-subject-wrap input:checked')).map(c=>c.value);
   const selSchools=Array.from(document.querySelectorAll('#inst-edit-school-wrap input:checked')).map(c=>c.value);
-  if(!selSubjs.length&&!selSchools.length){studentRow.style.display='none';return;}
+  if(!selSchools.length){studentRow.style.display='none';studentWrap.innerHTML='';return;}
   const allStudents=getUsers().filter(u=>u.role==='student');
   const matched=allStudents.filter(s=>{
     const sSubjs=(s.subject||'').split(',').filter(x=>x);
     const subjMatch=!selSubjs.length||sSubjs.some(sub=>selSubjs.includes(sub));
-    const schoolMatch=!selSchools.length||selSchools.some(key=>isStudentInSchoolGrade(s,key));
+    const schoolMatch=selSchools.some(key=>isStudentInSchoolGrade(s,key));
     return subjMatch&&schoolMatch;
   });
+  const hadRenderedStudents=document.querySelectorAll('#inst-edit-student-wrap input').length>0;
   const prev=new Set(Array.from(document.querySelectorAll('#inst-edit-student-wrap input:checked')).map(c=>c.value));
   studentWrap.innerHTML=matched.length
-    ?matched.map(s=>{const checked=prev.has(s.id);return '<label class="subject-chip'+(checked?' active':'')+'"><input type="checkbox" name="inst-edit-student" value="'+s.id+'"'+(checked?' checked':'')+' onchange="toggleSubjectChip(this)"> '+s.name+'</label>';}).join('')
+    ?matched.map(s=>{const checked=prev.has(s.id)||(!hadRenderedStudents&&assignedIds.has(String(s.id)));return '<label class="subject-chip'+(checked?' active':'')+'"><input type="checkbox" name="inst-edit-student" value="'+s.id+'"'+(checked?' checked':'')+' onchange="toggleSubjectChip(this)"> '+s.name+'</label>';}).join('')
     :'<div style="font-size:12px;color:var(--text-muted)">해당하는 학생이 없습니다.</div>';
   studentRow.style.display='';
 }
@@ -2869,16 +2928,28 @@ function parseSalaryNumber(value) {
 
 function getInstructorSalaryAdjustmentRowHtml(adj = {}) {
   const op = adj.op || 'add';
-  const amount = adj.amount === 0 || adj.amount ? adj.amount : '';
+  const isTax = op === 'withholdingTax';
+  const amount = !isTax && (adj.amount === 0 || adj.amount) ? adj.amount : '';
   return `<div class="salary-adjustment-row">
-    <select class="inst-salary-op">
+    <select class="inst-salary-op" onchange="updateInstructorSalaryAdjustmentRow(this)">
       <option value="add"${op === 'add' ? ' selected' : ''}>더하기</option>
       <option value="subtract"${op === 'subtract' ? ' selected' : ''}>빼기</option>
       <option value="multiply"${op === 'multiply' ? ' selected' : ''}>곱하기</option>
+      <option value="withholdingTax"${isTax ? ' selected' : ''}>원천세(3.3%)</option>
     </select>
-    <input class="inst-salary-amount" type="text" inputmode="decimal" value="${amount}" placeholder="더하기/빼기: 금액, 곱하기: 배수 예) 1.1">
+    <input class="inst-salary-amount" type="text" inputmode="decimal" value="${amount}" placeholder="${isTax ? '자동 계산' : '더하기/빼기: 금액, 곱하기: 배수 예) 1.1'}"${isTax ? ' disabled' : ''}>
     <button type="button" onclick="removeInstructorSalaryAdjustment(this)">×</button>
   </div>`;
+}
+
+function updateInstructorSalaryAdjustmentRow(selectEl) {
+  const row = selectEl ? selectEl.closest('.salary-adjustment-row') : null;
+  const input = row ? row.querySelector('.inst-salary-amount') : null;
+  if (!input) return;
+  const isTax = selectEl.value === 'withholdingTax';
+  input.disabled = isTax;
+  input.value = isTax ? '' : input.value;
+  input.placeholder = isTax ? '자동 계산' : '더하기/빼기: 금액, 곱하기: 배수 예) 1.1';
 }
 
 function renderInstructorSalaryAdjustments(containerId, adjustments = []) {
@@ -2909,9 +2980,11 @@ function collectInstructorSalaryAdjustments(containerId) {
   return Array.from(wrap.querySelectorAll('.salary-adjustment-row')).map(row => {
     const input = row.querySelector('.inst-salary-amount');
     const raw = input ? input.value.trim() : '';
-    if (raw === '') return null;
     const opEl = row.querySelector('.inst-salary-op');
-    return { op: opEl ? opEl.value : 'add', amount: parseSalaryNumber(raw) };
+    const op = opEl ? opEl.value : 'add';
+    if (op === 'withholdingTax') return { op, amount: 3.3 };
+    if (raw === '') return null;
+    return { op, amount: parseSalaryNumber(raw) };
   }).filter(Boolean);
 }
 
@@ -2919,24 +2992,58 @@ function hasInstructorSalaryConfig(inst) {
   return inst && (inst.salaryPercent !== undefined && inst.salaryPercent !== '' || (Array.isArray(inst.salaryAdjustments) && inst.salaryAdjustments.length > 0));
 }
 
-function calculateInstructorSalary(inst, totalSales) {
+function calculateInstructorSalaryDetail(inst, totalSales) {
   let salary = (totalSales || 0) * (parseSalaryNumber(inst && inst.salaryPercent) / 100);
   const adjustments = Array.isArray(inst && inst.salaryAdjustments) ? inst.salaryAdjustments : [];
+  let hasWithholdingTax = false;
   adjustments.forEach(adj => {
+    if (adj.op === 'withholdingTax') {
+      hasWithholdingTax = true;
+      return;
+    }
     const amount = parseSalaryNumber(adj.amount);
     if (adj.op === 'subtract') salary -= amount;
     else if (adj.op === 'multiply') salary *= amount;
     else salary += amount;
   });
-  return Math.round(salary);
+  const grossSalary = Math.round(salary);
+  const withholdingTax = hasWithholdingTax ? Math.round(grossSalary * 0.033) : 0;
+  return {
+    grossSalary,
+    withholdingTax,
+    salary: grossSalary - withholdingTax
+  };
+}
+
+function calculateInstructorSalary(inst, totalSales) {
+  return calculateInstructorSalaryDetail(inst, totalSales).salary;
 }
 
 function getInstructorMonthlySales(inst, month) {
   if (!inst) return 0;
   const studentIds = (inst.studentIds || []).map(String);
-  return getUsers()
-    .filter(u => u.role === 'student' && studentIds.includes(String(u.id)))
+  return getPaymentStudentsForMonth(month)
+    .filter(s => studentIds.includes(String(s.id)))
+    .filter(s => !s.enteredAt || s.enteredAt.slice(0, 7) <= month)
     .reduce((sum, s) => sum + getStudentFeeForInstructor(s, inst, month), 0);
+}
+
+function getPaymentStudentsForMonth(month) {
+  const activeStudents = getActiveStudents();
+  const retiredUsers = getActiveRetiredStudents();
+  return [
+    ...activeStudents.map(s => getActiveStudentForMonth(s, month)).filter(Boolean),
+    ...retiredUsers.filter(s => {
+      if (!s.retiredAt) return false;
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      if (month < retiredMonth) return true;
+      if (month === retiredMonth && month >= '2026-03') return true;
+      return false;
+    }).map(s => {
+      const retiredMonth = s.retiredAt.slice(0, 7);
+      return { ...s, status: month === retiredMonth ? '퇴원' : '재원' };
+    })
+  ];
 }
 
 function renderInstructorStudentSalaryPill() {
@@ -3032,8 +3139,10 @@ function renderInstructorList(){
     // 총매출: 담당 학생들의 담당 과목 월 수강료 합산
     const myStudents = allStudents.filter(s=>(inst.studentIds||[]).includes(s.id));
     const totalSales = getInstructorMonthlySales(inst, currentInstructorMonth);
-    const calculatedSalary = calculateInstructorSalary(inst, totalSales);
-    const salaryDisplay = hasInstructorSalaryConfig(inst) ? calculatedSalary.toLocaleString()+'원' : '-';
+    const salaryDetail = calculateInstructorSalaryDetail(inst, totalSales);
+    const salaryDisplay = hasInstructorSalaryConfig(inst)
+      ? salaryDetail.salary.toLocaleString()+'원' + (salaryDetail.withholdingTax ? ' <span style="font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap">(원천세 '+salaryDetail.withholdingTax.toLocaleString()+'원 제외)</span>' : '')
+      : '-';
     // 담당 학생들의 해당 월 수금 완료 여부
     const payableStudents = myStudents.filter(s => getStudentFeeForInstructor(s, inst, currentInstructorMonth) > 0);
     const isPaid = payableStudents.length > 0 && payableStudents.every(s => isPaidForMonth(s, currentInstructorMonth));
@@ -3170,11 +3279,13 @@ function shiftInstructorMonth(dir){
   const inp = document.getElementById('instructor-summary-month-filter');
   if(inp) inp.value = currentInstructorMonth;
   renderInstructorPaymentSummary();
+  renderInstructorList();
 }
 
 function changeInstructorMonth(val){
   if(val) currentInstructorMonth = val;
   renderInstructorPaymentSummary();
+  renderInstructorList();
 }
 
 function renderInstructorPaymentSummary(){
@@ -3211,7 +3322,7 @@ function renderInstructorPaymentSummary(){
 
   const pendingStudents = students.filter(s => {
     if(s.status === '퇴원') return false;
-    return !isPaidForMonth(s, currentInstructorMonth) && getStudentTotalFee(s) > 0;
+    return !isPaidForMonth(s, currentInstructorMonth) && getStudentTotalFee(s, currentInstructorMonth) > 0;
   });
 
   // 과목별 수금 통계
@@ -3223,7 +3334,7 @@ function renderInstructorPaymentSummary(){
 
   students.forEach(s => {
     const isPaid = isPaidForMonth(s, currentInstructorMonth);
-    const totalFee = getStudentTotalFee(s);
+    const totalFee = getStudentTotalFee(s, currentInstructorMonth);
     let feeBySubject = null;
     try { const raw = getStudentFeeForMonth(s, currentInstructorMonth); if(raw && String(raw).startsWith('{')) feeBySubject = JSON.parse(raw); } catch(e){}
     totalAcademyExpected += totalFee;
@@ -3277,7 +3388,7 @@ function renderInstructorPaymentSummary(){
 
   const mkStudentRow = s => {
     const subjects = (s.subject||'').split(',').filter(x=>x).map(sub=>'<span class="cat-tag'+(sub.startsWith('수학')?' math':'')+'" style="padding:1px 5px;font-size:9px;margin:0">'+sub+'</span>').join(' ');
-    return '<div class="pay-pending-item"><div class="pay-pending-info"><div class="pay-pending-name">'+s.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px"><div style="display:flex;gap:2px">'+subjects+'</div><div class="pay-pending-fee" style="margin-top:0">'+getStudentTotalFee(s).toLocaleString()+'원</div></div></div><button class="btn-check-pay" onclick="confirmPayment(\''+s.id+'\')">수금 체크</button></div>';
+    return '<div class="pay-pending-item"><div class="pay-pending-info"><div class="pay-pending-name">'+s.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px"><div style="display:flex;gap:2px">'+subjects+'</div><div class="pay-pending-fee" style="margin-top:0">'+getStudentTotalFee(s, currentInstructorMonth).toLocaleString()+'원</div></div></div><button class="btn-check-pay" onclick="confirmPayment(\''+s.id+'\')">수금 체크</button></div>';
   };
 
   let instGroupsHtml = '';
@@ -3884,6 +3995,28 @@ function getStudentTotalFee(s, month) {
   }
 }
 
+function formatStudentFeeDisplay(s, month) {
+  const rawFee = getStudentFeeForMonth(s, month || currentPaymentMonth);
+  if (!rawFee || String(rawFee).trim() === '') return '';
+  try {
+    if (String(rawFee).startsWith('{')) {
+      const feeObj = JSON.parse(rawFee);
+      const entries = Object.entries(feeObj)
+        .map(([sub, val]) => [sub, parseInt(val) || 0])
+        .filter(([, val]) => val > 0);
+      if (!entries.length) return '';
+      const total = entries.reduce((sum, [, val]) => sum + val, 0);
+      const breakdown = entries.map(([sub, val]) => `${sub} ${val.toLocaleString()}원`).join('<br>');
+      return `<span title="${breakdown}">${total.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${entries.map(([sub]) => sub).join('+')})</span></span>`;
+    }
+    const fee = parseInt(rawFee) || 0;
+    return fee > 0 ? fee.toLocaleString() + '원' : '';
+  } catch(e) {
+    const fee = parseInt(rawFee) || 0;
+    return fee > 0 ? fee.toLocaleString() + '원' : '';
+  }
+}
+
 // 핸드폰 번호 포맷팅 (010-XXXX-XXXX)
 function formatPhone(val) {
   if (!val) return '-';
@@ -4205,9 +4338,8 @@ function renderDashboard(who) {
   if (!currentCalDate) currentCalDate = new Date();
   const todayStr = formatDateLocal(new Date()); // Always use real today for comparison
   const allClasses = getVisibleClasses();
-  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
   const hasTodayClass = allClasses.some(c => {
-    const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
+    const isMine = !isStudent || isClassVisibleForStudent(c, currentUser);
     return isMine && c.date === todayStr;
   });
 
@@ -4272,6 +4404,11 @@ function renderDashboardHomeworkList(who) {
 
   if (filteredHws.length === 0) {
     listEl.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:14px">현재 진행 중인 숙제가 없습니다. ✨</div>';
+    return;
+  }
+
+  if (isStudent) {
+    listEl.innerHTML = renderStudentHomeworkListHtml(filteredHws, studentGroups, comps, currentUser.id);
     return;
   }
 
@@ -4388,6 +4525,84 @@ function filterDashboardProgress(groupId, btn) {
 }
 
 // ── STUDENT HOMEWORK ─────────────────────────────────────
+function getStudentHomeworkMonthVisual(dateStr) {
+  if (!dateStr || dateStr.length < 7) {
+    return { key:'date-unknown', label:'날짜 미정', strip:'미정', color:'#64748b', bg:'#f1f5f9', text:'#475569' };
+  }
+  const yyyyMm = dateStr.slice(0, 7);
+  const yyyy = yyyyMm.slice(0, 4);
+  const mm = parseInt(yyyyMm.slice(5, 7), 10);
+  let hash = 0;
+  for (let i = 0; i < yyyyMm.length; i++) hash = yyyyMm.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash * 137) % 360;
+  return {
+    key: yyyyMm,
+    label: `${yyyy}년 ${mm}월`,
+    strip: `${yyyy}년<br>${mm}월`,
+    color: `hsl(${hue}, 75%, 42%)`,
+    bg: `hsl(${hue}, 95%, 90%)`,
+    text: `hsl(${hue}, 85%, 30%)`
+  };
+}
+
+function renderStudentHomeworkListHtml(hws, studentGroups, comps, studentId) {
+  const isDone = id => comps.some(c => c.homeworkId === id && c.studentId === studentId);
+  const hwGroups = buildGroups(hws, studentGroups);
+  return hwGroups.map(g => {
+    const headerStyle = `style="background:${g.gc.bg}; border-left-color:${g.gc.color}; color:${g.gc.color}"`;
+    const header = `<div class="cat-group-header" ${headerStyle}>${g.labelPrefix}${g.label}<span class="cat-count">${g.items.length}개</span></div>`;
+    const sortedItems = [...g.items].sort((a,b) => {
+      const vA = a.dueDate || '0000-00-00';
+      const vB = b.dueDate || '0000-00-00';
+      if (vA > vB) return -1;
+      if (vA < vB) return 1;
+      return 0;
+    });
+    const renderItem = h => {
+      const d = isDone(h.id);
+      const chk = pendingChecks[h.id] !== undefined ? pendingChecks[h.id] : d;
+      let diff = null;
+      if (h.dueDate) {
+        const p = h.dueDate.split('-');
+        const dDate = new Date(+p[0], +p[1]-1, +p[2]); dDate.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        diff = Math.ceil((dDate - today) / 86400000);
+      }
+      const badgeClass = (diff !== null && diff <= 2 && !chk) ? 'badge-danger' : 'badge-pending';
+      const badgeText = chk ? '완료' : (d ? '취소 예정' : (diff !== null ? 'D-' + diff : '미완료'));
+      const dueColor = diff !== null && diff < 0 ? 'inherit' : 'var(--danger)';
+      const month = getStudentHomeworkMonthVisual(h.createdAt || '');
+      return `
+        <div class="detail-hw-item" style="padding:0; overflow:hidden; align-items:stretch; cursor:pointer; margin-bottom:8px;" onclick="toggleCheck('${h.id}',${d})">
+          <div style="flex:0 0 70px; background:${month.color}; color:white; display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; font-weight:700; line-height:1.4;">${month.strip}</div>
+          <div style="flex:1; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+            <div class="detail-hw-info">
+              <div class="detail-hw-title" style="${chk ? 'color:var(--text-muted)' : ''}">${h.title}</div>
+              <div class="detail-hw-meta">${h.subject ? '<span class="cat-tag' + (h.subject.startsWith('수학') ? ' math' : '') + '" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">' + h.subject + '</span>' : ''}출제일: ${h.createdAt || '알수없음'} · <span style="color:${dueColor}; font-weight:700">마감: ${h.dueDate || '미정'}</span></div>
+            </div>
+            <div class="detail-pct-wrap">
+              <span class="detail-status hw-badge ${chk ? 'badge-done' : badgeClass}">${badgeText}</span>
+              <div class="hw-checkbox ${chk ? 'checked' : ''}" style="width:22px; height:22px; margin-top:6px;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+    const monthGroups = {};
+    sortedItems.forEach(h => {
+      const month = getStudentHomeworkMonthVisual(h.createdAt || '');
+      if (!monthGroups[month.key]) monthGroups[month.key] = { month, items: [] };
+      monthGroups[month.key].items.push(h);
+    });
+    const items = Object.values(monthGroups).map(monthGroup => {
+      const monthHeaderStyle = `style="background:${monthGroup.month.bg}; border-left-color:${monthGroup.month.color}; color:${monthGroup.month.text}"`;
+      const monthHeader = `<div class="cat-group-header" ${monthHeaderStyle}>📅 ${monthGroup.month.label}<span class="cat-count">${monthGroup.items.length}개</span></div>`;
+      return monthHeader + monthGroup.items.map(renderItem).join('');
+    }).join('');
+    return header + items;
+  }).join('');
+}
+
 function renderStudentHomework(){
   const linkedHwIds = getStudentLinkedProgressHomeworkIds(currentUser.id);
   const hws=getHomeworks().filter(h=>linkedHwIds.has(String(h.id)) && (h.assignedTo || []).map(String).includes(String(currentUser.id)));
@@ -4409,6 +4624,9 @@ function renderStudentHomework(){
   const list=document.getElementById('s-hw-list');
   if(!hws.length){list.innerHTML='<div class="empty-state"><div class="ei">🎉</div><div>배정된 숙제가 없습니다</div></div>';return;}
   
+  list.innerHTML = renderStudentHomeworkListHtml(hws, studentGroups, comps, currentUser.id);
+  return;
+
   const getHomeworkMonthVisual = (dateStr) => {
     if (!dateStr || dateStr.length < 7) {
       return { key:'date-unknown', label:'날짜 미정', strip:'미정', color:'#64748b', bg:'#f1f5f9', text:'#475569' };
@@ -4672,9 +4890,9 @@ function toggleCheck(hId,done){
   saveCompletions(comps);
   pendingChecks = {}; // Clear any legacy states just in case
   
-  // Re-render all views to ensure consistency immediately
-  renderDashboard();
-  renderStudentHomework();
+  // Re-render all student homework surfaces immediately so dashboard and menu stay identical.
+  renderDashboard(currentUser.role === 'student' ? 's' : 'a');
+  if (currentUser.role === 'student') renderStudentHomework();
   if (typeof renderStudentProgress === 'function') {
     renderStudentProgress();
   }
@@ -5554,7 +5772,12 @@ function isStudentEnteredThisMonth(student, month) {
   return !!(student && typeof student.enteredAt === 'string' && student.enteredAt.slice(0, 7) === getStudentStatusMonthKey(month));
 }
 
+function isStudentReturnedThisMonth(student, month) {
+  return !!(student && typeof student.returnedAt === 'string' && student.returnedAt.slice(0, 7) === getStudentStatusMonthKey(month));
+}
+
 function renderNewStudentBadge(student, month) {
+  if (isStudentReturnedThisMonth(student, month)) return '<span class="student-status-new">복귀</span>';
   return isStudentEnteredThisMonth(student, month) ? '<span class="student-status-new">신규</span>' : '';
 }
 
@@ -6088,15 +6311,13 @@ function shiftRetiredMonth(delta) {
 }
 
 function renderRetiredStudents(){
-  // 퇴원 학생: getRetiredUsers() + getUsers()에서 retiredAt 있는 복귀자
+  // 퇴원 학생: 현재 퇴원 상태인 학생만 표시하고, 복귀자는 신규 학생 목록으로 보낸다.
   const retiredOnly = getActiveRetiredStudents();
-  const returnedWithRetired = getActiveStudents().filter(u => u.retiredAt);
-  const allRetired = [...retiredOnly, ...returnedWithRetired];
 
   // 월 필터
   const filtered = currentRetiredMonth === 'all'
-    ? retiredOnly  // 전체기간: 현재 퇴원 상태인 학생만 (복귀자 제외)
-    : allRetired.filter(s => s.retiredAt && s.retiredAt.slice(0,7) === currentRetiredMonth);
+    ? retiredOnly
+    : retiredOnly.filter(s => s.retiredAt && s.retiredAt.slice(0,7) === currentRetiredMonth);
 
   // 퇴원일 내림차순 정렬
   filtered.sort((a, b) => (b.retiredAt || '').localeCompare(a.retiredAt || ''));
@@ -6105,7 +6326,7 @@ function renderRetiredStudents(){
   const badge = document.getElementById('retired-count-badge');
   if (badge) badge.textContent = `${filtered.length}명`;
 
-  const isReturned = s => returnedWithRetired.some(u => u.id === s.id);
+  const isReturned = s => !!s.returnedAt;
 
   document.getElementById('retired-stat-body').innerHTML = filtered.length === 0
     ? `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">해당 월 퇴원 학생이 없습니다.</td></tr>`
@@ -6151,8 +6372,11 @@ function renderNewStudentsList(){
     if (s && s.id && !visibleMap.has(s.id)) visibleMap.set(s.id, s);
   });
   const filtered = [...visibleMap.values()]
-    .filter(s => s.enteredAt && (currentRetiredMonth === 'all' || s.enteredAt.slice(0, 7) === currentRetiredMonth))
-    .sort((a, b) => (b.enteredAt || '').localeCompare(a.enteredAt || ''));
+    .filter(s => {
+      const listDate = s.returnedAt || s.enteredAt;
+      return listDate && (currentRetiredMonth === 'all' || listDate.slice(0, 7) === currentRetiredMonth);
+    })
+    .sort((a, b) => ((b.returnedAt || b.enteredAt || '').localeCompare(a.returnedAt || a.enteredAt || '')));
   if (badge) badge.textContent = `${filtered.length}명`;
   body.innerHTML = filtered.length === 0
     ? `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">해당 기간 신규 학생이 없습니다.</td></tr>`
@@ -6163,13 +6387,17 @@ function renderNewStudentsList(){
         const grpColor = grp ? getGroupColor(grp.id) : null;
         const grpBadge = grp ? `<span class="grp-badge" style="margin-left:6px;font-size:10px;background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '';
         const subjectTags = (s.subject || '').split(',').filter(Boolean).map(sub => `<span class="cat-tag${sub.startsWith('수학') ? ' math' : ''}" style="margin:0">${sub}</span>`).join('') || '-';
-        const feeMonth = s.enteredAt ? s.enteredAt.slice(0, 7) : currentPaymentMonth;
-        const fee = getStudentTotalFee(s, feeMonth);
+        const isReturnedStudent = !!s.returnedAt;
+        const listDate = s.returnedAt || s.enteredAt;
+        const listLabel = isReturnedStudent ? '복귀' : '입학';
+        const statusBadge = isReturnedStudent ? '<span class="grp-badge" style="background:#dbeafe;color:#2563eb;border:1px solid #bfdbfe;margin-left:6px">복귀</span>' : '';
+        const feeMonth = listDate ? listDate.slice(0, 7) : currentPaymentMonth;
+        const feeDisplay = formatStudentFeeDisplay(s, feeMonth);
         return `<tr onclick="openStudentDetail('${s.id}')" style="background:#f0fdf4">
-          <td><div class="student-name-cell"><div class="student-avatar" style="background:#dcfce7;color:#166534">${initials}</div>${s.name}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${s.enteredAt} 입학</span>${grpBadge}</div></td>
+          <td><div class="student-name-cell"><div class="student-avatar" style="background:#dcfce7;color:#166534">${initials}</div>${s.name}${statusBadge}<span style="font-size:11px;color:var(--text-muted);margin-left:4px">[${loginId}] - ${listDate} ${listLabel}</span>${grpBadge}</div></td>
           <td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${subjectTags}</div></td>
-          <td style="font-size:13px;font-weight:700;color:var(--primary)">${fee ? fee.toLocaleString() + '원' : '-'}</td>
-          <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt}</td>
+          <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
+          <td style="font-size:13px;color:var(--text-muted)">${listDate}</td>
           <td style="white-space:nowrap;text-align:right"><span style="font-size:12px;color:var(--text-muted);cursor:pointer" onclick="event.stopPropagation();openStudentDetail('${s.id}')">상세 보기</span></td>
         </tr>`;
       }).join('');
@@ -6696,6 +6924,17 @@ function confirmPayment(sid) {
 
 
 
+function renderStudentInstructorBadges(studentId) {
+  const matched = getInstructors()
+    .filter(inst => (inst.studentIds || []).map(String).includes(String(studentId)))
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+  if (!matched.length) return '<span style="color:#cbd5e1">-</span>';
+  return matched.map(inst => {
+    const color = getInstructorColor(inst.id, inst.colorIndex);
+    return `<span class="grp-badge" style="background:${color.bg};color:${color.text};border:1px solid ${color.bg};margin:0">${escapeExamText(inst.name || '')}</span>`;
+  }).join('');
+}
+
 function renderDetailedStudentList() {
   const activeStudents = getActiveStudents();
   const retiredUsers = getActiveRetiredStudents();
@@ -6758,18 +6997,7 @@ function renderDetailedStudentList() {
     const grp = getStudentGroupOf(s.id);
     const grpColor = grp ? getGroupColor(grp.id) : null;
     const grpBadge = grp ? `<span class="grp-badge" style="background:${grpColor.bg};color:${grpColor.color};border:1px solid ${grpColor.border};">${grp.name}</span>` : '<span style="color:#cbd5e1">-</span>';
-    let feeDisplay = '-';
-    try {
-      const rawFee = getStudentFeeForMonth(s, currentPaymentMonth);
-      if (rawFee && String(rawFee).startsWith('{')) {
-        const feeObj = JSON.parse(rawFee);
-        const total = Object.values(feeObj).reduce((a, b) => a + (parseInt(b)||0), 0);
-        const breakdown = Object.entries(feeObj).map(([sub, v]) => `${sub} ${parseInt(v).toLocaleString()}원`).join('<br>');
-        feeDisplay = `<span title="${breakdown}">${total.toLocaleString()}원 <span style="font-size:10px;color:var(--text-muted)">(${Object.keys(feeObj).join('+')})</span></span>`;
-      } else if (rawFee) {
-        feeDisplay = getStudentTotalFee(s, currentPaymentMonth).toLocaleString() + '원';
-      }
-    } catch(e) { feeDisplay = '-'; }
+    const feeDisplay = formatStudentFeeDisplay(s, currentPaymentMonth);
     
     // 과목 복수 태그 처리
     let subjsArray = (s.subject || '').split(',').filter(x => x);
@@ -6783,11 +7011,12 @@ function renderDetailedStudentList() {
         return a.localeCompare(b, 'ko');
       });
     }
-    const subjectTags = subjsArray.map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0">${sub}</span>`).join('') || '-';
+    const subjectTags = subjsArray.map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0;width:max-content">${sub}</span>`).join('') || '-';
+    const instructorBadges = renderStudentInstructorBadges(s.id);
     
     const initials = s.name.slice(0, 1);
     const safeName = s.name.replace(/'/g, '\u2019');
-    const isNewActiveStudent = s.status === '재원' && isStudentEnteredThisMonth(s, currentPaymentMonth);
+    const isNewActiveStudent = s.status === '재원' && (isStudentEnteredThisMonth(s, currentPaymentMonth) || isStudentReturnedThisMonth(s, currentPaymentMonth));
     const statusBadge = isNewActiveStudent
       ? renderNewStudentBadge(s, currentPaymentMonth)
       : `<span style="padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; background:${s.status === '재원' ? 'var(--success-bg)' : '#fef2f2'}; color:${s.status === '재원' ? 'var(--success)' : '#dc2626'}; border:1px solid ${s.status === '재원' ? 'rgba(34,197,94,0.1)' : 'rgba(220,38,38,0.1)'}">${s.status}</span>`;
@@ -6805,7 +7034,8 @@ function renderDetailedStudentList() {
             ${statusBadge}
           </div>
         </td>
-        <td style="font-size:13px;"><div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">${subjectTags}</div></td>
+        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${subjectTags}</div></td>
+        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${instructorBadges}</div></td>
         <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
         <td style="font-size:12px;color:var(--text-muted)">${getPaymentDateForMonth(s, currentPaymentMonth)}</td>
         <td>
@@ -8005,15 +8235,26 @@ function renderClassView(who, isStudent) {
   else renderUniversalCalendar(containerId, isStudent);
 }
 
+function isClassVisibleForStudent(c, student) {
+  if (!student) return false;
+  const assignedTo = Array.isArray(c.assignedTo) ? c.assignedTo.map(String) : null;
+  if (assignedTo) return assignedTo.length > 0 && assignedTo.includes(String(student.id));
+
+  const targetIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+  const groupMatch = !targetIds.length || targetIds.includes(getStudentGroupOf(student.id)?.id || '');
+  const studentSubjects = (student.subject || '').split(',').map(x => x.split('(')[0].trim()).filter(Boolean);
+  const classSubject = (c.subject || '').split('(')[0].trim();
+  const subjectMatch = !classSubject || studentSubjects.includes(classSubject);
+  return groupMatch && subjectMatch;
+}
+
 function renderDailySchedule(containerId, isStudent) {
   const container = document.getElementById(containerId);
   const dateStr = formatDateLocal(currentCalDate);
   
   const classes = getVisibleClasses();
-  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
-  
   const dayClasses = classes.filter(c => {
-    const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
+    const isMine = !isStudent || isClassVisibleForStudent(c, currentUser);
     return isMine && c.date === dateStr;
   }).sort((a,b) => a.startTime.localeCompare(b.startTime));
   
@@ -8080,8 +8321,6 @@ function renderWeeklySchedule(containerId, isStudent) {
   end.setDate(end.getDate() + 6);
   
   const classes = getVisibleClasses();
-  const myGrpId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
-  
   const dayNamesFull = ['일', '월', '화', '수', '목', '금', '토'];
   const startDay = dayNamesFull[start.getDay()];
   const endDay = dayNamesFull[end.getDay()];
@@ -8106,7 +8345,7 @@ function renderWeeklySchedule(containerId, isStudent) {
     const isToday = dStr === formatDateLocal(new Date());
     
     const dayClasses = classes.filter(c => {
-      const isMine = !isStudent || (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === myGrpId || (c.groupIds && c.groupIds.includes(myGrpId));
+      const isMine = !isStudent || isClassVisibleForStudent(c, currentUser);
       return isMine && c.date === dStr;
     }).sort((a,b) => a.startTime.localeCompare(b.startTime));
     
@@ -8180,8 +8419,6 @@ function renderUniversalCalendar(containerId, isStudent) {
   `;
   
   const classes = getVisibleClasses();
-  const studentGroupId = isStudent ? (getStudentGroupOf(currentUser.id)?.id || null) : null;
-
   // Fill empty cells for previous month
   for(let i = startDayIdx; i > 0; i--) {
     html += `<div class="cal-cell other-month"><div class="cal-date">${prevLastDay - i + 1}</div></div>`;
@@ -8199,7 +8436,7 @@ function renderUniversalCalendar(containerId, isStudent) {
       const dateMatch = c.date === dateStr;
       if (!dateMatch) return false;
       if (isStudent) {
-        return (!c.groupId && (!c.groupIds || c.groupIds.length === 0)) || c.groupId === studentGroupId || (c.groupIds && c.groupIds.includes(studentGroupId));
+        return isClassVisibleForStudent(c, currentUser);
       }
       return true;
     }).sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -8652,6 +8889,7 @@ function deleteClass(id) {
 
 
 let currentProgressFilter = '';
+let currentProgressSubjectFilter = '';
 
 function autoSetProgressDue() {
   const targetDateVal = document.getElementById('prog-target-date').value;
@@ -8724,25 +8962,22 @@ function renderProgressPanel() {
     });
 
     const allTabs = classSeries.concat(extraTabs);
-    
-    // Extract unique subjects
-    const uniqueSubjects = [...new Set(allTabs.map(t => t.subject).filter(Boolean))];
-    const subjFilterEl = document.getElementById('prog-subject-filters');
-    if (subjFilterEl) {
-      const activeSubj = window.currentProgSubjectFilter || '';
-      let subjHtml = `<button class="sftab ${!activeSubj?'active':''}" style="padding:4px 10px; font-size:12px; border-radius:12px; cursor:pointer; background:${!activeSubj?'var(--primary)':'#f1f5f9'}; color:${!activeSubj?'#fff':'#475569'}; border:none;" onclick="window.currentProgSubjectFilter=''; renderAdminProgress()">전체</button>`;
-      uniqueSubjects.forEach(sub => {
-        const isAct = activeSubj === sub;
-        subjHtml += `<button class="sftab ${isAct?'active':''}" style="padding:4px 10px; font-size:12px; border-radius:12px; cursor:pointer; background:${isAct?'var(--primary)':'#f1f5f9'}; color:${isAct?'#fff':'#475569'}; border:none;" onclick="window.currentProgSubjectFilter='${sub}'; renderAdminProgress()">${sub}</button>`;
-      });
-      subjFilterEl.innerHTML = subjHtml;
+    const activeSubject = currentProgressSubjectFilter || '';
+    const subjectTabsEl = document.getElementById('prog-subject-tabs');
+    if (subjectTabsEl) {
+      const subjectOptions = ['', '국어', '영어', '수학'];
+      subjectTabsEl.innerHTML = subjectOptions.map(subject => {
+        const label = subject || '전체';
+        const isActive = activeSubject === subject;
+        return `<button class="sftab ${isActive ? 'active' : ''}" onclick='setProgressSubjectFilter(${JSON.stringify(subject)})'>${label}</button>`;
+      }).join('');
     }
 
     // 강사 계정이면 담당 수업만 필터링
     const isInstTab = typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor';
     let visibleTabs = allTabs;
-    if (window.currentProgSubjectFilter) {
-      visibleTabs = visibleTabs.filter(t => t.subject === window.currentProgSubjectFilter);
+    if (activeSubject) {
+      visibleTabs = visibleTabs.filter(t => t.subject === activeSubject);
     }
     if (isInstTab) visibleTabs = visibleTabs.filter(cs => isClassForInstructor(cs, currentUser) || (!cs.instructorId && !cs.instructorName));
     if (false) {
@@ -8754,8 +8989,11 @@ function renderProgressPanel() {
       });
     }
 
-    // Sort tabs by subject: Korean (국어) -> Math (수학) -> English (영어) -> Others
-    const subjectOrder = { '국어': 1, '수학': 2, '영어': 3 };
+    if (currentProgressFilter && !visibleTabs.some(cs => cs.id === currentProgressFilter)) {
+      currentProgressFilter = '';
+    }
+
+    const subjectOrder = { '국어': 1, '영어': 2, '수학': 3 };
     visibleTabs.sort((a,b) => {
       const waitA = subjectOrder[a.subject] || 99;
       const waitB = subjectOrder[b.subject] || 99;
@@ -8763,8 +9001,7 @@ function renderProgressPanel() {
       return (a.title || a.label || '').localeCompare(b.title || b.label || '', 'ko');
     });
 
-    tabEl.innerHTML = `<button class="sftab ${currentProgressFilter === '' ? 'active' : ''}" onclick="filterProgress('',this)">전체</button>` +
-      visibleTabs.map(cs => {
+    tabEl.innerHTML = visibleTabs.length ? visibleTabs.map(cs => {
         const isActive = currentProgressFilter === cs.id;
         // getGroupColor(groupId, seed, manualColorIndex)
         // classSeries items have groupIds, title, colorIndex.
@@ -8772,7 +9009,7 @@ function renderProgressPanel() {
         const color = getGroupColor(cs.groupIds ? cs.groupIds[0] : cs.id, cs.title || null, cs.colorIndex);
         const style = `background:${color.bg}; color:${color.color}; border-color:${isActive ? color.color : color.border}; border-width:${isActive ? '3px' : '1px'}; font-weight:${isActive ? '700' : '500'}; box-shadow:${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'}`;
         return `<button class="sftab ${isActive ? 'active' : ''}" style="${style}" onclick="filterProgress('${cs.id}',this)">${cs.label}</button>`;
-      }).join('');
+      }).join('') : '<span class="prog-filter-empty">해당 과목 수업이 없습니다.</span>';
   }
 
   renderProgressContent();
@@ -8816,6 +9053,87 @@ function updateProgressClassList() {
       sel.value = currentVal;
     }
   }
+}
+
+function renderProgressFilterTabs() {
+  const tabEl = document.getElementById('prog-filter-tabs');
+  if (!tabEl) return;
+
+  const classSeries = getAllClassSeries();
+  const allClassSeriesMap = {};
+  classSeries.forEach(cs => { allClassSeriesMap[cs.id] = cs; });
+
+  const usedEntityIds = [...new Set(getVisibleProgressTopics().map(t => {
+    let eid = t.groupId;
+    if (allClassSeriesMap[eid]) return eid;
+    let cs = null;
+    if (eid && eid.startsWith('reg-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 5) {
+        const title = parts[1], start = parts[2], gids = parts.slice(4).join('-');
+        cs = classSeries.find(c => c.type === 'regular' && c.title === title && c.startTime === start && c.groupIds.slice().sort().join(',') === gids);
+      }
+    }
+    if (!cs && eid && eid.startsWith('single-')) {
+      const parts = eid.split('-');
+      if (parts.length >= 3) {
+        const title = parts[1], start = parts[2], gids = parts.slice(3).join('-');
+        cs = classSeries.find(c => c.type === 'single' && c.title === title && c.startTime === start && c.groupIds.slice().sort().join(',') === gids);
+      }
+    }
+    return cs ? cs.id : eid;
+  }))];
+
+  const extraTabs = usedEntityIds
+    .filter(eid => eid && !allClassSeriesMap[eid])
+    .map(eid => {
+      const grp = getStudentGroups().find(g => g.id === eid);
+      return { id: eid, label: grp ? `🏫 ${grp.name}` : `🏷️ ${String(eid).substring(0, 20)}`, subject: '' };
+    });
+
+  const activeSubject = currentProgressSubjectFilter || '';
+  const subjectTabsEl = document.getElementById('prog-subject-tabs');
+  if (subjectTabsEl) {
+    const subjectOptions = ['', '국어', '영어', '수학'];
+    subjectTabsEl.innerHTML = subjectOptions.map(subject => {
+      const label = subject || '전체';
+      const isActive = activeSubject === subject;
+      return `<button class="sftab ${isActive ? 'active' : ''}" onclick='setProgressSubjectFilter(${JSON.stringify(subject)})'>${label}</button>`;
+    }).join('');
+  }
+
+  const isInstTab = typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor';
+  let visibleTabs = classSeries.concat(extraTabs);
+  if (activeSubject) visibleTabs = visibleTabs.filter(t => t.subject === activeSubject);
+  if (isInstTab) visibleTabs = visibleTabs.filter(cs => isClassForInstructor(cs, currentUser) || (!cs.instructorId && !cs.instructorName));
+
+  if (currentProgressFilter && !visibleTabs.some(cs => cs.id === currentProgressFilter)) {
+    currentProgressFilter = '';
+  }
+
+  const subjectOrder = { '국어': 1, '영어': 2, '수학': 3 };
+  visibleTabs.sort((a, b) => {
+    const waitA = subjectOrder[a.subject] || 99;
+    const waitB = subjectOrder[b.subject] || 99;
+    if (waitA !== waitB) return waitA - waitB;
+    return (a.title || a.label || '').localeCompare(b.title || b.label || '', 'ko');
+  });
+
+  tabEl.innerHTML = visibleTabs.length ? visibleTabs.map(cs => {
+    const isActive = currentProgressFilter === cs.id;
+    const color = getGroupColor(cs.groupIds ? cs.groupIds[0] : cs.id, cs.title || null, cs.colorIndex);
+    const style = `background:${color.bg}; color:${color.color}; border-color:${isActive ? color.color : color.border}; border-width:${isActive ? '3px' : '1px'}; font-weight:${isActive ? '700' : '500'}; box-shadow:${isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'}`;
+    return `<button class="sftab ${isActive ? 'active' : ''}" style="${style}" onclick="filterProgress('${cs.id}',this)">${cs.label}</button>`;
+  }).join('') : '<span class="prog-filter-empty">해당 과목 수업이 없습니다.</span>';
+}
+
+function setProgressSubjectFilter(subject) {
+  currentProgressSubjectFilter = subject || '';
+  currentProgressFilter = '';
+  const progGroupSel = document.getElementById('prog-group');
+  if (progGroupSel) progGroupSel.value = '';
+  renderProgressFilterTabs();
+  renderProgressContent();
 }
 
 function filterProgress(groupId, btn) {
@@ -9950,6 +10268,7 @@ function toggleStudentProgress(topicId) {
 
 function renderProgressContent(targetId) {
   const activeProgressFilter = targetId === 'a-dashboard-progress-list' ? currentDashboardProgressFilter : currentProgressFilter;
+  const activeSubjectFilter = targetId === 'a-dashboard-progress-list' ? '' : currentProgressSubjectFilter;
   const topics = getVisibleProgressTopics();
   const comps = getProgressCompletions();
   const groups = getStudentGroups();
@@ -10003,6 +10322,11 @@ function renderProgressContent(targetId) {
     const group = groups.find(g => g.id === entityId);
     
     if (!classSeries && !group) return;
+    if (activeSubjectFilter) {
+      const seriesSubject = classSeries ? (classSeries.subject || '') : '';
+      const hasTopicSubject = entityTopics.some(t => t.subject === activeSubjectFilter);
+      if (seriesSubject !== activeSubjectFilter && !hasTopicSubject) return;
+    }
 
     const label = classSeries ? classSeries.label : (group ? `🏫 ${group.name}` : `🏷️ ${entityId}`);
     const gc = classSeries 
@@ -11067,6 +11391,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <label>부교재 단원</label>
           <div id="es-supplement-units" class="exam-unit-list"></div>
           <button type="button" class="exam-unit-add" onclick="addExamUnit('supplement')">+ 부교재 단원 추가</button>
+        </div>
+        <div class="form-row">
+          <label>프린트/기타</label>
+          <div id="es-print-units" class="exam-unit-list"></div>
+          <button type="button" class="exam-unit-add" onclick="addExamUnit('print')">+ 프린트/기타 추가</button>
         </div>
         <div class="form-row"><label>상세 시험범위 내용</label><textarea id="es-details" rows="5" placeholder="상세한 시험범위를 텍스트로 입력하세요"></textarea></div>
         <button class="btn-add" style="width:100%;margin-top:12px" onclick="saveExamScopeForm()">💾 저장하기</button>
