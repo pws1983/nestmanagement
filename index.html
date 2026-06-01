@@ -110,6 +110,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* PANELS */
 .panel{display:none;}
 .panel.active{display:block;}
+#a-panel-instructors.panel.active{display:flex;flex-direction:column;}
 .panel-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
 .panel-sub{color:var(--text-muted);font-size:14px;margin-bottom:28px;}
 
@@ -1107,7 +1108,7 @@ body.is-instructor button[onclick="importData()"] {
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px">
         <div class="panel-title" style="margin-bottom:0">강사 현황</div>
       </div>
-      <div class="admin-grid" id="a-instructors-grid">
+      <div class="admin-grid" id="a-instructors-grid" style="order:2;margin-top:20px">
         <div class="card" id="a-instructor-add-card">
           <div class="section-title">➕ 강사 추가</div>
           <div class="form-row"><label>강사 이름</label><input id="new-instructor-name" type="text" placeholder="예) 홍길동"></div>
@@ -1153,7 +1154,7 @@ body.is-instructor button[onclick="importData()"] {
           </div>
         </div>
       </div>
-      <div class="card" style="margin-top:20px">
+      <div class="card" style="margin-top:0;order:1">
         <div class="section-title" style="margin-bottom:16px">📋 전체 강사 현황</div>
         <div style="overflow-x:auto">
           <table class="student-stat-table" style="min-width:1100px">
@@ -3398,7 +3399,7 @@ function renderInstructorPaymentSummary(){
 
   const mkStudentRow = s => {
     const subjects = (s.subject||'').split(',').filter(x=>x).map(sub=>'<span class="cat-tag'+(sub.startsWith('수학')?' math':'')+'" style="padding:1px 5px;font-size:9px;margin:0">'+sub+'</span>').join(' ');
-    return '<div class="pay-pending-item"><div class="pay-pending-info"><div class="pay-pending-name">'+s.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px"><div style="display:flex;gap:2px">'+subjects+'</div><div class="pay-pending-fee" style="margin-top:0">'+getStudentTotalFee(s, currentInstructorMonth).toLocaleString()+'원</div></div></div><button class="btn-check-pay" onclick="confirmPayment(\''+s.id+'\')">수금 체크</button></div>';
+    return '<div class="pay-pending-item"><div class="pay-pending-info"><div class="pay-pending-name">'+s.name+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:2px"><div style="display:flex;gap:2px">'+subjects+'</div><div class="pay-pending-fee" style="margin-top:0">'+getStudentTotalFee(s, currentInstructorMonth).toLocaleString()+'원</div></div></div><button class="btn-check-pay" onclick="confirmPayment(\''+s.id+'\', currentInstructorMonth)">수금 체크</button></div>';
   };
 
   let instGroupsHtml = '';
@@ -7820,7 +7821,7 @@ function renderPaymentSummary() {
                     <div class="pay-pending-fee" style="margin-top:0">${getStudentTotalFee(s).toLocaleString()}원</div>
                   </div>
                 </div>
-                <button class="btn-check-pay" onclick="confirmPayment('${s.id}')">수금 체크</button>
+                <button class="btn-check-pay" onclick="confirmPayment('${s.id}', '${currentPaymentMonth}')">수금 체크</button>
               </div>
             `;
           }).join('') : '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px">미납 학생이 없습니다. 🎉</div>'}
@@ -7891,8 +7892,8 @@ function renderPaymentSummary() {
   renderInstructorStudentSalaryPill();
 }
 
-function confirmPayment(sid) {
-  togglePaymentStatus(sid, true);
+function confirmPayment(sid, month) {
+  togglePaymentStatus(sid, true, month || currentPaymentMonth);
 }
 
 function getSubjectInstructorsForStudent(studentId, subject) {
@@ -8416,7 +8417,8 @@ function _payDateCancel() {
   if (_payDateCb) { _payDateCb(null); _payDateCb = null; }
 }
 
-function togglePaymentStatus(sid, isPaid) {
+function togglePaymentStatus(sid, isPaid, month) {
+  const paymentMonth = month || currentPaymentMonth;
   const users = getUsers();
   const sIdx = users.findIndex(u => u.id === sid);
   if (sIdx > -1) {
@@ -8424,37 +8426,39 @@ function togglePaymentStatus(sid, isPaid) {
     if (!s.payments) s.payments = {};
     
     if (isPaid) {
-      const fee = getStudentTotalFee(s);
+      const fee = getStudentTotalFee(s, paymentMonth);
       const formattedFee = fee.toLocaleString();
       if (!confirm(`📢 [수금 확인]\n\n"${s.name}" 학생의 학원비 ${formattedFee}원을 수납 완료 처리하시겠습니까?`)) {
         renderDetailedStudentList();
+        renderPaymentSummary();
+        renderInstructorPaymentSummary();
         return;
       }
       
       const today = new Date().toISOString().slice(0, 10);
       _openPayDateModal(s.name, today, (pDate) => {
-        if (pDate === null) { renderDetailedStudentList(); return; }
-        s.payments[currentPaymentMonth] = pDate || today;
+        if (pDate === null) { renderDetailedStudentList(); renderPaymentSummary(); renderInstructorPaymentSummary(); return; }
+        s.payments[paymentMonth] = pDate || today;
         saveUsers(users);
-        showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 정보가 업데이트되었습니다.`);
-        if (editingStudentId === sid) {
+        showToast(`✅ "${s.name}" 학생의 ${paymentMonth} 수금 정보가 업데이트되었습니다.`);
+        if (editingStudentId === sid && paymentMonth === currentPaymentMonth) {
           const editPopupCb = document.getElementById('edit-popup-student-ispaid');
           if (editPopupCb) { editPopupCb.checked = true; editPopupCb.parentElement.classList.add('active'); }
           const editPayDate = document.getElementById('edit-popup-student-paydate');
           if (editPayDate) editPayDate.value = pDate || today;
         }
-        renderDetailedStudentList(); renderPaymentSummary();
+        renderDetailedStudentList(); renderPaymentSummary(); renderInstructorPaymentSummary();
       });
       return; // 이후 처리는 콜백에서
     } else {
-      s.payments[currentPaymentMonth] = false;
+      s.payments[paymentMonth] = false;
     }
     
     saveUsers(users);
-    showToast(`✅ "${s.name}" 학생의 ${currentPaymentMonth} 수금 정보가 업데이트되었습니다.`);
+    showToast(`✅ "${s.name}" 학생의 ${paymentMonth} 수금 정보가 업데이트되었습니다.`);
     
     // 현재 수정 중인 학생과 같다면 팝업 동기화
-    if (editingStudentId === sid) {
+    if (editingStudentId === sid && paymentMonth === currentPaymentMonth) {
       const editPopupCb = document.getElementById('edit-popup-student-ispaid');
       if (editPopupCb) {
         editPopupCb.checked = isPaid;
@@ -8464,6 +8468,8 @@ function togglePaymentStatus(sid, isPaid) {
 
     // 전반적인 UI 연동 (리스트 및 요약 위젯)
     renderDetailedStudentList();
+    renderPaymentSummary();
+    renderInstructorPaymentSummary();
   }
 }
 
