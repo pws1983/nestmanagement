@@ -899,9 +899,9 @@ body.is-instructor button[onclick="importData()"] {
       <div class="nav-item" onclick="showPanel('a','learning')" id="anav-learning"><span>📖</span> 학습 관리</div>
       <div class="nav-item" onclick="showPanel('a','groups')" id="anav-groups"><span>🏫</span> 학교 관리</div>
       <div class="nav-item" onclick="showPanel('a','students')" id="anav-students"><span>👥</span> 학생 현황</div>
-      <div class="nav-item" onclick="showPanel('a','instructors')" id="anav-instructors"><span>🧑‍🏫</span> 강사 현황</div>
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원/신규</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
+      <div class="nav-item" onclick="showPanel('a','instructors')" id="anav-instructors"><span>🧑‍🏫</span> 강사 현황</div>
       <div class="nav-item" onclick="showPanel('a','account')" id="anav-account"><span>⚙️</span> 계정정보</div>
     </nav>
   <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
@@ -7920,17 +7920,17 @@ function renderStudentSubjectInstructorRows(student) {
   const subjects = getStudentSubjectList(student);
   if (!subjects.length) {
     return {
-      subjectHtml: '<div style="min-height:22px;display:flex;align-items:center;color:#cbd5e1">-</div>',
-      instructorHtml: '<div style="min-height:22px;display:flex;align-items:center;color:#cbd5e1">-</div>'
+      subjectHtml: '<div style="height:24px;display:flex;align-items:center;color:#cbd5e1">-</div>',
+      instructorHtml: '<div style="height:24px;display:flex;align-items:center;color:#cbd5e1">-</div>'
     };
   }
   const subjectHtml = subjects.map(sub => `
-    <div style="min-height:22px;display:flex;align-items:center">
+    <div style="height:24px;display:flex;align-items:center">
       <span class="cat-tag${getSubjectBase(sub) === '수학' ? ' math' : ''}" style="margin:0;width:max-content">${escapeExamText(sub)}</span>
     </div>
   `).join('');
   const instructorHtml = subjects.map(sub => `
-    <div style="min-height:22px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+    <div style="height:24px;display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap">
       ${renderInstructorBadgesForSubject(student.id, sub)}
     </div>
   `).join('');
@@ -8026,8 +8026,7 @@ function renderDetailedStudentList() {
         return a.localeCompare(b, 'ko');
       });
     }
-    const subjectTags = subjsArray.map(sub => `<span class="cat-tag${sub.startsWith('수학')?' math':''}" style="margin:0;width:max-content">${sub}</span>`).join('') || '-';
-    const instructorBadges = renderStudentInstructorBadges(s.id);
+    const subjectInstructorRows = renderStudentSubjectInstructorRows({ ...s, subject: subjsArray.join(',') });
     
     const initials = s.name.slice(0, 1);
     const safeName = s.name.replace(/'/g, '\u2019');
@@ -8050,8 +8049,8 @@ function renderDetailedStudentList() {
             ${statusBadge}
           </div>
         </td>
-        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${subjectTags}</div></td>
-        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${instructorBadges}</div></td>
+        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${subjectInstructorRows.subjectHtml}</div></td>
+        <td style="font-size:13px;"><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start">${subjectInstructorRows.instructorHtml}</div></td>
         <td style="font-size:13px;font-weight:700;color:var(--primary)">${feeDisplay}</td>
         <td style="font-size:12px;color:var(--text-muted)">${getPaymentDateForMonth(s, currentPaymentMonth)}</td>
         <td>
