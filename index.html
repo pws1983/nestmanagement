@@ -748,6 +748,7 @@ body.is-instructor button[onclick="importData()"] {
   display: none !important;
 }
 </style>
+<link rel="stylesheet" href="mobile.css" media="(max-width: 760px)">
 </head>
 <body>
 
@@ -2488,13 +2489,13 @@ function initData(){
 }
 const getUsers=()=>JSON.parse(localStorage.getItem('hwapp_users')||'[]');
 const getHomeworks=()=>JSON.parse(localStorage.getItem('hwapp_homeworks')||'[]').map(h=>({...h, assignedTo: h.assignedTo || []}));
-const getCompletions=()=>JSON.parse(localStorage.getItem('hwapp_completions')||'[]');
+const getCompletions=()=>JSON.parse(localStorage.getItem('hwapp_completions')||'[]').filter(isHomeworkCompletionDone);
 const getCategories=()=>JSON.parse(localStorage.getItem('hwapp_categories')||'[]');
 const getStudentGroups=()=>JSON.parse(localStorage.getItem('hwapp_student_groups')||'[]');
 const getRetiredUsers=()=>JSON.parse(localStorage.getItem('hwapp_retired_users')||'[]');
 const getClasses=()=>JSON.parse(localStorage.getItem('hwapp_classes')||'[]');
 const saveHomeworks=d=>{localStorage.setItem('hwapp_homeworks',JSON.stringify(d));syncToServer();}
-const saveCompletions=d=>{localStorage.setItem('hwapp_completions',JSON.stringify(d));syncToServer();}
+const saveCompletions=d=>{localStorage.setItem('hwapp_completions',JSON.stringify((d||[]).filter(isHomeworkCompletionDone)));syncToServer();}
 const saveCategories=d=>{localStorage.setItem('hwapp_categories',JSON.stringify(d));syncToServer();}
 const saveStudentGroups=d=>{localStorage.setItem('hwapp_student_groups',JSON.stringify(d));syncToServer();}
 const saveRetiredUsers=d=>{localStorage.setItem('hwapp_retired_users',JSON.stringify(d));syncToServer();}
@@ -3456,9 +3457,9 @@ function renderInstructorPaymentSummary(){
 }
 
 const getProgressTopics = () => JSON.parse(localStorage.getItem('hwapp_progress_topics') || '[]');
-const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]');
+const getProgressCompletions = () => JSON.parse(localStorage.getItem('hwapp_progress_completions') || '[]').filter(isProgressCompletionDone);
 const saveProgressTopics = d => {localStorage.setItem('hwapp_progress_topics', JSON.stringify(d));syncToServer();}
-const saveProgressCompletions = d => {localStorage.setItem('hwapp_progress_completions', JSON.stringify(d));syncToServer();}
+const saveProgressCompletions = d => {localStorage.setItem('hwapp_progress_completions', JSON.stringify((d||[]).filter(isProgressCompletionDone)));syncToServer();}
 function getLinkedProgressHomeworkIds() {
   return new Set(getProgressTopics().map(t => t && t.hwId).filter(Boolean).map(String));
 }
@@ -4214,7 +4215,7 @@ function getAdminHWItemHtml(h, users, comps, options = {}) {
     assigned.forEach(sid => {
       const s = users.find(u => u.id === sid);
       if (!s) return;
-      const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid);
+      const done = comps.some(c => c.homeworkId === h.id && c.studentId === sid && isHomeworkCompletionDone(c));
       const nameColor = done ? 'var(--success)' : 'var(--text)';
       const clickAction = studentNameAction === 'toggleHomework'
         ? `toggleHomeworkCompletionFromProgress('${h.id}', '${sid}', ${done})`
@@ -4432,7 +4433,7 @@ function renderDashboardHomeworkList(who) {
     
     const items = g.items.map(h => {
       if (isStudent) {
-        const d = comps.some(c => c.homeworkId === h.id && c.studentId === currentUser.id);
+        const d = comps.some(c => c.homeworkId === h.id && c.studentId === currentUser.id && isHomeworkCompletionDone(c));
         const chk = pendingChecks[h.id] !== undefined ? pendingChecks[h.id] : d;
         
         let diff = null;
@@ -4557,7 +4558,7 @@ function getStudentHomeworkMonthVisual(dateStr) {
 }
 
 function renderStudentHomeworkListHtml(hws, studentGroups, comps, studentId) {
-  const isDone = id => comps.some(c => c.homeworkId === id && c.studentId === studentId);
+  const isDone = id => comps.some(c => c.homeworkId === id && c.studentId === studentId && isHomeworkCompletionDone(c));
   const hwGroups = buildGroups(hws, studentGroups);
   return hwGroups.map(g => {
     const headerStyle = `style="background:${g.gc.bg}; border-left-color:${g.gc.color}; color:${g.gc.color}"`;
@@ -4619,7 +4620,7 @@ function renderStudentHomework(){
   const hws=getHomeworks().filter(h=>linkedHwIds.has(String(h.id)) && (h.assignedTo || []).map(String).includes(String(currentUser.id)));
   const studentGroups=getStudentGroups();
   const comps=getCompletions();
-  const isDone=id=>comps.some(c=>c.homeworkId===id&&c.studentId===currentUser.id);
+  const isDone=id=>comps.some(c=>c.homeworkId===id&&c.studentId===currentUser.id&&isHomeworkCompletionDone(c));
   const total=hws.length, done=hws.filter(h=>isDone(h.id)).length, pct=total?Math.round(done/total*100):0;
   document.getElementById('s-hw-sub').textContent=`총 ${total}개 숙제 · 완료 ${done}개`;
   document.getElementById('s-quick-stats').innerHTML=`
@@ -4972,8 +4973,10 @@ function getStudentProgressTopics(sid){
     return true;
   });
 }
-function isDoneFor(hId,sid){return getCompletions().some(c=>c.homeworkId===hId&&c.studentId===sid);}
-function isProgressDoneFor(topicId,sid){return getProgressCompletions().some(c=>c.topicId===topicId&&c.studentId===sid);}
+function isHomeworkCompletionDone(c){return !!(c && (c.completedAt || c.isDone === true));}
+function isProgressCompletionDone(c){return !!(c && (c.completedAt || c.isDone === true));}
+function isDoneFor(hId,sid){return getCompletions().some(c=>c.homeworkId===hId&&c.studentId===sid&&isHomeworkCompletionDone(c));}
+function isProgressDoneFor(topicId,sid){return getProgressCompletions().some(c=>c.topicId===topicId&&c.studentId===sid&&isProgressCompletionDone(c));}
 
 const getStatCutoffDate = () => {
   const d = new Date();
@@ -4990,7 +4993,7 @@ function calcPeriodStats(sid,period){
   hws.forEach(h=>{
     const k=getPKey(h.createdAt,period);
     if(!res[k])res[k]={total:0,done:0,label:getPLabel(h.createdAt,period)};
-    res[k].total++;if(comps.some(c=>c.homeworkId===h.id))res[k].done++;
+    res[k].total++;if(comps.some(c=>c.homeworkId===h.id&&isHomeworkCompletionDone(c)))res[k].done++;
   });return res;
 }
 function getPKey(ds,p){
@@ -5277,6 +5280,33 @@ function syncStudentGroup(studentId, schoolName, gradeName) {
   saveStudentGroups(groups);
   return targetGroup.id;
 }
+
+function syncStudentClassAssignments(studentId) {
+  const users = getUsers();
+  const student = users.find(u => u.id === studentId && u.role === 'student');
+  if (!student) return 0;
+
+  const group = getStudentGroupOf(studentId);
+  if (!group) return 0;
+
+  const subjects = (student.subject || '').split(',').map(s => s.trim()).filter(Boolean);
+  let changed = 0;
+  const classes = getClasses().map(c => {
+    if (!c.date || (student.enteredAt && c.date < student.enteredAt)) return c;
+    const classGroupIds = c.groupIds || (c.groupId ? [c.groupId] : []);
+    if (!classGroupIds.includes(group.id)) return c;
+    if (c.subject && !subjects.includes(c.subject)) return c;
+
+    const assignedTo = Array.isArray(c.assignedTo) ? c.assignedTo.map(String) : [];
+    if (assignedTo.includes(String(studentId))) return c;
+    changed++;
+    return { ...c, assignedTo: [...assignedTo, studentId] };
+  });
+
+  if (changed) saveClasses(classes);
+  return changed;
+}
+
 function renderAdminManage(){
   // 전체 숙제 목록 렌더링
   renderAdminHWList();
@@ -5649,7 +5679,7 @@ function renderHWStudentList(hwId){
   const targetIds = new Set(targetStudents.map(s => s.id));
   const assignedHTML=targetStudents.map(s=>{
     const sid=s.id;
-    const isDone=comps.some(c=>c.homeworkId===hwId&&c.studentId===sid);
+    const isDone=comps.some(c=>c.homeworkId===hwId&&c.studentId===sid&&isHomeworkCompletionDone(c));
     const initial=s.name.slice(0,1);
     return`<div class="hw-student-row">
       <div class="hw-student-avatar">${initial}</div>
@@ -5715,7 +5745,7 @@ function toggleHWStudentDone(hwId,sid,isDone){
   saveCompletions(comps);
   // 모달 요약 업데이트
   const hw=getHomeworks().find(h=>h.id===hwId);
-  const done=comps.filter(c=>c.homeworkId===hwId).length;
+  const done=comps.filter(c=>c.homeworkId===hwId&&isHomeworkCompletionDone(c)).length;
   const total=hw.assignedTo.length;
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('hw-modal-summary').querySelectorAll('.msummary-val')[0].textContent=pct+'%';
@@ -5923,6 +5953,7 @@ function addStudent(){
 
       // 그룹 업데이트
       syncStudentGroup(editingStudentId, schoolName, grade);
+      syncStudentClassAssignments(editingStudentId);
       showToast(`✅ "${name}" 학생 정보가 수정되었습니다.`);
     }
   } else {
@@ -5962,6 +5993,7 @@ function addStudent(){
 
       saveUsers(users);
       syncStudentGroup(users[sIdx].id, users[sIdx].school, users[sIdx].grade);
+      syncStudentClassAssignments(users[sIdx].id);
 
       // 강사 계정인 경우 담당 학생으로 연동
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
@@ -6004,6 +6036,7 @@ function addStudent(){
       }
 
       syncStudentGroup(newId, schoolName, grade);
+      syncStudentClassAssignments(newId);
       showToast(`✅ "${name}" 학생이 추가되었습니다!`);
     }
   }
@@ -8657,7 +8690,7 @@ function openStudentProgressAsModal(sid, subject = '전체') {
   });
 
   // 요약 통계 진도 기준으로 교체
-  const doneCount = myTopics.filter(t => comps.some(c => c.topicId === t.id && c.studentId === sid)).length;
+  const doneCount = myTopics.filter(t => comps.some(c => c.topicId === t.id && c.studentId === sid && isProgressCompletionDone(c))).length;
   const total = myTopics.length;
   const pct = total ? Math.round(doneCount / total * 100) : 0;
 
@@ -8710,7 +8743,7 @@ function openStudentProgressAsModal(sid, subject = '전체') {
     document.getElementById('modal-hw-list').innerHTML = '<div class="empty-state"><div class="ei">📭</div><div>진행된 진도 항목이 없습니다</div></div>';
   } else {
     document.getElementById('modal-hw-list').innerHTML = myTopics.map(t => {
-      const d = comps.some(c => c.topicId === t.id && c.studentId === sid);
+      const d = comps.some(c => c.topicId === t.id && c.studentId === sid && isProgressCompletionDone(c));
       const sid2 = sid;
       const subEscaped = (subject || '전체').replace(/'/g, "\\'");
       
@@ -10314,14 +10347,6 @@ function addProgressTopic() {
         hwId: topicHwId
       });
 
-      // Auto-mark all students as done
-      const initialComps = getProgressCompletions();
-      studentIds.forEach(sid => {
-        if (!initialComps.some(c => c.topicId === topicId && c.studentId === sid)) {
-          initialComps.push({ topicId, studentId: sid, completedAt: targetDate });
-        }
-      });
-      saveProgressCompletions(initialComps);
     });
     saveHomeworks(hws);
     const hwMsg = hwAddedCount > 0 ? ` 숙제 ${hwAddedCount}개가 수업 학생 ${studentIds.length}명에게 등록되었습니다.` : '';
@@ -10666,11 +10691,6 @@ function submitProgGroupEdit() {
           
           const tId = topicsData[pIdx].id;
           topicsCompletions = topicsCompletions.filter(c => !(c.topicId === tId && !currentEditSessionBase.students.includes(c.studentId)));
-          currentEditSessionBase.students.forEach(uid => {
-             if(!topicsCompletions.some(c => c.topicId === tId && c.studentId === uid)) {
-                 topicsCompletions.push({ topicId: tId, studentId: uid, completedAt: null, memo: '' });
-             }
-          });
           
           if (topicsData[pIdx].hwId) {
             const hIdx = hwData.findIndex(h => h.id === topicsData[pIdx].hwId);
@@ -10682,11 +10702,6 @@ function submitProgGroupEdit() {
               
               const hwIdVal = topicsData[pIdx].hwId;
               hwCompletions = hwCompletions.filter(c => !(c.homeworkId === hwIdVal && !currentEditSessionBase.students.includes(c.studentId)));
-              currentEditSessionBase.students.forEach(uid => {
-                 if(!hwCompletions.some(c => c.homeworkId === hwIdVal && c.studentId === uid)) {
-                     hwCompletions.push({ homeworkId: hwIdVal, studentId: uid, isDone: false });
-                 }
-              });
             } else if (valHw) { 
                const newHwId = 'H' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
                topicsData[pIdx].hwId = newHwId;
@@ -10697,9 +10712,6 @@ function submitProgGroupEdit() {
                  assignedTo: [...currentEditSessionBase.students]
                };
                hwData.unshift(newHw);
-               currentEditSessionBase.students.forEach(uid => {
-                  hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
-               });
             }
           } else if (valHw) {
             // New Homework for existing topic
@@ -10712,9 +10724,6 @@ function submitProgGroupEdit() {
               assignedTo: [...currentEditSessionBase.students]
             };
             hwData.unshift(newHw);
-            currentEditSessionBase.students.forEach(uid => {
-               hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
-            });
           }
           changesMade = true;
         }
@@ -10732,9 +10741,6 @@ function submitProgGroupEdit() {
             assignedTo: [...currentEditSessionBase.students]
           };
           hwData.unshift(newHw);
-          currentEditSessionBase.students.forEach(uid => {
-             hwCompletions.push({ homeworkId: newHwId, studentId: uid, isDone: false });
-          });
         }
         
         const newTopicId = 'PT' + Date.now() + Math.floor(Math.random()*1000) + '_' + i;
@@ -10755,9 +10761,6 @@ function submitProgGroupEdit() {
             isManuallyManaged: true // Preserve manual student roster
         };
         topicsData.push(newPt);
-        currentEditSessionBase.students.forEach(uid => {
-             topicsCompletions.push({ topicId: newTopicId, studentId: uid, completedAt: null, memo: '' });
-        });
         changesMade = true;
       }
     }
@@ -10799,6 +10802,7 @@ function submitProgGroupEdit() {
 }
 
 function toggleProgressCompletion(topicId, studentId, isDone) {
+  if (currentUser && currentUser.role === 'student') return;
   let comps = getProgressCompletions();
   if (isDone) {
     comps = comps.filter(c => !(c.topicId === topicId && c.studentId === studentId));
@@ -10863,7 +10867,7 @@ function renderProgStudentList(topicId) {
     targetStudents = [];
   }
 
-  const doneCount = targetStudents.filter(s => comps.some(c => c.topicId === topicId && c.studentId === s.id)).length;
+  const doneCount = targetStudents.filter(s => comps.some(c => c.topicId === topicId && c.studentId === s.id && isProgressCompletionDone(c))).length;
   const totalCount = targetStudents.length;
   const pct = totalCount ? Math.round(doneCount / totalCount * 100) : 0;
   
@@ -10877,7 +10881,7 @@ function renderProgStudentList(topicId) {
 
   const listEl = document.getElementById('prog-modal-student-list');
   listEl.innerHTML = targetStudents.map(s => {
-    const isDone = comps.some(c => c.topicId === topicId && c.studentId === s.id);
+    const isDone = comps.some(c => c.topicId === topicId && c.studentId === s.id && isProgressCompletionDone(c));
     const initial = s.name.slice(0, 1);
     return `
       <div class="hw-student-row">
@@ -10891,9 +10895,11 @@ function renderProgStudentList(topicId) {
 }
 
 function toggleProgStudentDone(topicId, studentId, isDone) {
+  if (currentUser && currentUser.role === 'student') return;
   let comps = getProgressCompletions();
   if (isDone) {
-    if (!comps.some(c => c.topicId === topicId && c.studentId === studentId)) {
+    comps = comps.filter(c => !(c.topicId === topicId && c.studentId === studentId));
+    if (!comps.some(c => c.topicId === topicId && c.studentId === studentId && isProgressCompletionDone(c))) {
       comps.push({ topicId, studentId, completedAt: formatDateLocal(new Date()) });
     }
   } else {
@@ -11156,8 +11162,9 @@ function renderStudentProgressContent(targetId) {
       const renderTopicCard = (t) => {
         const isDone = isProgressDoneFor(t.id, myId);
         const subjTag = t.subject ? `<span class="cat-tag${t.subject.startsWith('수학')?' math':''}" style="margin:0 6px 0 0; padding:2px 6px; font-size:10px">${t.subject}</span>` : '';
+        const canEditProgress = !(currentUser && currentUser.role === 'student');
         return `
-          <div class="admin-hw-item" style="cursor:pointer; align-items:flex-start;" onclick="toggleStudentProgress('${t.id}')">
+          <div class="admin-hw-item" style="cursor:${canEditProgress ? 'pointer' : 'default'}; align-items:flex-start;" ${canEditProgress ? `onclick="toggleStudentProgress('${t.id}')"` : ''}>
             <div style="display:flex; align-items:flex-start; gap:10px; width:100%">
               <div class="hw-checkbox ${isDone ? 'checked' : ''}" style="width:20px; height:20px; flex-shrink:0; margin-top:2px"></div>
               <div class="admin-hw-info" style="flex:1">
@@ -11277,6 +11284,7 @@ function renderStudentProgressContent(targetId) {
 }
 
 function toggleStudentProgress(topicId) {
+  if (currentUser && currentUser.role === 'student') return;
   const myId = currentUser.id;
   const isDone = isProgressDoneFor(topicId, myId);
   toggleProgressCompletion(topicId, myId, !isDone);
@@ -11455,7 +11463,7 @@ function renderProgressContent(targetId) {
       const membersForTopic = studentsInEntity;
       membersForTopic.forEach(s => {
         groupTotalItems++;
-        if (comps.some(c => c.topicId === t.id && c.studentId === s.id)) groupDoneItems++;
+        if (comps.some(c => c.topicId === t.id && c.studentId === s.id && isProgressCompletionDone(c))) groupDoneItems++;
         
         if (t.hwId) {
           sessHwTotal++;
@@ -11517,7 +11525,7 @@ function renderProgressContent(targetId) {
       // 수업관리 기준: studentsInEntity (수업 인스턴스 assignedTo 동적 조회)
       const membersForTopic = studentsInEntity;
 
-      const topicDone = membersForTopic.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id)).length;
+      const topicDone = membersForTopic.filter(s => comps.some(c => c.topicId === t.id && c.studentId === s.id && isProgressCompletionDone(c))).length;
       const topicTotal = membersForTopic.length;
       const topicPct = topicTotal ? Math.round(topicDone / topicTotal * 100) : 0;
       const topicColor = topicPct === 100 ? 'var(--success)' : topicPct > 0 ? 'var(--warning)' : 'var(--border-strong)';
@@ -11607,7 +11615,7 @@ function renderProgressContent(targetId) {
     let progSectionStudentHtml = '';
     if (studentsInEntity.length > 0) {
       const progNames = studentsInEntity.map(s => {
-        const allDone = sessionTopics.length > 0 && sessionTopics.every(t => comps.some(c => c.topicId === t.id && c.studentId === s.id));
+        const allDone = sessionTopics.length > 0 && sessionTopics.every(t => comps.some(c => c.topicId === t.id && c.studentId === s.id && isProgressCompletionDone(c)));
         return `<span style="font-size:12px;font-weight:600;cursor:pointer;color:#000000;text-decoration:underline dotted;margin-right:4px;white-space:nowrap" onclick="event.stopPropagation();openStudentProgressAsModal('${s.id}')">${s.name}</span>`;
       });
       progSectionStudentHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;margin-bottom:8px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px">${progNames.join('')}</div>`;
