@@ -904,6 +904,7 @@ body.is-instructor button[onclick="importData()"] {
       <div class="nav-item" onclick="showPanel('a','retired')" id="anav-retired"><span>😢</span> 퇴원/신규</div>
       <div class="nav-item" onclick="showPanel('a','stats')" id="anav-stats"><span>📊</span> 달성 통계</div>
       <div class="nav-item" onclick="showPanel('a','instructors')" id="anav-instructors"><span>🧑‍🏫</span> 강사 현황</div>
+      <div class="nav-item" onclick="showPanel('a','costs')" id="anav-costs"><span>💸</span> 비용 현황</div>
       <div class="nav-item" onclick="showPanel('a','account')" id="anav-account"><span>⚙️</span> 계정정보</div>
     </nav>
   <div class="sidebar-footer" style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px">
@@ -1033,6 +1034,19 @@ body.is-instructor button[onclick="importData()"] {
             </select>
           </div>
           <div class="form-row"><label>과목별 학원비 (원)</label><div id="new-student-fee-wrap" style="display:flex; flex-direction:column; gap:6px"><div style="font-size:12px; color:var(--text-muted)">위에서 과목을 선택하면 입력칸이 나타납니다.</div></div></div>
+          <div class="form-row"><label>결제수단</label>
+            <div style="display:flex; gap:8px; align-items:center">
+              <select id="new-student-payment-method" onchange="togglePaymentMethodOther('new-student')" style="flex:1">
+                <option value="">선택 안 함</option>
+                <option value="결제선생">결제선생</option>
+                <option value="카드">카드</option>
+                <option value="계좌이체">계좌이체</option>
+                <option value="페이">페이</option>
+                <option value="기타">기타</option>
+              </select>
+              <input id="new-student-payment-method-other" type="text" placeholder="기타 결제수단 입력" style="display:none;flex:1">
+            </div>
+          </div>
           
 
           <div class="form-row"><label>입학 날짜</label><input id="new-student-entered" type="date"></div>
@@ -1080,7 +1094,7 @@ body.is-instructor button[onclick="importData()"] {
           </div>
         </div>
         <div style="overflow-x:auto">
-          <table class="student-stat-table" style="min-width:1130px">
+          <table class="student-stat-table" style="min-width:1230px">
             <thead>
               <tr>
                 <th style="width:120px">학생명</th>
@@ -1095,6 +1109,7 @@ body.is-instructor button[onclick="importData()"] {
                 <th style="width:120px">학원비</th>
                 <th style="width:100px">수금일</th>
                 <th style="width:60px">수금</th>
+                <th style="width:100px">결제수단</th>
                 <th style="width:110px">입학일</th>
                 <th>관리</th>
               </tr>
@@ -1178,6 +1193,33 @@ body.is-instructor button[onclick="importData()"] {
             </thead>
             <tbody id="instructor-stat-body"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Costs -->
+    <div class="panel" id="a-panel-costs">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px; gap:12px; flex-wrap:wrap">
+        <div class="panel-title" style="margin-bottom:0">비용 현황</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button onclick="shiftCostMonth(-1)" style="border:1px solid var(--border); background:#f8fafc; padding:6px 10px; cursor:pointer; color:var(--text-muted); border-radius:8px" title="이전 달">‹</button>
+          <input type="month" id="cost-month-filter" style="padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; outline:none;" onchange="changeCostMonth(this.value)">
+          <button onclick="shiftCostMonth(1)" style="border:1px solid var(--border); background:#f8fafc; padding:6px 10px; cursor:pointer; color:var(--text-muted); border-radius:8px" title="다음 달">›</button>
+        </div>
+      </div>
+      <div class="panel-sub">고정비용, 가변비용, 강사급여, 기타비용을 입력하고 비용 구성을 확인합니다</div>
+
+      <div class="admin-grid" style="grid-template-columns:repeat(4,minmax(160px,1fr)); gap:12px; margin-bottom:20px" id="cost-summary-cards"></div>
+
+      <div class="admin-grid" style="grid-template-columns:minmax(280px,360px) minmax(0,1fr); gap:20px">
+        <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:330px">
+          <div class="section-title" style="width:100%; margin-bottom:18px">원그래프</div>
+          <div id="cost-pie-chart" style="width:220px; height:220px; border-radius:50%; background:#e2e8f0; position:relative; box-shadow:inset 0 0 0 1px var(--border)"></div>
+          <div id="cost-total-label" style="margin-top:18px; font-size:20px; font-weight:900; color:var(--text)"></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">수치 구성</div>
+          <div id="cost-breakdown-list" style="display:flex; flex-direction:column; gap:10px"></div>
         </div>
       </div>
     </div>
@@ -1553,6 +1595,34 @@ body.is-instructor button[onclick="importData()"] {
   </div>
 </div>
 
+<!-- COST INPUT MODAL -->
+<div class="modal-overlay" id="costEditModal" onclick="closeCostEditModal(event)">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="cost-edit-title">비용 입력</div>
+        <div class="modal-sub" id="cost-edit-sub">해당 비용 항목의 금액과 메모를 입력합니다</div>
+      </div>
+      <button class="modal-close" onclick="closeCostEditModalDirect()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cost-edit-type">
+      <div class="form-row"><label>비용 항목</label>
+        <div id="cost-item-list" style="display:flex; flex-direction:column; gap:8px"></div>
+        <button type="button" class="salary-adjustment-add" style="margin-top:10px" onclick="addCostItemRow()">+ 비용항목 추가</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; margin-top:12px">
+        <span style="font-size:13px; font-weight:800; color:var(--text-muted)">합계</span>
+        <span id="cost-edit-total" style="font-size:18px; font-weight:900; color:var(--primary)">0원</span>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:20px">
+        <button class="btn-add" style="flex:2" onclick="saveCostItemFromModal()">저장</button>
+        <button class="btn-del" style="flex:1; background:#94a3b8" onclick="closeCostEditModalDirect()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- HW STUDENT MODAL -->
 <div class="modal-overlay" id="hwStudentModal" onclick="closeHWModal(event)">
   <div class="modal">
@@ -1795,6 +1865,19 @@ body.is-instructor button[onclick="importData()"] {
         <div style="display:flex; align-items:center; gap:8px;">
           <label style="font-size:12px; font-weight:700; color:var(--text-muted)">수금 연월일:</label>
           <input type="date" id="edit-popup-student-paydate" style="padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; outline:none; font-size:12px">
+        </div>
+      </div>
+      <div class="form-row"><label>결제수단</label>
+        <div style="display:flex; gap:8px; align-items:center">
+          <select id="edit-popup-payment-method" onchange="togglePaymentMethodOther('edit-popup')" style="flex:1">
+            <option value="">선택 안 함</option>
+            <option value="결제선생">결제선생</option>
+            <option value="카드">카드</option>
+            <option value="계좌이체">계좌이체</option>
+            <option value="페이">페이</option>
+            <option value="기타">기타</option>
+          </select>
+          <input id="edit-popup-payment-method-other" type="text" placeholder="기타 결제수단 입력" style="display:none;flex:1">
         </div>
       </div>
       <div class="form-row"><label>입학 날짜</label><input id="edit-popup-student-entered" type="date"></div>
@@ -2531,6 +2614,8 @@ const saveMockExams=d=>{localStorage.setItem('hwapp_mock_exams',JSON.stringify(d
 const saveUsers=d=>{localStorage.setItem('hwapp_users',JSON.stringify(d));syncToServer();}
 const getInstructors=()=>JSON.parse(localStorage.getItem('hwapp_instructors')||'[]');
 const saveInstructors=d=>{localStorage.setItem('hwapp_instructors',JSON.stringify(d));syncToServer();}
+const getCostData=()=>JSON.parse(localStorage.getItem('hwapp_costs')||'{}');
+const saveCostData=d=>{localStorage.setItem('hwapp_costs',JSON.stringify(d));syncToServer();}
 
 function isClassForInstructor(c, instructor = currentUser) {
   if (!c || !instructor || instructor.role !== 'instructor') return false;
@@ -2951,11 +3036,16 @@ function submitInstructorEdit(){
     salaryAdjustments: collectInstructorSalaryAdjustments('inst-edit-salary-adjustments')
   } : {};
   instructors[idx]={...instructors[idx],name,hp,enteredAt,subjects,schools,studentIds,colorIndex,...salaryUpdates};
+  if (canEditSalary && instructors[idx].salaryOverrides) {
+    delete instructors[idx].salaryOverrides[currentInstructorMonth];
+    if (!Object.keys(instructors[idx].salaryOverrides).length) delete instructors[idx].salaryOverrides;
+  }
   if(pw) instructors[idx].password=pw;
   saveInstructors(instructors);
   closeInstructorEditModalDirect();
   renderInstructorList();
   renderInstructorPaymentSummary();
+  renderCostPanel();
   showToast('"'+name+'" 강사 정보가 수정되었습니다.');
 }
 
@@ -3030,7 +3120,23 @@ function hasInstructorSalaryConfig(inst) {
   return inst && (inst.salaryPercent !== undefined && inst.salaryPercent !== '' || (Array.isArray(inst.salaryAdjustments) && inst.salaryAdjustments.length > 0));
 }
 
-function calculateInstructorSalaryDetail(inst, totalSales) {
+function getInstructorSalaryOverride(inst, month) {
+  if (!inst || !month || !inst.salaryOverrides) return null;
+  const raw = inst.salaryOverrides[month];
+  if (raw === undefined || raw === null || raw === '') return null;
+  return parseSalaryNumber(raw);
+}
+
+function calculateInstructorSalaryDetail(inst, totalSales, month) {
+  const override = getInstructorSalaryOverride(inst, month);
+  if (override !== null) {
+    return {
+      grossSalary: override,
+      withholdingTax: 0,
+      salary: override,
+      isOverride: true
+    };
+  }
   let salary = (totalSales || 0) * (parseSalaryNumber(inst && inst.salaryPercent) / 100);
   const adjustments = Array.isArray(inst && inst.salaryAdjustments) ? inst.salaryAdjustments : [];
   let hasWithholdingTax = false;
@@ -3049,12 +3155,13 @@ function calculateInstructorSalaryDetail(inst, totalSales) {
   return {
     grossSalary,
     withholdingTax,
-    salary: grossSalary - withholdingTax
+    salary: grossSalary - withholdingTax,
+    isOverride: false
   };
 }
 
-function calculateInstructorSalary(inst, totalSales) {
-  return calculateInstructorSalaryDetail(inst, totalSales).salary;
+function calculateInstructorSalary(inst, totalSales, month) {
+  return calculateInstructorSalaryDetail(inst, totalSales, month).salary;
 }
 
 function getInstructorMonthlySales(inst, month) {
@@ -3099,12 +3206,332 @@ function renderInstructorStudentSalaryPill() {
   }
   const inst = getInstructors().find(i => i.id === currentUser.id) || currentUser;
   const totalSales = getInstructorMonthlySales(inst, currentPaymentMonth);
-  const salary = calculateInstructorSalary(inst, totalSales);
-  const label = '이번달 급여 : ' + (hasInstructorSalaryConfig(inst) ? salary.toLocaleString() + '원' : '-');
+  const salary = calculateInstructorSalary(inst, totalSales, currentPaymentMonth);
+  const label = '이번달 급여 : ' + (hasInstructorSalaryConfig(inst) || getInstructorSalaryOverride(inst, currentPaymentMonth) !== null ? salary.toLocaleString() + '원' : '-');
   els.forEach(el => {
     el.textContent = label;
     el.style.display = 'inline-flex';
   });
+}
+
+let currentCostMonth = formatDateLocal(new Date()).slice(0, 7);
+const COST_CATEGORIES = [
+  { key: 'fixed', label: '고정비용', color: '#6366f1' },
+  { key: 'variable', label: '가변비용', color: '#06b6d4' },
+  { key: 'salary', label: '강사급여', color: '#22c55e' },
+  { key: 'other', label: '기타비용', color: '#f59e0b' }
+];
+
+function getCostMonthData(month = currentCostMonth) {
+  const all = getCostData();
+  const base = {};
+  COST_CATEGORIES.forEach(c => {
+    base[c.key] = { amount: 0, memo: '' };
+  });
+  return { ...base, ...(all[month] || {}) };
+}
+
+function saveCostMonthData(month, monthData) {
+  const all = getCostData();
+  all[month] = monthData;
+  saveCostData(all);
+}
+
+function normalizeCostItemData(raw, fallbackLabel = '비용') {
+  const item = raw || {};
+  const items = Array.isArray(item.items)
+    ? item.items.map(x => ({
+        name: String(x.name || '').trim(),
+        amount: parseSalaryNumber(x.amount),
+        instructorId: x.instructorId ? String(x.instructorId) : ''
+      })).filter(x => x.name || x.amount)
+    : [];
+  if (!items.length && (item.amount || item.memo)) {
+    items.push({
+      name: item.memo || fallbackLabel,
+      amount: parseSalaryNumber(item.amount)
+    });
+  }
+  const amount = items.length
+    ? items.reduce((sum, x) => sum + parseSalaryNumber(x.amount), 0)
+    : parseSalaryNumber(item.amount);
+  const memo = items.map(x => x.name).filter(Boolean).join(', ') || (item.memo || '');
+  return { items, amount, memo };
+}
+
+function getInstructorSalaryCostItems(month = currentCostMonth) {
+  return getInstructors().map(inst => {
+    const totalSales = getInstructorMonthlySales(inst, month);
+    const detail = calculateInstructorSalaryDetail(inst, totalSales, month);
+    const hasSalary = hasInstructorSalaryConfig(inst) || getInstructorSalaryOverride(inst, month) !== null;
+    return {
+      name: inst.name || inst.loginId || '강사',
+      amount: hasSalary ? detail.salary : 0,
+      instructorId: inst.id
+    };
+  });
+}
+
+function getSalaryExtraCostItems(month = currentCostMonth) {
+  const data = getCostMonthData(month);
+  const normalized = normalizeCostItemData(data.salary, '강사급여');
+  const instructors = getInstructors();
+  const ids = new Set(instructors.map(inst => String(inst.id)));
+  const names = new Set(instructors.map(inst => String(inst.name || inst.loginId || '').trim()).filter(Boolean));
+  return normalized.items.filter(item => {
+    if (item.instructorId && ids.has(String(item.instructorId))) return false;
+    if (!item.instructorId && names.has(String(item.name || '').trim())) return false;
+    return true;
+  });
+}
+
+function getSalaryCostData(month = currentCostMonth) {
+  const items = [
+    ...getInstructorSalaryCostItems(month),
+    ...getSalaryExtraCostItems(month)
+  ];
+  const amount = items.reduce((sum, item) => sum + parseSalaryNumber(item.amount), 0);
+  const memo = items.map(item => item.name).filter(Boolean).join(', ');
+  return { items, amount, memo };
+}
+
+function getCostCategoryData(key, raw, meta, month = currentCostMonth) {
+  if (key === 'salary') return getSalaryCostData(month);
+  return normalizeCostItemData(raw, meta.label);
+}
+
+function findInstructorByCostItem(item, instructors) {
+  if (item.instructorId) {
+    return instructors.find(inst => String(inst.id) === String(item.instructorId));
+  }
+  const name = String(item.name || '').trim();
+  if (!name) return null;
+  return instructors.find(inst => String(inst.name || inst.loginId || '').trim() === name) || null;
+}
+
+function syncInstructorSalaryOverridesFromCostItems(items, month) {
+  const instructors = getInstructors();
+  let changed = false;
+  items.forEach(item => {
+    const inst = findInstructorByCostItem(item, instructors);
+    if (!inst) return;
+    if (item.instructorId && parseSalaryNumber(item.originalAmount) === parseSalaryNumber(item.amount)) return;
+    if (!item.hasAmountInput) return;
+    if (!inst.salaryOverrides) inst.salaryOverrides = {};
+    inst.salaryOverrides[month] = parseSalaryNumber(item.amount);
+    changed = true;
+  });
+  if (!changed) return;
+  saveInstructors(instructors);
+  renderInstructorList();
+  renderInstructorPaymentSummary();
+  renderInstructorStudentSalaryPill();
+}
+
+function getSalaryExtraItemsFromRows(items) {
+  const instructors = getInstructors();
+  return items.filter(item => !findInstructorByCostItem(item, instructors));
+}
+
+function escapeCostText(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function openInstructorEditModalFromCost(instructorId) {
+  if (!instructorId) return;
+  currentInstructorMonth = currentCostMonth;
+  const instructorMonthInput = document.getElementById('instructor-summary-month-filter');
+  if (instructorMonthInput) instructorMonthInput.value = currentInstructorMonth;
+  closeCostEditModalDirect();
+  openInstructorEditModal(instructorId);
+}
+
+function addCostItemRow(name = '', amount = '', instructorId = '') {
+  const list = document.getElementById('cost-item-list');
+  if (!list) return;
+  const rowId = 'costItem' + Date.now() + Math.floor(Math.random() * 1000);
+  const isInstructorSalary = !!instructorId;
+  const amountAttrs = isInstructorSalary
+    ? ' readonly tabindex="-1" style="background:#f1f5f9;color:var(--text-muted);cursor:not-allowed"'
+    : '';
+  const actionButton = isInstructorSalary
+    ? `<button type="button" onclick="openInstructorEditModalFromCost('${escapeCostText(instructorId)}')" style="height:34px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:900;cursor:pointer">수정</button>`
+    : '<button type="button" onclick="removeCostItemRow(this)" style="height:34px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-weight:900;cursor:pointer">×</button>';
+  list.insertAdjacentHTML('beforeend', `
+    <div class="cost-item-row" style="display:grid; grid-template-columns:minmax(0,1fr) 130px 48px; gap:8px; align-items:center">
+      <input class="cost-item-instructor-id" type="hidden" value="${escapeCostText(instructorId)}">
+      <input class="cost-item-original-amount" type="hidden" value="${escapeCostText(amount)}">
+      <input class="cost-item-name" type="text" value="${escapeCostText(name)}" placeholder="항목명 예) 월세, 교재비" oninput="updateCostItemTotal()"${isInstructorSalary ? ' readonly style="background:#f1f5f9;color:var(--text-muted);cursor:not-allowed"' : ''}>
+      <input class="cost-item-amount" id="${rowId}" type="text" inputmode="numeric" value="${amount ? Number(amount).toLocaleString() : ''}" placeholder="금액" oninput="updateCostItemTotal()"${amountAttrs}>
+      ${actionButton}
+    </div>
+  `);
+  updateCostItemTotal();
+}
+
+function removeCostItemRow(btn) {
+  const row = btn ? btn.closest('.cost-item-row') : null;
+  if (row) row.remove();
+  const list = document.getElementById('cost-item-list');
+  if (list && !list.querySelector('.cost-item-row')) addCostItemRow();
+  updateCostItemTotal();
+}
+
+function collectCostItemRows() {
+  const list = document.getElementById('cost-item-list');
+  if (!list) return [];
+  return Array.from(list.querySelectorAll('.cost-item-row')).map(row => {
+    const name = row.querySelector('.cost-item-name')?.value.trim() || '';
+    const amountText = row.querySelector('.cost-item-amount')?.value || '';
+    const amount = parseSalaryNumber(amountText);
+    const instructorId = row.querySelector('.cost-item-instructor-id')?.value || '';
+    const originalAmount = row.querySelector('.cost-item-original-amount')?.value || '';
+    return { name, amount, instructorId, originalAmount, hasAmountInput: amountText.trim() !== '' };
+  }).filter(item => item.name || item.amount);
+}
+
+function updateCostItemTotal() {
+  const total = collectCostItemRows().reduce((sum, item) => sum + item.amount, 0);
+  const el = document.getElementById('cost-edit-total');
+  if (el) el.textContent = total.toLocaleString() + '원';
+}
+
+function changeCostMonth(month) {
+  if (!month) return;
+  currentCostMonth = month;
+  renderCostPanel();
+}
+
+function shiftCostMonth(delta) {
+  const [y, m] = (currentCostMonth || formatDateLocal(new Date()).slice(0, 7)).split('-').map(Number);
+  const d = new Date(y, (m || 1) - 1 + delta, 1);
+  currentCostMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  renderCostPanel();
+}
+
+function openCostEditModal(type) {
+  const meta = COST_CATEGORIES.find(c => c.key === type);
+  if (!meta) return;
+  const data = getCostMonthData();
+  const item = getCostCategoryData(type, data[type], meta, currentCostMonth);
+  document.getElementById('cost-edit-type').value = type;
+  document.getElementById('cost-edit-title').textContent = `${meta.label} 입력`;
+  document.getElementById('cost-edit-sub').textContent = `${currentCostMonth} ${meta.label} 세부 항목을 입력합니다`;
+  const list = document.getElementById('cost-item-list');
+  if (list) list.innerHTML = '';
+  if (item.items.length) {
+    item.items.forEach(row => addCostItemRow(row.name, row.amount, row.instructorId || ''));
+  } else {
+    addCostItemRow();
+  }
+  document.getElementById('costEditModal').classList.add('open');
+  setTimeout(() => document.querySelector('#cost-item-list .cost-item-name')?.focus(), 0);
+}
+
+function closeCostEditModal(event) {
+  if (event && event.target.id !== 'costEditModal') return;
+  closeCostEditModalDirect();
+}
+
+function closeCostEditModalDirect() {
+  const modal = document.getElementById('costEditModal');
+  if (modal) modal.classList.remove('open');
+  const type = document.getElementById('cost-edit-type');
+  const list = document.getElementById('cost-item-list');
+  if (list) list.innerHTML = '';
+  if (type) type.value = '';
+  updateCostItemTotal();
+}
+
+function saveCostItemFromModal() {
+  const type = document.getElementById('cost-edit-type').value;
+  const meta = COST_CATEGORIES.find(c => c.key === type);
+  if (!meta) return;
+  const items = collectCostItemRows();
+  const saveItems = type === 'salary' ? getSalaryExtraItemsFromRows(items) : items;
+  if (type === 'salary') syncInstructorSalaryOverridesFromCostItems(items, currentCostMonth);
+  const amount = saveItems.reduce((sum, item) => sum + item.amount, 0);
+  const memo = saveItems.map(item => item.name).filter(Boolean).join(', ');
+  const data = getCostMonthData();
+  data[type] = { amount, memo, items: saveItems };
+  saveCostMonthData(currentCostMonth, data);
+  closeCostEditModalDirect();
+  renderCostPanel();
+  showToast(`${meta.label}이 저장되었습니다.`);
+}
+
+function renderCostPanel() {
+  const monthInput = document.getElementById('cost-month-filter');
+  if (monthInput) monthInput.value = currentCostMonth;
+  const data = getCostMonthData();
+  const values = COST_CATEGORIES.map(c => {
+    const normalized = getCostCategoryData(c.key, data[c.key], c, currentCostMonth);
+    return {
+      ...c,
+      amount: normalized.amount,
+      memo: normalized.memo,
+      items: normalized.items
+    };
+  });
+  const total = values.reduce((sum, item) => sum + item.amount, 0);
+
+  const cardsEl = document.getElementById('cost-summary-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = values.map(item => {
+      const pct = total ? Math.round(item.amount / total * 100) : 0;
+      return `<button type="button" onclick="openCostEditModal('${item.key}')" style="text-align:left; cursor:pointer; border:1px solid var(--border); background:#fff; border-radius:8px; padding:16px; box-shadow:var(--shadow); min-height:112px">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px">
+          <div style="font-size:13px; font-weight:900; color:${item.color}">${item.label}</div>
+          <div style="width:10px; height:10px; border-radius:50%; background:${item.color}"></div>
+        </div>
+        <div style="font-size:22px; font-weight:900; color:var(--text); margin-bottom:4px">${item.amount ? item.amount.toLocaleString() + '원' : '-'}</div>
+        <div style="font-size:12px; color:var(--text-muted)">${pct}% · ${item.items.length}개 항목${item.memo ? ' · ' + escapeCostText(item.memo) : ''}</div>
+      </button>`;
+    }).join('');
+  }
+
+  const chartEl = document.getElementById('cost-pie-chart');
+  if (chartEl) {
+    if (!total) {
+      chartEl.style.background = '#e2e8f0';
+      chartEl.innerHTML = '<div style="position:absolute; inset:42px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--text-muted); text-align:center">입력된<br>비용 없음</div>';
+    } else {
+      let start = 0;
+      const stops = values.map(item => {
+        const deg = item.amount / total * 360;
+        const seg = `${item.color} ${start}deg ${start + deg}deg`;
+        start += deg;
+        return seg;
+      }).join(', ');
+      chartEl.style.background = `conic-gradient(${stops})`;
+      chartEl.innerHTML = '<div style="position:absolute; inset:42px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; font-weight:800; color:var(--text-muted)">비용<br>구성</div>';
+    }
+  }
+
+  const totalEl = document.getElementById('cost-total-label');
+  if (totalEl) totalEl.textContent = `총 ${total.toLocaleString()}원`;
+
+  const listEl = document.getElementById('cost-breakdown-list');
+  if (listEl) {
+    listEl.innerHTML = values.map(item => {
+      const pct = total ? Math.round(item.amount / total * 100) : 0;
+      const itemRows = item.items.length
+        ? `<div style="grid-column:1 / -1; display:flex; flex-direction:column; gap:4px; margin-top:2px">${item.items.map(row => `<div style="display:flex; justify-content:space-between; gap:12px; font-size:12px; color:var(--text-muted)"><span>${escapeCostText(row.name || '항목명 없음')}</span><span style="font-weight:800">${parseSalaryNumber(row.amount).toLocaleString()}원</span></div>`).join('')}</div>`
+        : '';
+      return `<div style="display:grid; grid-template-columns:110px minmax(0,1fr) 110px; align-items:center; gap:12px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#f8fafc">
+        <div style="display:flex; align-items:center; gap:8px; font-weight:800; color:var(--text)"><span style="width:10px; height:10px; border-radius:50%; background:${item.color}"></span>${item.label}</div>
+        <div style="height:8px; background:#e2e8f0; border-radius:99px; overflow:hidden"><div style="height:100%; width:${pct}%; background:${item.color}; border-radius:99px"></div></div>
+        <div style="text-align:right; font-weight:900; color:var(--text)">${item.amount.toLocaleString()}원<br><span style="font-size:11px; color:var(--text-muted); font-weight:700">${pct}%</span></div>
+        ${itemRows}
+      </div>`;
+    }).join('');
+  }
 }
 function getStudentFeeForInstructor(s, inst, month) {
   month = month || currentInstructorMonth;
@@ -3177,8 +3604,8 @@ function renderInstructorList(){
     // 총매출: 담당 학생들의 담당 과목 월 수강료 합산
     const myStudents = allStudents.filter(s=>(inst.studentIds||[]).includes(s.id));
     const totalSales = getInstructorMonthlySales(inst, currentInstructorMonth);
-    const salaryDetail = calculateInstructorSalaryDetail(inst, totalSales);
-    const salaryDisplay = hasInstructorSalaryConfig(inst)
+    const salaryDetail = calculateInstructorSalaryDetail(inst, totalSales, currentInstructorMonth);
+    const salaryDisplay = hasInstructorSalaryConfig(inst) || getInstructorSalaryOverride(inst, currentInstructorMonth) !== null
       ? salaryDetail.salary.toLocaleString()+'원' + (salaryDetail.withholdingTax ? ' <span style="font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap">(원천세 '+salaryDetail.withholdingTax.toLocaleString()+'원 제외)</span>' : '')
       : '-';
     // 담당 학생들의 해당 월 수금 완료 여부
@@ -3734,7 +4161,8 @@ function exportData() {
     'hwapp_users', 'hwapp_categories', 'hwapp_homeworks', 'hwapp_completions',
     'hwapp_student_groups', 'hwapp_retired_users', 'hwapp_classes',
     'hwapp_saved_id', 'hwapp_saved_pw', 'hwapp_progress_topics', 'hwapp_progress_completions',
-    'hwapp_mock_exams', 'hwapp_instructors', 'hwapp_exam_scopes', 'hwapp_exam_scopes_backup'
+    'hwapp_mock_exams', 'hwapp_instructors', 'hwapp_exam_scopes', 'hwapp_exam_scopes_backup',
+    'hwapp_costs'
   ];
   const data = {};
   keys.forEach(k => {
@@ -4334,6 +4762,9 @@ function showPanel(who,name){
     renderInstructorSchoolChips();
     renderInstructorList();
     renderInstructorPaymentSummary();
+  }
+  if(who==='a'&&name==='costs') {
+    renderCostPanel();
   }
   if(who==='a'&&name==='retired'){
     const input = document.getElementById('retired-month-filter');
@@ -5949,6 +6380,39 @@ function renderNewStudentBadge(student, month) {
   return isStudentEnteredThisMonth(student, month) ? '<span class="student-status-new">신규</span>' : '';
 }
 
+function togglePaymentMethodOther(prefix) {
+  const select = document.getElementById(prefix + '-payment-method');
+  const other = document.getElementById(prefix + '-payment-method-other');
+  if (!select || !other) return;
+  const isOther = select.value === '기타';
+  other.style.display = isOther ? '' : 'none';
+  if (!isOther) other.value = '';
+}
+
+function setPaymentMethodInputs(prefix, student) {
+  const select = document.getElementById(prefix + '-payment-method');
+  const other = document.getElementById(prefix + '-payment-method-other');
+  if (!select || !other) return;
+  select.value = student && student.paymentMethod ? student.paymentMethod : '';
+  other.value = student && student.paymentMethod === '기타' ? (student.paymentMethodOther || '') : '';
+  togglePaymentMethodOther(prefix);
+}
+
+function readPaymentMethodInputs(prefix) {
+  const select = document.getElementById(prefix + '-payment-method');
+  const other = document.getElementById(prefix + '-payment-method-other');
+  return {
+    paymentMethod: select ? select.value : '',
+    paymentMethodOther: select && select.value === '기타' && other ? other.value.trim() : ''
+  };
+}
+
+function getPaymentMethodDisplay(student) {
+  if (!student || !student.paymentMethod) return '';
+  if (student.paymentMethod === '기타') return student.paymentMethodOther || '기타';
+  return student.paymentMethod;
+}
+
 function renderAdminStudents(){
   // 학교 input 초기화 (더 이상 select가 아님)
   // 별도 초기화 필요 없음
@@ -6054,6 +6518,7 @@ function addStudent(){
   });
   const fee = JSON.stringify(feeData);
   const grade = document.getElementById('new-student-grade').value;
+  const paymentMethodInfo = readPaymentMethodInputs('new-student');
 
   if(!name){
     showToast('학생 이름을 입력하세요.', 'warn');
@@ -6076,6 +6541,8 @@ function addStudent(){
       users[sIdx].enteredAt = entered;
       users[sIdx].grade = grade;
       users[sIdx].school = schoolName;
+      users[sIdx].paymentMethod = paymentMethodInfo.paymentMethod;
+      users[sIdx].paymentMethodOther = paymentMethodInfo.paymentMethodOther;
       saveUsers(users);
 
       // 그룹 업데이트
@@ -6117,6 +6584,10 @@ function addStudent(){
       try { currentMonthFee = JSON.parse(users[sIdx].fees[currentPaymentMonth] || '{}'); } catch(e) {}
       Object.assign(currentMonthFee, newFeeData);
       users[sIdx].fees[currentPaymentMonth] = JSON.stringify(currentMonthFee);
+      if (paymentMethodInfo.paymentMethod) {
+        users[sIdx].paymentMethod = paymentMethodInfo.paymentMethod;
+        users[sIdx].paymentMethodOther = paymentMethodInfo.paymentMethodOther;
+      }
 
       saveUsers(users);
       syncStudentGroup(users[sIdx].id, users[sIdx].school, users[sIdx].grade);
@@ -6148,7 +6619,7 @@ function addStudent(){
       const initialPayments = {};
       const initialFees = {}; initialFees[currentPaymentMonth] = fee;
       
-      users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, fees: initialFees, payments: initialPayments, grade, school: schoolName});
+      users.push({id:newId, name, password:finalPw, role:'student', loginId:finalId, enteredAt:entered || formatDateLocal(new Date()), parentHp, studentHp, subject, fee, fees: initialFees, payments: initialPayments, grade, school: schoolName, paymentMethod: paymentMethodInfo.paymentMethod, paymentMethodOther: paymentMethodInfo.paymentMethodOther});
       saveUsers(users);
 
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'instructor') {
@@ -8217,6 +8688,7 @@ function renderDetailedStudentList() {
         <td>
           <input type="checkbox" ${isPaidForMonth(s, currentPaymentMonth) ? 'checked' : ''} onchange="event.stopPropagation(); togglePaymentStatus('${s.id}', this.checked)" style="cursor:pointer; width:18px; height:18px;">
         </td>
+        <td style="font-size:12px;color:var(--text-muted)">${getPaymentMethodDisplay(s)}</td>
         <td style="font-size:13px;color:var(--text-muted)">${s.enteredAt || '-'}</td>
         <td style="white-space:nowrap">
           ${s.status === '재원' ? `
@@ -8260,6 +8732,7 @@ function openStudentEditModal(sid) {
   const toggleContainer = document.getElementById('edit-popup-payment-toggle-container');
   if (isMonthPaid) toggleContainer.classList.add('active');
   else toggleContainer.classList.remove('active');
+  setPaymentMethodInputs('edit-popup', student);
 
   // Subjects - Use forceBasic=true as requested
   renderSubjectCheckboxes('edit-popup-subject-wrap', 'edit-popup-subj', (student.subject || '').split(','), true);
@@ -8370,6 +8843,9 @@ function submitStudentEditModal() {
     student.studentHp = document.getElementById('edit-popup-student-hp').value.trim();
     student.grade = document.getElementById('edit-popup-student-grade').value || '';
     student.enteredAt = document.getElementById('edit-popup-student-entered').value;
+    const paymentMethodInfo = readPaymentMethodInputs('edit-popup');
+    student.paymentMethod = paymentMethodInfo.paymentMethod;
+    student.paymentMethodOther = paymentMethodInfo.paymentMethodOther;
     
     if (!student.payments) student.payments = {};
     const isPaid = document.getElementById('edit-popup-student-ispaid').checked;
@@ -8446,6 +8922,7 @@ function editStudent(sid) {
   document.getElementById('new-student-pw2').value = '';
   document.getElementById('new-student-parent-hp').value = student.parentHp || '';
   document.getElementById('new-student-student-hp').value = student.studentHp || '';
+  setPaymentMethodInputs('new-student', student);
   
   // 과목 복수 체크박스 처리
   renderSubjectCheckboxes('new-student-subject-wrap', 'subj', (student.subject || '').split(','), true);
@@ -8488,6 +8965,7 @@ function cancelStudentEdit() {
   document.getElementById('new-student-pw2').value = '';
   document.getElementById('new-student-parent-hp').value = '';
   document.getElementById('new-student-student-hp').value = '';
+  setPaymentMethodInputs('new-student', null);
   // 과목별 학원비 입력 초기화
   const feeWrap = document.getElementById('new-student-fee-wrap');
   if (feeWrap) feeWrap.innerHTML = '<div style="font-size:12px; color:var(--text-muted)">위에서 과목을 선택하면 입력칸이 나타납니다.</div>';
@@ -12240,7 +12718,7 @@ const SYNC_KEYS = [
   'hwapp_users','hwapp_homeworks','hwapp_completions','hwapp_categories',
   'hwapp_student_groups','hwapp_retired_users','hwapp_classes','hwapp_mock_exams',
   'hwapp_instructors','hwapp_exam_scopes','hwapp_exam_scopes_backup',
-  'hwapp_progress_topics','hwapp_progress_completions'
+  'hwapp_progress_topics','hwapp_progress_completions','hwapp_costs'
 ];
 
 async function syncToServer() {
